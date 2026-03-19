@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import Groq from "groq-sdk";
-import { createClient } from "@supabase/supabase-js";
+import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────

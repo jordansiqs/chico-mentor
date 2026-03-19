@@ -12,7 +12,7 @@ import React, {
   useCallback,
   FormEvent,
 } from "react";
-import { createClientComponentClient } from "@supabase/auth-helpers-nextjs";
+import { createBrowserClient } from "@supabase/ssr";
 import { useChicoAudio } from "@/hooks/useChicoAudio";
 import type { ChicoCard } from "@/app/api/chico/route";
 
@@ -508,7 +508,10 @@ function ChatBubble({ message }: { message: ChatMessage }) {
 // ── Dashboard Principal ───────────────────────────────────────────────────────
 
 export default function ChicoDashboard() {
-  const supabase = createClientComponentClient();
+  const supabase = createBrowserClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
   const { speak, stop, isSpeaking, currentLang, startListening, stopListening,
           isListening, transcript, interimTranscript, resetTranscript } =
     useChicoAudio();
