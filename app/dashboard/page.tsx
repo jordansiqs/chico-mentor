@@ -43,23 +43,19 @@ function createSupabase() {
   );
 }
 
-// ── Sub-componentes ───────────────────────────────────────────────────────────
+// ── AudioButton ───────────────────────────────────────────────────────────────
 
-function AudioButton({
-  text,
-  lang,
-  bcp47,
-  isActive,
-  onPlay,
-  onStop,
-}: {
+interface AudioButtonProps {
+  label: string;
   text: string;
   lang: string;
   bcp47: string;
   isActive: boolean;
   onPlay: () => void;
   onStop: () => void;
-}) {
+}
+
+function AudioButton({ label, text, lang, bcp47, isActive, onPlay, onStop }: AudioButtonProps) {
   return (
     <button
       onClick={isActive ? onStop : onPlay}
@@ -80,6 +76,7 @@ function AudioButton({
           : "rgba(0,113,227,0.08)",
         color: isActive ? "#fff" : "#0071E3",
         letterSpacing: "0.01em",
+        flexShrink: 0,
       }}
       aria-label={`${isActive ? "Parar" : "Ouvir"} ${lang}`}
     >
@@ -94,24 +91,22 @@ function AudioButton({
           <polygon points="1,0.5 9,5 1,9.5" />
         </svg>
       )}
-      {lang}
+      {label}
     </button>
   );
 }
 
-function NexoCard({
-  card,
-  onPlay,
-  onStop,
-  isSpeaking,
-  currentLang,
-}: {
+// ── NexoCard ──────────────────────────────────────────────────────────────────
+
+interface NexoCardProps {
   card: MentoriaCard;
   onPlay: (text: string, bcp47: string) => void;
   onStop: () => void;
   isSpeaking: boolean;
   currentLang: string | null;
-}) {
+}
+
+function NexoCard({ card, onPlay, onStop, isSpeaking, currentLang }: NexoCardProps) {
   const [expanded, setExpanded] = useState(false);
 
   const langs = [
@@ -124,7 +119,10 @@ function NexoCard({
     ? { bg: "rgba(255,59,48,0.07)", dot: "#FF3B30", label: "Tear Românico" }
     : { bg: "rgba(0,113,227,0.07)", dot: "#0071E3", label: "Tear Germânico" };
 
-  const dateStr = new Date(card.criado_em).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" });
+  const dateStr = new Date(card.criado_em).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+  });
 
   return (
     <article
@@ -145,45 +143,66 @@ function NexoCard({
         (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
       }}
     >
+      {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
         <div>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "3px 8px", borderRadius: "8px", background: troncoColor.bg, fontSize: "10px", fontWeight: 600, color: troncoColor.dot, letterSpacing: "0.04em", textTransform: "uppercase", marginBottom: "8px" }}>
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "3px 8px", borderRadius: "8px", background: troncoColor.bg, fontSize: "10px", fontWeight: 600, color: troncoColor.dot, letterSpacing: "0.04em", textTransform: "uppercase" as const, marginBottom: "8px" }}>
             <span style={{ width: 5, height: 5, borderRadius: "50%", background: troncoColor.dot }} />
             {troncoColor.label}
           </span>
-          <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 600, color: "#1D1D1F", lineHeight: 1.35, fontFamily: "-apple-system, 'SF Pro Display', BlinkMacSystemFont, sans-serif" }}>
+          <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 600, color: "#1D1D1F", lineHeight: 1.35, fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif" }}>
             {card.tema_gerador}
           </h3>
         </div>
-        <span style={{ fontSize: "11px", color: "#86868B", whiteSpace: "nowrap", marginLeft: "8px", paddingTop: "2px" }}>{dateStr}</span>
+        <span style={{ fontSize: "11px", color: "#86868B", whiteSpace: "nowrap", marginLeft: "8px", paddingTop: "2px" }}>
+          {dateStr}
+        </span>
       </div>
 
+      {/* Traduções */}
       <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "14px" }}>
         {langs.map((l) => (
           <div key={l.bcp47} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", padding: "10px 12px", borderRadius: "12px", background: "#F5F5F7" }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: "13px", fontWeight: 600, color: "#1D1D1F", marginBottom: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.txt}</div>
-              <div style={{ fontSize: "11px", color: "#86868B", fontStyle: "italic" }}>{l.fon}</div>
+              <div style={{ fontSize: "13px", fontWeight: 600, color: "#1D1D1F", marginBottom: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {l.txt}
+              </div>
+              <div style={{ fontSize: "11px", color: "#86868B", fontStyle: "italic" }}>
+                {l.fon}
+              </div>
             </div>
-            <AudioButton label={l.nome} text={l.txt} lang={l.nome} bcp47={l.bcp47} isActive={isSpeaking && currentLang === l.bcp47} onPlay={() => onPlay(l.txt, l.bcp47)} onStop={onStop} />
+            <AudioButton
+              label={l.nome}
+              text={l.txt}
+              lang={l.nome}
+              bcp47={l.bcp47}
+              isActive={isSpeaking && currentLang === l.bcp47}
+              onPlay={() => onPlay(l.txt, l.bcp47)}
+              onStop={onStop}
+            />
           </div>
         ))}
       </div>
 
-      <button onClick={() => setExpanded((v) => !v)} style={{ width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }} aria-expanded={expanded}>
+      {/* Aula do Chico */}
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        style={{ width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}
+        aria-expanded={expanded}
+      >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "12px", background: expanded ? "rgba(0,113,227,0.06)" : "#F5F5F7", transition: "background 0.2s ease" }}>
           <span style={{ fontSize: "12px", fontWeight: 600, color: "#0071E3", display: "flex", alignItems: "center", gap: "6px" }}>
             <span style={{ fontSize: "14px" }}>📖</span>
             Lição do Chico
           </span>
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="#0071E3" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease", flexShrink: 0 }} aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 12 12" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease", flexShrink: 0 }} aria-hidden="true">
             <path d="M2 4l4 4 4-4" stroke="#0071E3" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
       </button>
 
       {expanded && (
-        <div style={{ marginTop: "8px", padding: "12px", borderRadius: "12px", background: "rgba(0,113,227,0.04)", fontSize: "13px", lineHeight: "1.65", color: "#3A3A3C", fontFamily: "-apple-system, 'SF Pro Text', BlinkMacSystemFont, sans-serif" }}>
+        <div style={{ marginTop: "8px", padding: "12px", borderRadius: "12px", background: "rgba(0,113,227,0.04)", fontSize: "13px", lineHeight: "1.65", color: "#3A3A3C" }}>
           {card.aula_chico}
         </div>
       )}
@@ -191,13 +210,17 @@ function NexoCard({
   );
 }
 
+// ── ChatBubble ────────────────────────────────────────────────────────────────
+
 function ChatBubble({ message }: { message: ChatMessage }) {
   const isChico = message.role === "chico";
 
   if (message.isLoading) {
     return (
       <div style={{ display: "flex", alignItems: "flex-end", gap: "8px" }}>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #0071E3, #34AADC)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", flexShrink: 0 }}>🦋</div>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #0071E3, #34AADC)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", flexShrink: 0 }}>
+          🦋
+        </div>
         <div style={{ padding: "12px 16px", borderRadius: "18px 18px 18px 4px", background: "#FFFFFF", boxShadow: "0 1px 4px rgba(0,0,0,0.08)", display: "flex", gap: "5px", alignItems: "center" }} aria-live="polite" aria-label="Chico está pensando">
           {[0, 1, 2].map((i) => (
             <span key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: "#86868B", animation: `typingDot 1.2s ease-in-out ${i * 0.2}s infinite` }} />
@@ -210,9 +233,21 @@ function ChatBubble({ message }: { message: ChatMessage }) {
   return (
     <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", flexDirection: isChico ? "row" : "row-reverse" }}>
       {isChico && (
-        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #0071E3, #34AADC)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", flexShrink: 0 }}>🦋</div>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #0071E3, #34AADC)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", flexShrink: 0 }}>
+          🦋
+        </div>
       )}
-      <div style={{ maxWidth: "75%", padding: "12px 16px", borderRadius: isChico ? "18px 18px 18px 4px" : "18px 18px 4px 18px", background: isChico ? "#FFFFFF" : "linear-gradient(135deg, #0071E3 0%, #0077ED 100%)", boxShadow: isChico ? "0 1px 4px rgba(0,0,0,0.08)" : "0 2px 8px rgba(0,113,227,0.3)", fontSize: "14px", lineHeight: "1.55", color: isChico ? "#1D1D1F" : "#FFFFFF", fontFamily: "-apple-system, 'SF Pro Text', BlinkMacSystemFont, sans-serif" }}>
+      <div style={{
+        maxWidth: "75%",
+        padding: "12px 16px",
+        borderRadius: isChico ? "18px 18px 18px 4px" : "18px 18px 4px 18px",
+        background: isChico ? "#FFFFFF" : "linear-gradient(135deg, #0071E3 0%, #0077ED 100%)",
+        boxShadow: isChico ? "0 1px 4px rgba(0,0,0,0.08)" : "0 2px 8px rgba(0,113,227,0.3)",
+        fontSize: "14px",
+        lineHeight: "1.55",
+        color: isChico ? "#1D1D1F" : "#FFFFFF",
+        fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+      }}>
         {message.content}
       </div>
     </div>
@@ -223,37 +258,54 @@ function ChatBubble({ message }: { message: ChatMessage }) {
 
 export default function ChicoDashboard() {
   const supabase = createSupabase();
-  const { speak, stop, isSpeaking, currentLang, startListening, stopListening,
-          isListening, transcript, interimTranscript, resetTranscript } = useChicoAudio();
+  const {
+    speak, stop, isSpeaking, currentLang,
+    startListening, stopListening, isListening,
+    transcript, interimTranscript, resetTranscript,
+  } = useChicoAudio();
 
-  const [profile, setProfile]             = useState<UserProfile | null>(null);
-  const [cards, setCards]                 = useState<MentoriaCard[]>([]);
-  const [messages, setMessages]           = useState<ChatMessage[]>([]);
-  const [inputText, setInputText]         = useState("");
-  const [isLoading, setIsLoading]         = useState(false);
+  const [profile, setProfile]               = useState<UserProfile | null>(null);
+  const [cards, setCards]                   = useState<MentoriaCard[]>([]);
+  const [messages, setMessages]             = useState<ChatMessage[]>([]);
+  const [inputText, setInputText]           = useState("");
+  const [isLoading, setIsLoading]           = useState(false);
   const [isFetchingCards, setFetchingCards] = useState(true);
-  const [sidebarFilter, setSidebarFilter] = useState<"todos" | "românico" | "germânico">("todos");
+  const [sidebarFilter, setSidebarFilter]   = useState<"todos" | "românico" | "germânico">("todos");
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inputRef   = useRef<HTMLTextAreaElement>(null);
 
+  // Carregar perfil e cards
   useEffect(() => {
     async function loadData() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data: prof } = await supabase.from("user_profiles").select("*").eq("id", user.id).single();
-      if (prof) setProfile(prof);
+      const { data: prof } = await supabase
+        .from("user_profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      if (prof) setProfile(prof as UserProfile);
 
-      const { data: c } = await supabase.from("mentoria_cards").select("*").eq("user_id", user.id).order("criado_em", { ascending: false }).limit(50);
-      if (c) setCards(c);
+      const { data: c } = await supabase
+        .from("mentoria_cards")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("criado_em", { ascending: false })
+        .limit(50);
+      if (c) setCards(c as MentoriaCard[]);
       setFetchingCards(false);
     }
     loadData();
   }, []);
 
-  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
+  // Rolar chat para o fim
+  useEffect(() => {
+    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
+  // Integrar transcript de voz
   useEffect(() => {
     if (transcript) {
       setInputText((prev) => (prev ? `${prev} ${transcript}` : transcript).trim());
@@ -261,6 +313,7 @@ export default function ChicoDashboard() {
     }
   }, [transcript, resetTranscript]);
 
+  // Saudação inicial
   useEffect(() => {
     if (profile && messages.length === 0) {
       const troncoLabel = profile.tronco === "românico" ? "Tear Românico" : "Tear Germânico";
@@ -273,6 +326,7 @@ export default function ChicoDashboard() {
     }
   }, [profile, messages.length]);
 
+  // Enviar mensagem
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || isLoading || !profile) return;
 
@@ -287,7 +341,11 @@ export default function ChicoDashboard() {
       const res = await fetch("/api/chico", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tema_gerador: text.trim(), tronco: profile.tronco, interesses: profile.interesses ?? [] }),
+        body: JSON.stringify({
+          tema_gerador: text.trim(),
+          tronco: profile.tronco,
+          interesses: profile.interesses ?? [],
+        }),
       });
 
       const data = await res.json();
@@ -296,10 +354,19 @@ export default function ChicoDashboard() {
       const savedCard: MentoriaCard = data.card;
       setCards((prev) => [savedCard, ...prev]);
 
-      const chicoMsg: ChatMessage = { id: `chico-${Date.now()}`, role: "chico", content: savedCard.aula_chico, card: savedCard };
+      const chicoMsg: ChatMessage = {
+        id: `chico-${Date.now()}`,
+        role: "chico",
+        content: savedCard.aula_chico,
+        card: savedCard,
+      };
       setMessages((prev) => prev.map((m) => (m.isLoading ? chicoMsg : m)));
     } catch (err) {
-      const errorMsg: ChatMessage = { id: `error-${Date.now()}`, role: "chico", content: `Perdoe-me — houve um tropeço. ${(err as Error).message}. Podemos tentar novamente?` };
+      const errorMsg: ChatMessage = {
+        id: `error-${Date.now()}`,
+        role: "chico",
+        content: `Perdoe-me — houve um tropeço. ${(err as Error).message}. Podemos tentar novamente?`,
+      };
       setMessages((prev) => prev.map((m) => (m.isLoading ? errorMsg : m)));
     } finally {
       setIsLoading(false);
@@ -311,14 +378,27 @@ export default function ChicoDashboard() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(inputText); }
   };
 
-  const filteredCards = sidebarFilter === "todos" ? cards : cards.filter((c) => c.tronco === sidebarFilter);
+  const filteredCards = sidebarFilter === "todos"
+    ? cards
+    : cards.filter((c) => c.tronco === sidebarFilter);
+
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <>
       <style>{`
-        @keyframes typingDot { 0%, 60%, 100% { transform: translateY(0); opacity: 0.4; } 30% { transform: translateY(-6px); opacity: 1; } }
-        @keyframes pulse { from { transform: scaleY(0.6); } to { transform: scaleY(1.2); } }
-        @keyframes fadeSlideIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes typingDot {
+          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+          30% { transform: translateY(-6px); opacity: 1; }
+        }
+        @keyframes pulse {
+          from { transform: scaleY(0.6); }
+          to   { transform: scaleY(1.2); }
+        }
+        @keyframes fadeSlideIn {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
         * { box-sizing: border-box; }
         body { margin: 0; }
         ::-webkit-scrollbar { width: 4px; }
@@ -328,7 +408,7 @@ export default function ChicoDashboard() {
         button:focus-visible { outline: 2px solid #0071E3; outline-offset: 2px; }
       `}</style>
 
-      <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#F5F5F7", fontFamily: "-apple-system, 'SF Pro Text', BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#F5F5F7", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
 
         {/* Top Bar */}
         <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", height: "56px", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: "1px solid rgba(0,0,0,0.08)", position: "sticky", top: 0, zIndex: 100, flexShrink: 0 }}>
@@ -359,7 +439,9 @@ export default function ChicoDashboard() {
           <aside style={{ width: "380px", minWidth: "320px", maxWidth: "420px", display: "flex", flexDirection: "column", borderRight: "1px solid rgba(0,0,0,0.07)", background: "#F5F5F7", overflow: "hidden", flexShrink: 0 }}>
             <div style={{ padding: "20px 20px 12px", flexShrink: 0 }}>
               <h2 style={{ margin: "0 0 4px 0", fontSize: "20px", fontWeight: 700, color: "#1D1D1F", letterSpacing: "-0.02em" }}>Biblioteca de Nexos</h2>
-              <p style={{ margin: "0 0 14px 0", fontSize: "13px", color: "#86868B" }}>{cards.length} {cards.length === 1 ? "nexo salvo" : "nexos salvos"}</p>
+              <p style={{ margin: "0 0 14px 0", fontSize: "13px", color: "#86868B" }}>
+                {cards.length} {cards.length === 1 ? "nexo salvo" : "nexos salvos"}
+              </p>
               <div style={{ display: "flex", gap: "6px", padding: "4px", borderRadius: "12px", background: "rgba(0,0,0,0.06)" }} role="group" aria-label="Filtrar por tronco">
                 {(["todos", "românico", "germânico"] as const).map((f) => (
                   <button key={f} onClick={() => setSidebarFilter(f)} style={{ flex: 1, padding: "6px 8px", borderRadius: "9px", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: 600, transition: "all 0.15s ease", background: sidebarFilter === f ? "#FFFFFF" : "transparent", color: sidebarFilter === f ? "#1D1D1F" : "#86868B", boxShadow: sidebarFilter === f ? "0 1px 4px rgba(0,0,0,0.12)" : "none" }} aria-pressed={sidebarFilter === f}>
@@ -371,17 +453,29 @@ export default function ChicoDashboard() {
 
             <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 20px", display: "flex", flexDirection: "column", gap: "12px" }}>
               {isFetchingCards
-                ? Array.from({ length: 3 }).map((_, i) => <div key={i} style={{ height: 160, borderRadius: "18px", background: "#ebebeb" }} aria-hidden="true" />)
+                ? Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} style={{ height: 160, borderRadius: "18px", background: "#ebebeb" }} aria-hidden="true" />
+                  ))
                 : filteredCards.length === 0
-                  ? <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 20px", textAlign: "center", gap: "12px" }}>
+                  ? (
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 20px", textAlign: "center", gap: "12px" }}>
                       <span style={{ fontSize: "40px", opacity: 0.5 }}>🔮</span>
-                      <p style={{ margin: 0, fontSize: "14px", color: "#86868B", lineHeight: 1.5 }}>Sua biblioteca está vazia. Inicie uma conversa com o Chico.</p>
+                      <p style={{ margin: 0, fontSize: "14px", color: "#86868B", lineHeight: 1.5 }}>
+                        Sua biblioteca está vazia. Inicie uma conversa com o Chico.
+                      </p>
                     </div>
+                  )
                   : filteredCards.map((card) => (
-                      <div key={card.id} style={{ animation: "fadeSlideIn 0.3s ease forwards" }}>
-                        <NexoCard card={card} onPlay={(text, bcp47) => speak({ text, lang: bcp47 })} onStop={stop} isSpeaking={isSpeaking} currentLang={currentLang} />
-                      </div>
-                    ))
+                    <div key={card.id} style={{ animation: "fadeSlideIn 0.3s ease forwards" }}>
+                      <NexoCard
+                        card={card}
+                        onPlay={(text, bcp47) => speak({ text, lang: bcp47 })}
+                        onStop={stop}
+                        isSpeaking={isSpeaking}
+                        currentLang={currentLang}
+                      />
+                    </div>
+                  ))
               }
             </div>
           </aside>
@@ -401,15 +495,35 @@ export default function ChicoDashboard() {
               <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "10px", background: "rgba(255,59,48,0.08)", borderTop: "1px solid rgba(255,59,48,0.15)" }} role="status" aria-live="assertive">
                 <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#FF3B30", animation: "pulse 0.8s ease-in-out infinite alternate" }} aria-hidden="true" />
                 <span style={{ fontSize: "13px", color: "#FF3B30", fontWeight: 500 }}>Ouvindo...</span>
-                {interimTranscript && <span style={{ fontSize: "12px", color: "#86868B", fontStyle: "italic" }}>"{interimTranscript}"</span>}
+                {interimTranscript && (
+                  <span style={{ fontSize: "12px", color: "#86868B", fontStyle: "italic" }}>"{interimTranscript}"</span>
+                )}
               </div>
             )}
 
+            {/* Input */}
             <div style={{ padding: "16px 24px 20px", background: "rgba(255,255,255,0.9)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderTop: "1px solid rgba(0,0,0,0.07)", flexShrink: 0 }}>
               <form onSubmit={handleSubmit} style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
                 <div style={{ flex: 1, display: "flex", alignItems: "flex-end", gap: "8px", padding: "10px 14px", background: "#FFFFFF", borderRadius: "20px", border: "1px solid rgba(0,0,0,0.10)", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
-                  <textarea ref={inputRef} value={inputText} onChange={(e) => setInputText(e.target.value)} onKeyDown={handleKeyDown} placeholder="Pergunte ao Chico... (Ex: Como dizer gol de placa em francês?)" rows={1} disabled={isLoading} style={{ flex: 1, border: "none", background: "transparent", fontSize: "14px", lineHeight: "1.5", color: "#1D1D1F", fontFamily: "inherit", maxHeight: "120px", overflowY: "auto", padding: 0 }} aria-label="Mensagem para o Chico" />
-                  <button type="button" onClick={isListening ? stopListening : startListening} disabled={isLoading} style={{ width: 32, height: 32, borderRadius: "50%", border: "none", cursor: isLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", background: isListening ? "#FF3B30" : "rgba(0,0,0,0.06)", transition: "all 0.2s ease", flexShrink: 0 }} aria-label={isListening ? "Parar gravação" : "Gravar voz"} aria-pressed={isListening}>
+                  <textarea
+                    ref={inputRef}
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Pergunte ao Chico... (Ex: Como dizer gol de placa em francês?)"
+                    rows={1}
+                    disabled={isLoading}
+                    style={{ flex: 1, border: "none", background: "transparent", fontSize: "14px", lineHeight: "1.5", color: "#1D1D1F", fontFamily: "inherit", maxHeight: "120px", overflowY: "auto", padding: 0 }}
+                    aria-label="Mensagem para o Chico"
+                  />
+                  <button
+                    type="button"
+                    onClick={isListening ? stopListening : startListening}
+                    disabled={isLoading}
+                    style={{ width: 32, height: 32, borderRadius: "50%", border: "none", cursor: isLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", background: isListening ? "#FF3B30" : "rgba(0,0,0,0.06)", transition: "all 0.2s ease", flexShrink: 0 }}
+                    aria-label={isListening ? "Parar gravação" : "Gravar voz"}
+                    aria-pressed={isListening}
+                  >
                     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isListening ? "#fff" : "#86868B"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                       <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z" />
                       <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
@@ -418,14 +532,21 @@ export default function ChicoDashboard() {
                     </svg>
                   </button>
                 </div>
-                <button type="submit" disabled={!inputText.trim() || isLoading} style={{ width: 44, height: 44, borderRadius: "50%", border: "none", cursor: !inputText.trim() || isLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", background: !inputText.trim() || isLoading ? "rgba(0,0,0,0.08)" : "linear-gradient(135deg, #0071E3 0%, #0077ED 100%)", transition: "all 0.2s ease", boxShadow: !inputText.trim() || isLoading ? "none" : "0 2px 8px rgba(0,113,227,0.35)", flexShrink: 0 }} aria-label="Enviar mensagem">
+                <button
+                  type="submit"
+                  disabled={!inputText.trim() || isLoading}
+                  style={{ width: 44, height: 44, borderRadius: "50%", border: "none", cursor: !inputText.trim() || isLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", background: !inputText.trim() || isLoading ? "rgba(0,0,0,0.08)" : "linear-gradient(135deg, #0071E3 0%, #0077ED 100%)", transition: "all 0.2s ease", boxShadow: !inputText.trim() || isLoading ? "none" : "0 2px 8px rgba(0,113,227,0.35)", flexShrink: 0 }}
+                  aria-label="Enviar mensagem"
+                >
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={!inputText.trim() || isLoading ? "#86868B" : "#fff"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <line x1="22" y1="2" x2="11" y2="13" />
                     <polygon points="22 2 15 22 11 13 2 9 22 2" />
                   </svg>
                 </button>
               </form>
-              <p style={{ margin: "8px 0 0", fontSize: "11px", color: "#AEAEB2", textAlign: "center" }}>Enter para enviar · Shift + Enter para nova linha</p>
+              <p style={{ margin: "8px 0 0", fontSize: "11px", color: "#AEAEB2", textAlign: "center" }}>
+                Enter para enviar · Shift + Enter para nova linha
+              </p>
             </div>
           </main>
         </div>
