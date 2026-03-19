@@ -46,7 +46,6 @@ function createSupabase() {
 // ── Sub-componentes ───────────────────────────────────────────────────────────
 
 function AudioButton({
-  label,
   text,
   lang,
   bcp47,
@@ -54,7 +53,6 @@ function AudioButton({
   onPlay,
   onStop,
 }: {
-  label: string;
   text: string;
   lang: string;
   bcp47: string;
