@@ -1,7 +1,7 @@
 "use client";
 // app/onboarding/page.tsx
 
-import { useState } from "react";
+import React, { useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
 
 function createSupabase() {
@@ -13,7 +13,7 @@ function createSupabase() {
 
 // ── Ícones SVG ────────────────────────────────────────────────────────────────
 
-const ICONS: Record<string, JSX.Element> = {
+const ICONS: Record<string, React.ReactElement> = {
   futebol:    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 6.3 2.3L12 8.5 5.7 4.3A10 10 0 0 1 12 2z"/><path d="M2.3 7.7L7 12l-4.7 4.3"/><path d="M21.7 7.7L17 12l4.7 4.3"/><path d="M12 21.5v-6l-5-3-2 5.2"/><path d="M12 21.5v-6l5-3 2 5.2"/></svg>,
   musica:     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>,
   culinaria:  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>,
@@ -29,18 +29,18 @@ const ICONS: Record<string, JSX.Element> = {
 };
 
 const INTERESSES = [
-  { id: "futebol",    label: "Futebol"     },
-  { id: "musica",     label: "Música"      },
-  { id: "culinaria",  label: "Culinária"   },
-  { id: "tecnologia", label: "Tecnologia"  },
-  { id: "viagens",    label: "Viagens"     },
-  { id: "cinema",     label: "Cinema"      },
-  { id: "literatura", label: "Literatura"  },
-  { id: "negocios",   label: "Negócios"    },
-  { id: "esportes",   label: "Esportes"    },
-  { id: "arte",       label: "Arte"        },
-  { id: "jogos",      label: "Jogos"       },
-  { id: "natureza",   label: "Natureza"    },
+  { id: "futebol",    label: "Futebol"    },
+  { id: "musica",     label: "Música"     },
+  { id: "culinaria",  label: "Culinária"  },
+  { id: "tecnologia", label: "Tecnologia" },
+  { id: "viagens",    label: "Viagens"    },
+  { id: "cinema",     label: "Cinema"     },
+  { id: "literatura", label: "Literatura" },
+  { id: "negocios",   label: "Negócios"   },
+  { id: "esportes",   label: "Esportes"   },
+  { id: "arte",       label: "Arte"       },
+  { id: "jogos",      label: "Jogos"      },
+  { id: "natureza",   label: "Natureza"   },
 ];
 
 const TRONCOS = [
@@ -77,11 +77,11 @@ function IconLogo() {
 export default function OnboardingPage() {
   const supabase = createSupabase();
 
-  const [step, setStep]           = useState<1 | 2>(1);
-  const [tronco, setTronco]       = useState<"românico" | "germânico" | null>(null);
+  const [step, setStep]             = useState<1 | 2>(1);
+  const [tronco, setTronco]         = useState<"românico" | "germânico" | null>(null);
   const [interesses, setInteresses] = useState<string[]>([]);
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState<string | null>(null);
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState<string | null>(null);
 
   function toggleInteresse(id: string) {
     setInteresses((prev) => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
@@ -142,7 +142,9 @@ export default function OnboardingPage() {
           {/* Step 1 */}
           {step === 1 && (
             <>
-              <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#1D1D1F", letterSpacing: "-0.02em", marginBottom: "8px" }}>Por qual caminho vamos?</h2>
+              <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#1D1D1F", letterSpacing: "-0.02em", marginBottom: "8px" }}>
+                Por qual caminho vamos?
+              </h2>
               <p style={{ fontSize: "14px", color: "#86868B", marginBottom: "28px", lineHeight: 1.6 }}>
                 O Chico vai comparar as línguas do tronco escolhido, revelando as raízes em comum.
               </p>
@@ -179,7 +181,9 @@ export default function OnboardingPage() {
           {/* Step 2 */}
           {step === 2 && (
             <>
-              <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#1D1D1F", letterSpacing: "-0.02em", marginBottom: "8px" }}>O que te move?</h2>
+              <h2 style={{ fontSize: "22px", fontWeight: 700, color: "#1D1D1F", letterSpacing: "-0.02em", marginBottom: "8px" }}>
+                O que te move?
+              </h2>
               <p style={{ fontSize: "14px", color: "#86868B", marginBottom: "28px", lineHeight: 1.6 }}>
                 O Chico usará seus interesses para criar exemplos que fazem sentido para você. Escolha pelo menos um.
               </p>
@@ -190,16 +194,22 @@ export default function OnboardingPage() {
                   return (
                     <button key={item.id} onClick={() => toggleInteresse(item.id)}
                       style={{ padding: "14px 10px", borderRadius: "12px", border: `2px solid ${selected ? "#0071E3" : "rgba(0,0,0,0.08)"}`, background: selected ? "rgba(0,113,227,0.05)" : "#FAFAFA", cursor: "pointer", display: "flex", flexDirection: "column" as const, alignItems: "center", gap: "8px", transition: "all 0.15s", fontFamily: "inherit" }}>
-                      <div style={{ color: selected ? "#0071E3" : "#86868B", width: 20, height: 20 }}>
+                      <div style={{ color: selected ? "#0071E3" : "#86868B", width: 20, height: 20, display: "flex", alignItems: "center", justifyContent: "center" }}>
                         {ICONS[item.id]}
                       </div>
-                      <span style={{ fontSize: "12px", fontWeight: selected ? 600 : 500, color: selected ? "#0071E3" : "#3A3A3C" }}>{item.label}</span>
+                      <span style={{ fontSize: "12px", fontWeight: selected ? 600 : 500, color: selected ? "#0071E3" : "#3A3A3C" }}>
+                        {item.label}
+                      </span>
                     </button>
                   );
                 })}
               </div>
 
-              {error && <div style={{ padding: "11px 14px", borderRadius: "10px", background: "rgba(255,59,48,0.07)", fontSize: "13px", color: "#FF3B30", marginBottom: "16px" }}>{error}</div>}
+              {error && (
+                <div style={{ padding: "11px 14px", borderRadius: "10px", background: "rgba(255,59,48,0.07)", fontSize: "13px", color: "#FF3B30", marginBottom: "16px" }}>
+                  {error}
+                </div>
+              )}
 
               <div style={{ display: "flex", gap: "12px" }}>
                 <button onClick={() => setStep(1)}
