@@ -10,7 +10,6 @@ import React, {
   FormEvent,
 } from "react";
 import { createBrowserClient } from "@supabase/ssr";
-import { useChicoAudio } from "@/hooks/useChicoAudio";
 import type { ChicoCard } from "@/app/api/chico/route";
 
 // ── Tipos ─────────────────────────────────────────────────────────────────────
@@ -24,7 +23,6 @@ interface ChatMessage {
   id: string;
   role: "user" | "chico";
   content: string;
-  card?: MentoriaCard;
   isLoading?: boolean;
 }
 
@@ -35,7 +33,7 @@ interface UserProfile {
   interesses: string[];
 }
 
-// ── Criar cliente Supabase (browser) ─────────────────────────────────────────
+// ── Supabase ──────────────────────────────────────────────────────────────────
 
 function createSupabase() {
   return createBrowserClient(
@@ -44,51 +42,93 @@ function createSupabase() {
   );
 }
 
-// ── AudioButton ───────────────────────────────────────────────────────────────
+// ── Audio Hook (inline, sem dependência externa) ──────────────────────────────
 
-interface AudioButtonProps {
-  label: string;
-  text: string;
-  lang: string;
-  bcp47: string;
-  isActive: boolean;
-  onPlay: () => void;
-  onStop: () => void;
+function useAudio() {
+  const [isSpeaking, setIsSpeaking]     = useState(false);
+  const [speakingBcp47, setSpeakingBcp47] = useState<string | null>(null);
+  const [isListening, setIsListening]   = useState(false);
+  const [micTranscript, setMicTranscript] = useState("");
+  const recognitionRef = useRef<any>(null);
+
+  function speak(text: string, bcp47: string) {
+    if (typeof window === "undefined") return;
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.lang  = bcp47;
+    utt.rate  = 0.88;
+    // Tenta usar a melhor voz disponível para o idioma
+    const voices = window.speechSynthesis.getVoices();
+    const best = voices.find((v) => v.lang === bcp47) ||
+                 voices.find((v) => v.lang.startsWith(bcp47.split("-")[0]));
+    if (best) utt.voice = best;
+    utt.onstart = () => { setIsSpeaking(true); setSpeakingBcp47(bcp47); };
+    utt.onend   = () => { setIsSpeaking(false); setSpeakingBcp47(null); };
+    utt.onerror = () => { setIsSpeaking(false); setSpeakingBcp47(null); };
+    window.speechSynthesis.speak(utt);
+  }
+
+  function stopSpeaking() {
+    if (typeof window !== "undefined") window.speechSynthesis.cancel();
+    setIsSpeaking(false);
+    setSpeakingBcp47(null);
+  }
+
+  function startListening(onResult: (text: string) => void) {
+    if (typeof window === "undefined") return;
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) { alert("Reconhecimento de voz não suportado neste navegador."); return; }
+    const rec = new SR();
+    rec.lang            = "pt-BR";
+    rec.continuous      = false;
+    rec.interimResults  = false;
+    rec.onstart  = () => setIsListening(true);
+    rec.onend    = () => setIsListening(false);
+    rec.onerror  = () => setIsListening(false);
+    rec.onresult = (e: any) => {
+      const text = e.results[0][0].transcript;
+      setMicTranscript(text);
+      onResult(text);
+    };
+    recognitionRef.current = rec;
+    rec.start();
+  }
+
+  function stopListening() {
+    recognitionRef.current?.stop();
+    setIsListening(false);
+  }
+
+  return { speak, stopSpeaking, isSpeaking, speakingBcp47, startListening, stopListening, isListening };
 }
 
-function AudioButton({ label, text, lang, bcp47, isActive, onPlay, onStop }: AudioButtonProps) {
+// ── AudioButton ───────────────────────────────────────────────────────────────
+
+function AudioButton({ label, text, bcp47, isActive, onPlay, onStop }: {
+  label: string; text: string; bcp47: string;
+  isActive: boolean; onPlay: () => void; onStop: () => void;
+}) {
   return (
     <button
       onClick={isActive ? onStop : onPlay}
-      title={`Ouvir em ${lang}`}
       style={{
-        display: "flex",
-        alignItems: "center",
-        gap: "4px",
-        padding: "4px 10px",
-        borderRadius: "20px",
-        border: "none",
-        cursor: "pointer",
-        fontSize: "11px",
-        fontWeight: 500,
-        transition: "all 0.2s ease",
-        background: isActive
-          ? "linear-gradient(135deg, #0071E3 0%, #0077ED 100%)"
-          : "rgba(0,113,227,0.08)",
+        display: "flex", alignItems: "center", gap: "4px",
+        padding: "4px 10px", borderRadius: "20px", border: "none",
+        cursor: "pointer", fontSize: "11px", fontWeight: 500,
+        transition: "all 0.2s ease", flexShrink: 0,
+        background: isActive ? "linear-gradient(135deg,#0071E3,#0077ED)" : "rgba(0,113,227,0.08)",
         color: isActive ? "#fff" : "#0071E3",
-        letterSpacing: "0.01em",
-        flexShrink: 0,
       }}
-      aria-label={`${isActive ? "Parar" : "Ouvir"} ${lang}`}
+      title={`Ouvir em ${label}`}
     >
       {isActive ? (
-        <span style={{ display: "flex", gap: "2px", alignItems: "center" }} aria-hidden="true">
-          <span style={{ width: 3, height: 10, background: "currentColor", borderRadius: 2, animation: "pulse 0.6s ease-in-out infinite alternate" }} />
-          <span style={{ width: 3, height: 14, background: "currentColor", borderRadius: 2, animation: "pulse 0.6s ease-in-out 0.15s infinite alternate" }} />
-          <span style={{ width: 3, height: 8,  background: "currentColor", borderRadius: 2, animation: "pulse 0.6s ease-in-out 0.3s infinite alternate" }} />
+        <span style={{ display: "flex", gap: "2px", alignItems: "center" }}>
+          {[10, 14, 8].map((h, i) => (
+            <span key={i} style={{ width: 3, height: h, background: "currentColor", borderRadius: 2, animation: `pulse 0.6s ${i*0.15}s ease-in-out infinite alternate` }} />
+          ))}
         </span>
       ) : (
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor">
           <polygon points="1,0.5 9,5 1,9.5" />
         </svg>
       )}
@@ -99,15 +139,7 @@ function AudioButton({ label, text, lang, bcp47, isActive, onPlay, onStop }: Aud
 
 // ── NexoCard ──────────────────────────────────────────────────────────────────
 
-interface NexoCardProps {
-  card: MentoriaCard;
-  onPlay: (text: string, bcp47: string) => void;
-  onStop: () => void;
-  isSpeaking: boolean;
-  currentLang: string | null;
-}
-
-function NexoCard({ card, onPlay, onStop, isSpeaking, currentLang }: NexoCardProps) {
+function NexoCard({ card, audio }: { card: MentoriaCard; audio: ReturnType<typeof useAudio> }) {
   const [expanded, setExpanded] = useState(false);
 
   const langs = [
@@ -116,87 +148,54 @@ function NexoCard({ card, onPlay, onStop, isSpeaking, currentLang }: NexoCardPro
     { nome: card.lang_3_nome, txt: card.lang_3_txt, fon: card.lang_3_fon, bcp47: card.lang_3_bcp47 },
   ];
 
-  const troncoColor = card.tronco === "românico"
-    ? { bg: "rgba(255,59,48,0.07)", dot: "#FF3B30", label: "Tear Românico" }
-    : { bg: "rgba(0,113,227,0.07)", dot: "#0071E3", label: "Tear Germânico" };
-
-  const dateStr = new Date(card.criado_em).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-  });
+  const isRom = card.tronco === "românico";
+  const troncoStyle = {
+    dot: isRom ? "#FF3B30" : "#0071E3",
+    bg: isRom ? "rgba(255,59,48,0.07)" : "rgba(0,113,227,0.07)",
+    label: isRom ? "Tear Românico" : "Tear Germânico",
+  };
 
   return (
-    <article
-      style={{
-        background: "#FFFFFF",
-        borderRadius: "18px",
-        padding: "20px",
-        boxShadow: "0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04)",
-        transition: "box-shadow 0.2s ease, transform 0.2s ease",
-        border: "1px solid rgba(0,0,0,0.05)",
-      }}
-      onMouseEnter={(e) => {
-        (e.currentTarget as HTMLElement).style.boxShadow = "0 2px 8px rgba(0,0,0,0.10), 0 8px 32px rgba(0,0,0,0.08)";
-        (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)";
-      }}
-      onMouseLeave={(e) => {
-        (e.currentTarget as HTMLElement).style.boxShadow = "0 1px 3px rgba(0,0,0,0.08), 0 4px 16px rgba(0,0,0,0.04)";
-        (e.currentTarget as HTMLElement).style.transform = "translateY(0)";
-      }}
+    <article style={{ background: "#fff", borderRadius: "18px", padding: "20px", boxShadow: "0 1px 3px rgba(0,0,0,0.08),0 4px 16px rgba(0,0,0,0.04)", border: "1px solid rgba(0,0,0,0.05)", transition: "transform 0.2s,box-shadow 0.2s" }}
+      onMouseEnter={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 4px 20px rgba(0,0,0,0.10)"; }}
+      onMouseLeave={(e) => { (e.currentTarget as HTMLElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow = "0 1px 3px rgba(0,0,0,0.08),0 4px 16px rgba(0,0,0,0.04)"; }}
     >
-      {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "12px" }}>
         <div>
-          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "3px 8px", borderRadius: "8px", background: troncoColor.bg, fontSize: "10px", fontWeight: 600, color: troncoColor.dot, letterSpacing: "0.04em", textTransform: "uppercase" as const, marginBottom: "8px" }}>
-            <span style={{ width: 5, height: 5, borderRadius: "50%", background: troncoColor.dot }} />
-            {troncoColor.label}
+          <span style={{ display: "inline-flex", alignItems: "center", gap: "5px", padding: "3px 8px", borderRadius: "8px", background: troncoStyle.bg, fontSize: "10px", fontWeight: 600, color: troncoStyle.dot, textTransform: "uppercase" as const, marginBottom: "8px" }}>
+            <span style={{ width: 5, height: 5, borderRadius: "50%", background: troncoStyle.dot }} />
+            {troncoStyle.label}
           </span>
-          <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 600, color: "#1D1D1F", lineHeight: 1.35, fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif" }}>
-            {card.tema_gerador}
-          </h3>
+          <h3 style={{ margin: 0, fontSize: "15px", fontWeight: 600, color: "#1D1D1F", lineHeight: 1.35 }}>{card.tema_gerador}</h3>
         </div>
-        <span style={{ fontSize: "11px", color: "#86868B", whiteSpace: "nowrap", marginLeft: "8px", paddingTop: "2px" }}>
-          {dateStr}
+        <span style={{ fontSize: "11px", color: "#86868B", whiteSpace: "nowrap", marginLeft: "8px" }}>
+          {new Date(card.criado_em).toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })}
         </span>
       </div>
 
-      {/* Traduções */}
-      <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "14px" }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: "10px", marginBottom: "12px" }}>
         {langs.map((l) => (
           <div key={l.bcp47} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "8px", padding: "10px 12px", borderRadius: "12px", background: "#F5F5F7" }}>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: "13px", fontWeight: 600, color: "#1D1D1F", marginBottom: "2px", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                {l.txt}
-              </div>
-              <div style={{ fontSize: "11px", color: "#86868B", fontStyle: "italic" }}>
-                {l.fon}
-              </div>
+              <div style={{ fontSize: "13px", fontWeight: 600, color: "#1D1D1F", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{l.txt}</div>
+              <div style={{ fontSize: "11px", color: "#86868B", fontStyle: "italic" }}>{l.fon}</div>
             </div>
             <AudioButton
-              label={l.nome}
-              text={l.txt}
-              lang={l.nome}
-              bcp47={l.bcp47}
-              isActive={isSpeaking && currentLang === l.bcp47}
-              onPlay={() => onPlay(l.txt, l.bcp47)}
-              onStop={onStop}
+              label={l.nome} text={l.txt} bcp47={l.bcp47}
+              isActive={audio.isSpeaking && audio.speakingBcp47 === l.bcp47}
+              onPlay={() => audio.speak(l.txt, l.bcp47)}
+              onStop={audio.stopSpeaking}
             />
           </div>
         ))}
       </div>
 
-      {/* Aula do Chico */}
-      <button
-        onClick={() => setExpanded((v) => !v)}
-        style={{ width: "100%", background: "none", border: "none", cursor: "pointer", textAlign: "left", padding: 0 }}
-        aria-expanded={expanded}
-      >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "12px", background: expanded ? "rgba(0,113,227,0.06)" : "#F5F5F7", transition: "background 0.2s ease" }}>
+      <button onClick={() => setExpanded((v) => !v)} style={{ width: "100%", background: "none", border: "none", cursor: "pointer", padding: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "10px 12px", borderRadius: "12px", background: expanded ? "rgba(0,113,227,0.06)" : "#F5F5F7" }}>
           <span style={{ fontSize: "12px", fontWeight: 600, color: "#0071E3", display: "flex", alignItems: "center", gap: "6px" }}>
-            <span style={{ fontSize: "14px" }}>📖</span>
-            Lição do Chico
+            <span>📖</span> Lição do Chico
           </span>
-          <svg width="12" height="12" viewBox="0 0 12 12" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s ease", flexShrink: 0 }} aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 12 12" style={{ transform: expanded ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}>
             <path d="M2 4l4 4 4-4" stroke="#0071E3" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
           </svg>
         </div>
@@ -219,12 +218,10 @@ function ChatBubble({ message }: { message: ChatMessage }) {
   if (message.isLoading) {
     return (
       <div style={{ display: "flex", alignItems: "flex-end", gap: "8px" }}>
-        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #0071E3, #34AADC)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", flexShrink: 0 }}>
-          🦋
-        </div>
-        <div style={{ padding: "12px 16px", borderRadius: "18px 18px 18px 4px", background: "#FFFFFF", boxShadow: "0 1px 4px rgba(0,0,0,0.08)", display: "flex", gap: "5px", alignItems: "center" }} aria-live="polite" aria-label="Chico está pensando">
+        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#0071E3,#34AADC)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>🦋</div>
+        <div style={{ padding: "12px 16px", borderRadius: "18px 18px 18px 4px", background: "#fff", boxShadow: "0 1px 4px rgba(0,0,0,0.08)", display: "flex", gap: "5px", alignItems: "center" }}>
           {[0, 1, 2].map((i) => (
-            <span key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: "#86868B", animation: `typingDot 1.2s ease-in-out ${i * 0.2}s infinite` }} />
+            <span key={i} style={{ width: 6, height: 6, borderRadius: "50%", background: "#86868B", animation: `typingDot 1.2s ${i * 0.2}s ease-in-out infinite` }} />
           ))}
         </div>
       </div>
@@ -234,20 +231,15 @@ function ChatBubble({ message }: { message: ChatMessage }) {
   return (
     <div style={{ display: "flex", alignItems: "flex-end", gap: "8px", flexDirection: isChico ? "row" : "row-reverse" }}>
       {isChico && (
-        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #0071E3, #34AADC)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", flexShrink: 0 }}>
-          🦋
-        </div>
+        <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg,#0071E3,#34AADC)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px", flexShrink: 0 }}>🦋</div>
       )}
       <div style={{
-        maxWidth: "75%",
-        padding: "12px 16px",
+        maxWidth: "75%", padding: "12px 16px",
         borderRadius: isChico ? "18px 18px 18px 4px" : "18px 18px 4px 18px",
-        background: isChico ? "#FFFFFF" : "linear-gradient(135deg, #0071E3 0%, #0077ED 100%)",
+        background: isChico ? "#fff" : "linear-gradient(135deg,#0071E3,#0077ED)",
         boxShadow: isChico ? "0 1px 4px rgba(0,0,0,0.08)" : "0 2px 8px rgba(0,113,227,0.3)",
-        fontSize: "14px",
-        lineHeight: "1.55",
-        color: isChico ? "#1D1D1F" : "#FFFFFF",
-        fontFamily: "-apple-system, BlinkMacSystemFont, sans-serif",
+        fontSize: "14px", lineHeight: "1.55",
+        color: isChico ? "#1D1D1F" : "#fff",
       }}>
         {message.content}
       </div>
@@ -259,11 +251,7 @@ function ChatBubble({ message }: { message: ChatMessage }) {
 
 export default function ChicoDashboard() {
   const supabase = createSupabase();
-  const {
-    speak, stop, isSpeaking, currentLang,
-    startListening, stopListening, isListening,
-    transcript, interimTranscript, resetTranscript,
-  } = useChicoAudio();
+  const audio    = useAudio();
 
   const [profile, setProfile]               = useState<UserProfile | null>(null);
   const [cards, setCards]                   = useState<MentoriaCard[]>([]);
@@ -274,45 +262,29 @@ export default function ChicoDashboard() {
   const [sidebarFilter, setSidebarFilter]   = useState<"todos" | "românico" | "germânico">("todos");
 
   const chatEndRef = useRef<HTMLDivElement>(null);
-  const inputRef   = useRef<HTMLTextAreaElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // Carregar perfil e cards
+  // Carregar dados
   useEffect(() => {
-    async function loadData() {
+    async function load() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { window.location.href = "/"; return; }
 
-      const { data: prof } = await supabase
-        .from("user_profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-      if (prof) setProfile(prof as UserProfile);
+      const { data: prof } = await supabase.from("user_profiles").select("*").eq("id", user.id).single();
+      if (prof) {
+        if (!prof.onboarding_ok) { window.location.href = "/onboarding"; return; }
+        setProfile(prof as UserProfile);
+      }
 
-      const { data: c } = await supabase
-        .from("mentoria_cards")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("criado_em", { ascending: false })
-        .limit(50);
+      const { data: c } = await supabase.from("mentoria_cards").select("*").eq("user_id", user.id).order("criado_em", { ascending: false }).limit(50);
       if (c) setCards(c as MentoriaCard[]);
       setFetchingCards(false);
     }
-    loadData();
+    load();
   }, []);
 
-  // Rolar chat para o fim
-  useEffect(() => {
-    chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
-  // Integrar transcript de voz
-  useEffect(() => {
-    if (transcript) {
-      setInputText((prev) => (prev ? `${prev} ${transcript}` : transcript).trim());
-      resetTranscript();
-    }
-  }, [transcript, resetTranscript]);
+  // Scroll automático
+  useEffect(() => { chatEndRef.current?.scrollIntoView({ behavior: "smooth" }); }, [messages]);
 
   // Saudação inicial
   useEffect(() => {
@@ -320,21 +292,21 @@ export default function ChicoDashboard() {
       const troncoLabel = profile.tronco === "românico" ? "Tear Românico" : "Tear Germânico";
       const interessesList = profile.interesses?.slice(0, 2).join(" e ") ?? "seu universo";
       setMessages([{
-        id: "welcome",
-        role: "chico",
-        content: `Olá, ${profile.display_name?.split(" ")[0] ?? "amigo"}. Sou o Chico. Juntos vamos explorar o ${troncoLabel}. Vejo que você se interessa por ${interessesList}. O que você quer compreender hoje?`,
+        id: "welcome", role: "chico",
+        content: `Olá, ${profile.display_name?.split(" ")[0] ?? "amigo"}! Sou o Chico. Juntos vamos explorar o ${troncoLabel}. Vejo que você se interessa por ${interessesList}. O que quer compreender hoje?`,
       }]);
     }
-  }, [profile, messages.length]);
+  }, [profile]);
 
   // Enviar mensagem
   const sendMessage = useCallback(async (text: string) => {
     if (!text.trim() || isLoading || !profile) return;
 
-    const userMsg: ChatMessage = { id: `user-${Date.now()}`, role: "user", content: text.trim() };
-    const loadingMsg: ChatMessage = { id: `loading-${Date.now()}`, role: "chico", content: "", isLoading: true };
-
-    setMessages((prev) => [...prev, userMsg, loadingMsg]);
+    setMessages((prev) => [
+      ...prev,
+      { id: `u-${Date.now()}`, role: "user", content: text.trim() },
+      { id: `l-${Date.now()}`, role: "chico", content: "", isLoading: true },
+    ]);
     setInputText("");
     setIsLoading(true);
 
@@ -354,98 +326,82 @@ export default function ChicoDashboard() {
 
       const savedCard: MentoriaCard = data.card;
       setCards((prev) => [savedCard, ...prev]);
-
-      const chicoMsg: ChatMessage = {
-        id: `chico-${Date.now()}`,
-        role: "chico",
-        content: savedCard.aula_chico,
-        card: savedCard,
-      };
-      setMessages((prev) => prev.map((m) => (m.isLoading ? chicoMsg : m)));
+      setMessages((prev) => prev.map((m) =>
+        m.isLoading ? { id: `c-${Date.now()}`, role: "chico" as const, content: savedCard.aula_chico } : m
+      ));
     } catch (err) {
-      const errorMsg: ChatMessage = {
-        id: `error-${Date.now()}`,
-        role: "chico",
-        content: `Perdoe-me — houve um tropeço. ${(err as Error).message}. Podemos tentar novamente?`,
-      };
-      setMessages((prev) => prev.map((m) => (m.isLoading ? errorMsg : m)));
+      setMessages((prev) => prev.map((m) =>
+        m.isLoading ? { id: `e-${Date.now()}`, role: "chico" as const, content: `Perdoe-me — ${(err as Error).message}. Podemos tentar novamente?` } : m
+      ));
     } finally {
       setIsLoading(false);
     }
   }, [isLoading, profile]);
 
-  const handleSubmit = (e: FormEvent) => { e.preventDefault(); sendMessage(inputText); };
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  function handleSubmit(e: FormEvent) { e.preventDefault(); sendMessage(inputText); }
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(inputText); }
-  };
+  }
+  function handleMic() {
+    if (audio.isListening) { audio.stopListening(); return; }
+    audio.startListening((text) => setInputText((prev) => (prev ? `${prev} ${text}` : text).trim()));
+  }
 
-  const filteredCards = sidebarFilter === "todos"
-    ? cards
-    : cards.filter((c) => c.tronco === sidebarFilter);
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  }
 
-  // ── Render ────────────────────────────────────────────────────────────────
+  const filteredCards = sidebarFilter === "todos" ? cards : cards.filter((c) => c.tronco === sidebarFilter);
 
   return (
     <>
       <style>{`
-        @keyframes typingDot {
-          0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-          30% { transform: translateY(-6px); opacity: 1; }
-        }
-        @keyframes pulse {
-          from { transform: scaleY(0.6); }
-          to   { transform: scaleY(1.2); }
-        }
-        @keyframes fadeSlideIn {
-          from { opacity: 0; transform: translateY(8px); }
-          to   { opacity: 1; transform: translateY(0); }
-        }
-        * { box-sizing: border-box; }
-        body { margin: 0; }
-        ::-webkit-scrollbar { width: 4px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: rgba(0,0,0,0.15); border-radius: 4px; }
-        textarea { resize: none; outline: none; }
-        button:focus-visible { outline: 2px solid #0071E3; outline-offset: 2px; }
+        @keyframes typingDot { 0%,60%,100% { transform:translateY(0);opacity:.4; } 30% { transform:translateY(-6px);opacity:1; } }
+        @keyframes pulse { from { transform:scaleY(.6); } to { transform:scaleY(1.3); } }
+        @keyframes fadeIn { from { opacity:0;transform:translateY(8px); } to { opacity:1;transform:translateY(0); } }
+        * { box-sizing:border-box; }
+        body { margin:0; }
+        textarea { resize:none; outline:none; }
+        ::-webkit-scrollbar { width:4px; }
+        ::-webkit-scrollbar-thumb { background:rgba(0,0,0,0.15);border-radius:4px; }
+        button:focus-visible { outline:2px solid #0071E3;outline-offset:2px; }
       `}</style>
 
-      <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#F5F5F7", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      <div style={{ display: "flex", flexDirection: "column", height: "100vh", background: "#F5F5F7", fontFamily: "-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
 
         {/* Top Bar */}
-        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 28px", height: "56px", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderBottom: "1px solid rgba(0,0,0,0.08)", position: "sticky", top: 0, zIndex: 100, flexShrink: 0 }}>
+        <header style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "0 24px", height: "56px", background: "rgba(255,255,255,0.9)", backdropFilter: "blur(20px)", borderBottom: "1px solid rgba(0,0,0,0.08)", flexShrink: 0, position: "sticky", top: 0, zIndex: 100 }}>
           <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-            <div style={{ width: 28, height: 28, borderRadius: "8px", background: "linear-gradient(135deg, #0071E3 0%, #34AADC 100%)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>🦋</div>
-            <span style={{ fontSize: "17px", fontWeight: 600, color: "#1D1D1F", letterSpacing: "-0.02em" }}>Chico Mentor</span>
+            <div style={{ width: 28, height: 28, borderRadius: "8px", background: "linear-gradient(135deg,#0071E3,#34AADC)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "14px" }}>🦋</div>
+            <span style={{ fontSize: "17px", fontWeight: 700, color: "#1D1D1F", letterSpacing: "-0.02em" }}>Chico Mentor</span>
             {profile?.tronco && (
-              <span style={{ padding: "3px 8px", borderRadius: "8px", background: profile.tronco === "românico" ? "rgba(255,59,48,0.10)" : "rgba(0,113,227,0.10)", color: profile.tronco === "românico" ? "#FF3B30" : "#0071E3", fontSize: "11px", fontWeight: 600, letterSpacing: "0.02em", textTransform: "uppercase" as const }}>
+              <span style={{ padding: "3px 8px", borderRadius: "8px", fontSize: "11px", fontWeight: 600, letterSpacing: "0.02em", textTransform: "uppercase" as const, background: profile.tronco === "românico" ? "rgba(255,59,48,0.10)" : "rgba(0,113,227,0.10)", color: profile.tronco === "românico" ? "#FF3B30" : "#0071E3" }}>
                 {profile.tronco === "românico" ? "Tear Românico" : "Tear Germânico"}
               </span>
             )}
           </div>
           {profile && (
-            <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
               <span style={{ fontSize: "13px", color: "#86868B" }}>{profile.display_name}</span>
-              {profile.avatar_url
-                ? <img src={profile.avatar_url} alt={profile.display_name} style={{ width: 32, height: 32, borderRadius: "50%", objectFit: "cover", border: "2px solid rgba(0,0,0,0.08)" }} />
-                : <div style={{ width: 32, height: 32, borderRadius: "50%", background: "linear-gradient(135deg, #5E5CE6, #BF5AF2)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "13px", color: "#fff", fontWeight: 600 }}>{profile.display_name?.[0]?.toUpperCase() ?? "U"}</div>
-              }
+              <button onClick={handleLogout} style={{ padding: "6px 12px", borderRadius: "8px", border: "1px solid rgba(0,0,0,0.12)", background: "transparent", fontSize: "12px", color: "#86868B", cursor: "pointer", fontFamily: "inherit" }}>
+                Sair
+              </button>
             </div>
           )}
         </header>
 
-        {/* Layout principal */}
+        {/* Layout */}
         <div style={{ display: "flex", flex: 1, overflow: "hidden" }}>
 
-          {/* Coluna Esquerda: Biblioteca */}
-          <aside style={{ width: "380px", minWidth: "320px", maxWidth: "420px", display: "flex", flexDirection: "column", borderRight: "1px solid rgba(0,0,0,0.07)", background: "#F5F5F7", overflow: "hidden", flexShrink: 0 }}>
+          {/* Sidebar — Biblioteca */}
+          <aside style={{ width: "380px", minWidth: "320px", maxWidth: "420px", display: "flex", flexDirection: "column", borderRight: "1px solid rgba(0,0,0,0.07)", background: "#F5F5F7", flexShrink: 0, overflow: "hidden" }}>
             <div style={{ padding: "20px 20px 12px", flexShrink: 0 }}>
-              <h2 style={{ margin: "0 0 4px 0", fontSize: "20px", fontWeight: 700, color: "#1D1D1F", letterSpacing: "-0.02em" }}>Biblioteca de Nexos</h2>
-              <p style={{ margin: "0 0 14px 0", fontSize: "13px", color: "#86868B" }}>
-                {cards.length} {cards.length === 1 ? "nexo salvo" : "nexos salvos"}
-              </p>
-              <div style={{ display: "flex", gap: "6px", padding: "4px", borderRadius: "12px", background: "rgba(0,0,0,0.06)" }} role="group" aria-label="Filtrar por tronco">
+              <h2 style={{ margin: "0 0 4px", fontSize: "20px", fontWeight: 700, color: "#1D1D1F", letterSpacing: "-0.02em" }}>Biblioteca de Nexos</h2>
+              <p style={{ margin: "0 0 14px", fontSize: "13px", color: "#86868B" }}>{cards.length} {cards.length === 1 ? "nexo" : "nexos"} salvos</p>
+              <div style={{ display: "flex", gap: "6px", padding: "4px", borderRadius: "12px", background: "rgba(0,0,0,0.06)" }}>
                 {(["todos", "românico", "germânico"] as const).map((f) => (
-                  <button key={f} onClick={() => setSidebarFilter(f)} style={{ flex: 1, padding: "6px 8px", borderRadius: "9px", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: 600, transition: "all 0.15s ease", background: sidebarFilter === f ? "#FFFFFF" : "transparent", color: sidebarFilter === f ? "#1D1D1F" : "#86868B", boxShadow: sidebarFilter === f ? "0 1px 4px rgba(0,0,0,0.12)" : "none" }} aria-pressed={sidebarFilter === f}>
+                  <button key={f} onClick={() => setSidebarFilter(f)} style={{ flex: 1, padding: "6px 8px", borderRadius: "9px", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: 600, transition: "all 0.15s", background: sidebarFilter === f ? "#fff" : "transparent", color: sidebarFilter === f ? "#1D1D1F" : "#86868B", boxShadow: sidebarFilter === f ? "0 1px 4px rgba(0,0,0,0.12)" : "none", fontFamily: "inherit" }}>
                     {f === "todos" ? "Todos" : f === "românico" ? "Românico" : "Germânico"}
                   </button>
                 ))}
@@ -454,60 +410,45 @@ export default function ChicoDashboard() {
 
             <div style={{ flex: 1, overflowY: "auto", padding: "0 16px 20px", display: "flex", flexDirection: "column", gap: "12px" }}>
               {isFetchingCards
-                ? Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} style={{ height: 160, borderRadius: "18px", background: "#ebebeb" }} aria-hidden="true" />
-                  ))
+                ? Array.from({ length: 3 }).map((_, i) => <div key={i} style={{ height: 160, borderRadius: "18px", background: "#e8e8e8" }} />)
                 : filteredCards.length === 0
-                  ? (
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: "48px 20px", textAlign: "center", gap: "12px" }}>
-                      <span style={{ fontSize: "40px", opacity: 0.5 }}>🔮</span>
-                      <p style={{ margin: 0, fontSize: "14px", color: "#86868B", lineHeight: 1.5 }}>
-                        Sua biblioteca está vazia. Inicie uma conversa com o Chico.
-                      </p>
+                  ? <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "48px 20px", textAlign: "center", gap: "12px" }}>
+                      <span style={{ fontSize: "40px", opacity: 0.4 }}>🔮</span>
+                      <p style={{ margin: 0, fontSize: "14px", color: "#86868B" }}>Sua biblioteca está vazia. Pergunte algo ao Chico!</p>
                     </div>
-                  )
                   : filteredCards.map((card) => (
-                    <div key={card.id} style={{ animation: "fadeSlideIn 0.3s ease forwards" }}>
-                      <NexoCard
-                        card={card}
-                        onPlay={(text, bcp47) => speak({ text, lang: bcp47 })}
-                        onStop={stop}
-                        isSpeaking={isSpeaking}
-                        currentLang={currentLang}
-                      />
-                    </div>
-                  ))
+                      <div key={card.id} style={{ animation: "fadeIn 0.3s ease forwards" }}>
+                        <NexoCard card={card} audio={audio} />
+                      </div>
+                    ))
               }
             </div>
           </aside>
 
-          {/* Coluna Direita: Chat */}
-          <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden", background: "#F5F5F7" }}>
-            <div style={{ flex: 1, overflowY: "auto", padding: "28px 32px", display: "flex", flexDirection: "column", gap: "16px" }} role="log" aria-live="polite">
+          {/* Chat */}
+          <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+            <div style={{ flex: 1, overflowY: "auto", padding: "28px 32px", display: "flex", flexDirection: "column", gap: "16px" }}>
               {messages.map((msg) => (
-                <div key={msg.id} style={{ animation: "fadeSlideIn 0.3s ease forwards" }}>
+                <div key={msg.id} style={{ animation: "fadeIn 0.3s ease forwards" }}>
                   <ChatBubble message={msg} />
                 </div>
               ))}
               <div ref={chatEndRef} />
             </div>
 
-            {isListening && (
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "10px", background: "rgba(255,59,48,0.08)", borderTop: "1px solid rgba(255,59,48,0.15)" }} role="status" aria-live="assertive">
-                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#FF3B30", animation: "pulse 0.8s ease-in-out infinite alternate" }} aria-hidden="true" />
+            {audio.isListening && (
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "8px", background: "rgba(255,59,48,0.08)", borderTop: "1px solid rgba(255,59,48,0.15)" }}>
+                <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#FF3B30", animation: "pulse 0.8s ease-in-out infinite alternate" }} />
                 <span style={{ fontSize: "13px", color: "#FF3B30", fontWeight: 500 }}>Ouvindo...</span>
-                {interimTranscript && (
-                  <span style={{ fontSize: "12px", color: "#86868B", fontStyle: "italic" }}>"{interimTranscript}"</span>
-                )}
               </div>
             )}
 
             {/* Input */}
-            <div style={{ padding: "16px 24px 20px", background: "rgba(255,255,255,0.9)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)", borderTop: "1px solid rgba(0,0,0,0.07)", flexShrink: 0 }}>
+            <div style={{ padding: "16px 24px 20px", background: "rgba(255,255,255,0.92)", backdropFilter: "blur(20px)", borderTop: "1px solid rgba(0,0,0,0.07)", flexShrink: 0 }}>
               <form onSubmit={handleSubmit} style={{ display: "flex", gap: "10px", alignItems: "flex-end" }}>
-                <div style={{ flex: 1, display: "flex", alignItems: "flex-end", gap: "8px", padding: "10px 14px", background: "#FFFFFF", borderRadius: "20px", border: "1px solid rgba(0,0,0,0.10)", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
+                <div style={{ flex: 1, display: "flex", alignItems: "flex-end", gap: "8px", padding: "10px 14px", background: "#fff", borderRadius: "20px", border: "1.5px solid rgba(0,0,0,0.10)", boxShadow: "0 1px 4px rgba(0,0,0,0.06)" }}>
                   <textarea
-                    ref={inputRef}
+                    ref={textareaRef}
                     value={inputText}
                     onChange={(e) => setInputText(e.target.value)}
                     onKeyDown={handleKeyDown}
@@ -515,17 +456,14 @@ export default function ChicoDashboard() {
                     rows={1}
                     disabled={isLoading}
                     style={{ flex: 1, border: "none", background: "transparent", fontSize: "14px", lineHeight: "1.5", color: "#1D1D1F", fontFamily: "inherit", maxHeight: "120px", overflowY: "auto", padding: 0 }}
-                    aria-label="Mensagem para o Chico"
                   />
                   <button
                     type="button"
-                    onClick={isListening ? stopListening : startListening}
-                    disabled={isLoading}
-                    style={{ width: 32, height: 32, borderRadius: "50%", border: "none", cursor: isLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", background: isListening ? "#FF3B30" : "rgba(0,0,0,0.06)", transition: "all 0.2s ease", flexShrink: 0 }}
-                    aria-label={isListening ? "Parar gravação" : "Gravar voz"}
-                    aria-pressed={isListening}
+                    onClick={handleMic}
+                    style={{ width: 32, height: 32, borderRadius: "50%", border: "none", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", background: audio.isListening ? "#FF3B30" : "rgba(0,0,0,0.06)", flexShrink: 0, transition: "all 0.2s" }}
+                    title={audio.isListening ? "Parar gravação" : "Gravar voz"}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={isListening ? "#fff" : "#86868B"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={audio.isListening ? "#fff" : "#86868B"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                       <path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z" />
                       <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
                       <line x1="12" y1="19" x2="12" y2="23" />
@@ -533,20 +471,28 @@ export default function ChicoDashboard() {
                     </svg>
                   </button>
                 </div>
+
                 <button
                   type="submit"
                   disabled={!inputText.trim() || isLoading}
-                  style={{ width: 44, height: 44, borderRadius: "50%", border: "none", cursor: !inputText.trim() || isLoading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", background: !inputText.trim() || isLoading ? "rgba(0,0,0,0.08)" : "linear-gradient(135deg, #0071E3 0%, #0077ED 100%)", transition: "all 0.2s ease", boxShadow: !inputText.trim() || isLoading ? "none" : "0 2px 8px rgba(0,113,227,0.35)", flexShrink: 0 }}
-                  aria-label="Enviar mensagem"
+                  style={{
+                    width: 44, height: 44, borderRadius: "50%", border: "none", flexShrink: 0,
+                    cursor: !inputText.trim() || isLoading ? "not-allowed" : "pointer",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    background: !inputText.trim() || isLoading ? "rgba(0,0,0,0.08)" : "linear-gradient(135deg,#0071E3,#0077ED)",
+                    boxShadow: !inputText.trim() || isLoading ? "none" : "0 2px 8px rgba(0,113,227,0.35)",
+                    transition: "all 0.2s",
+                  }}
+                  title="Enviar mensagem"
                 >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={!inputText.trim() || isLoading ? "#86868B" : "#fff"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={!inputText.trim() || isLoading ? "#86868B" : "#fff"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <line x1="22" y1="2" x2="11" y2="13" />
                     <polygon points="22 2 15 22 11 13 2 9 22 2" />
                   </svg>
                 </button>
               </form>
               <p style={{ margin: "8px 0 0", fontSize: "11px", color: "#AEAEB2", textAlign: "center" }}>
-                Enter para enviar · Shift + Enter para nova linha
+                Enter para enviar · Shift+Enter para nova linha
               </p>
             </div>
           </main>
