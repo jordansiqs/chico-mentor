@@ -711,7 +711,9 @@ export default function ChicoDashboard() {
               {tabs.map(tab => (
                 <button key={tab.id} onClick={() => setActiveTab(tab.id)}
                   style={{ display: "flex", alignItems: "center", gap: "7px", padding: "9px 16px", borderRadius: "10px 10px 0 0", border: "none", cursor: "pointer", fontSize: "13px", fontWeight: activeTab === tab.id ? 600 : 500, fontFamily: "inherit", transition: "all 0.15s", background: activeTab === tab.id ? "#F5F5F7" : "transparent", color: activeTab === tab.id ? "#1D1D1F" : "#86868B", borderBottom: activeTab === tab.id ? "2px solid #0071E3" : "2px solid transparent" }}>
-                  {React.cloneElement(tab.icon, { ...tab.icon.props, stroke: activeTab === tab.id ? "#0071E3" : "#86868B" } as any)}
+                 <span style={{ color: activeTab === tab.id ? "#0071E3" : "#86868B", display: "flex" }}>
+  {tab.icon}
+</span>
                   {tab.label}
                 </button>
               ))}
