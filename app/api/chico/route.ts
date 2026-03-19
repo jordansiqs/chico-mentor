@@ -1,10 +1,4 @@
 // app/api/chico/route.ts
-// ============================================================
-//  Chico Mentor — Rota de API
-//  Stack: Next.js 15 App Router + Groq SDK (Llama 3.3 70B)
-//  Retorna JSON estruturado para alimentar a tabela mentoria_cards
-// ============================================================
-
 import { NextRequest, NextResponse } from "next/server";
 import Groq from "groq-sdk";
 import { createServerClient } from "@supabase/ssr";
@@ -13,9 +7,9 @@ import { cookies } from "next/headers";
 // ── Tipos ─────────────────────────────────────────────────────────────────────
 
 export interface ChicoRequest {
-  tema_gerador: string;   // A dúvida/frase original do usuário
+  tema_gerador: string;
   tronco: "românico" | "germânico";
-  interesses: string[];   // Ex: ['futebol', 'música'] — Temas Geradores de Freire
+  interesses: string[];
 }
 
 export interface ChicoCard {
@@ -53,14 +47,14 @@ const TRONCOS = {
   germânico: {
     label: "Tear Germânico",
     linguas: [
-      { nome: "Inglês",    bcp47: "en-US" },
-      { nome: "Alemão",    bcp47: "de-DE" },
-      { nome: "Holandês",  bcp47: "nl-NL" },
+      { nome: "Inglês",   bcp47: "en-US" },
+      { nome: "Alemão",   bcp47: "de-DE" },
+      { nome: "Holandês", bcp47: "nl-NL" },
     ],
   },
 } as const;
 
-// ── System Prompt — A Alma do Chico ──────────────────────────────────────────
+// ── System Prompt ─────────────────────────────────────────────────────────────
 
 function buildSystemPrompt(
   tronco: "românico" | "germânico",
@@ -70,7 +64,6 @@ function buildSystemPrompt(
   const interessesStr = interesses.length > 0
     ? interesses.join(", ")
     : "cotidiano geral";
-
   const linguas = troncoInfo.linguas.map((l) => l.nome).join(", ");
 
   return `Você é o Chico — um mentor de linguagens maduro, sereno, profundo e encorajador.
@@ -81,9 +74,8 @@ Sua pedagogia funde dois pilares:
    Os interesses declarados deste aprendiz são: ${interessesStr}.
    Toda explicação deve usar metáforas, exemplos e cenários desses temas.
 
-2. **Arqueologia Linguística (Frederick Bodmer / "The Loom of Language")**:
+2. **Arqueologia Linguística (Frederick Bodmer)**:
    Você não ensina línguas isoladas. Você revela as engrenagens e raízes comuns.
-   Você mostra cognatos, padrões morfológicos e como as línguas evoluíram de troncos comuns.
    Ao explicar uma palavra ou estrutura, você ilumina a raiz latina, germânica ou proto-indo-europeia
    que conecta todas as línguas do tronco.
 
@@ -91,14 +83,13 @@ Sua pedagogia funde dois pilares:
 **Línguas a traduzir:** ${linguas} (sempre tendo o Português como base de comparação)
 
 **Sua tarefa para cada mensagem:**
-Você receberá uma dúvida ou frase em Português. Você deve responder com um JSON **puro**, sem markdown,
-no seguinte formato exato:
+Você receberá uma dúvida ou frase em Português. Responda com um JSON **puro**, sem markdown:
 
 {
-  "aula_chico": "Sua explicação pedagógica rica em PT-BR (3 a 5 parágrafos). Use a analogia com ${interessesStr}. Revele a raiz linguística. Seja o mestre que o Brasil nunca teve.",
+  "aula_chico": "Sua explicação pedagógica rica em PT-BR (3 a 5 parágrafos). Use a analogia com ${interessesStr}. Revele a raiz linguística.",
   "lang_1": {
     "txt": "Tradução para ${troncoInfo.linguas[0].nome}",
-    "fon": "Fonetização simplificada para um brasileiro ler em voz alta. Ex: [es-pa-NHOL: 'fú-bol']"
+    "fon": "Fonetização simplificada para um brasileiro ler em voz alta"
   },
   "lang_2": {
     "txt": "Tradução para ${troncoInfo.linguas[1].nome}",
@@ -112,35 +103,37 @@ no seguinte formato exato:
 
 Regras absolutas:
 - Responda SOMENTE com o JSON. Sem texto antes ou depois. Sem blocos de código markdown.
-- A chave "aula_chico" deve ser um texto corrido, rico, pedagógico e inspirador — nunca uma lista de tópicos.
-- As fonetizações usam a fonética intuitiva para falantes de PT-BR (ex: inglês "the" → "di").
-- Conecte sempre as línguas: "Note como 'football' em inglês guarda a mesma raiz latina 'pé' (foot ← pes/pedis)..."
 - Tom de voz: como um mestre sábio contando uma história junto a uma fogueira.`;
 }
 
-// ── Handler Principal ─────────────────────────────────────────────────────────
+// ── Helper para criar o cliente Supabase no servidor ─────────────────────────
+
+async function createSupabaseServer() {
+  const cookieStore = await cookies();
+  return createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return cookieStore.getAll();
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value, options }) =>
+            cookieStore.set(name, value, options)
+          );
+        },
+      },
+    }
+  );
+}
+
+// ── POST: Gerar aula e salvar card ────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
   try {
-    // 1. Autenticação via Supabase
-    const cookieStore = cookies();
-const supabase = createServerClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  {
-    cookies: {
-      getAll() { return cookieStore.getAll(); },
-      setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value, options }) =>
-          cookieStore.set(name, value, options)
-        );
-      },
-    },
-  }
-);
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const supabase = await createSupabaseServer();
+    const { data: { session } } = await supabase.auth.getSession();
 
     if (!session) {
       return NextResponse.json(
@@ -149,7 +142,6 @@ const supabase = createServerClient(
       );
     }
 
-    // 2. Parse do body
     const body: ChicoRequest = await request.json();
     const { tema_gerador, tronco, interesses } = body;
 
@@ -162,16 +154,12 @@ const supabase = createServerClient(
 
     if (!["românico", "germânico"].includes(tronco)) {
       return NextResponse.json(
-        { error: "Tronco inválido. Escolha 'românico' ou 'germânico'." },
+        { error: "Tronco inválido." },
         { status: 400 }
       );
     }
 
-    // 3. Chamada ao Groq
-    const groq = new Groq({
-      apiKey: process.env.GROQ_API_KEY,
-    });
-
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
     const systemPrompt = buildSystemPrompt(tronco, interesses || []);
 
     const completion = await groq.chat.completions.create({
@@ -186,7 +174,6 @@ const supabase = createServerClient(
 
     const rawContent = completion.choices[0]?.message?.content ?? "";
 
-    // 4. Parse do JSON retornado pelo Chico
     let parsed: {
       aula_chico: string;
       lang_1: { txt: string; fon: string };
@@ -195,7 +182,6 @@ const supabase = createServerClient(
     };
 
     try {
-      // Remove possíveis backticks residuais de segurança
       const cleaned = rawContent
         .replace(/^```json\s*/i, "")
         .replace(/^```\s*/i, "")
@@ -203,17 +189,12 @@ const supabase = createServerClient(
         .trim();
       parsed = JSON.parse(cleaned);
     } catch {
-      console.error("Falha ao parsear JSON do Chico:", rawContent);
       return NextResponse.json(
-        {
-          error: "O Chico teve dificuldade em formatar a resposta. Tente novamente.",
-          raw: rawContent,
-        },
+        { error: "O Chico teve dificuldade em formatar a resposta. Tente novamente.", raw: rawContent },
         { status: 500 }
       );
     }
 
-    // 5. Montar o card completo
     const troncoInfo = TRONCOS[tronco];
     const card: ChicoCard = {
       tema_gerador,
@@ -236,29 +217,20 @@ const supabase = createServerClient(
       lang_3_bcp47: troncoInfo.linguas[2].bcp47,
     };
 
-    // 6. Salvar no Supabase
     const { data: savedCard, error: dbError } = await supabase
       .from("mentoria_cards")
-      .insert({
-        user_id: session.user.id,
-        ...card,
-      })
+      .insert({ user_id: session.user.id, ...card })
       .select()
       .single();
 
     if (dbError) {
-      console.error("Erro ao salvar no Supabase:", dbError);
-      // Retorna o card mesmo se falhar o save (degradação graciosa)
       return NextResponse.json({ card, saved: false, db_error: dbError.message });
     }
 
     return NextResponse.json({ card: savedCard, saved: true }, { status: 201 });
   } catch (err) {
-    console.error("Erro inesperado na rota /api/chico:", err);
-    return NextResponse.json(
-      { error: "Erro interno do servidor." },
-      { status: 500 }
-    );
+    console.error("Erro na rota /api/chico:", err);
+    return NextResponse.json({ error: "Erro interno do servidor." }, { status: 500 });
   }
 }
 
@@ -266,10 +238,8 @@ const supabase = createServerClient(
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = createRouteHandlerClient({ cookies });
-    const {
-      data: { session },
-    } = await supabase.auth.getSession();
+    const supabase = await createSupabaseServer();
+    const { data: { session } } = await supabase.auth.getSession();
 
     if (!session) {
       return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
@@ -291,13 +261,13 @@ export async function GET(request: NextRequest) {
       query = query.eq("tronco", tronco);
     }
 
-    const { data, error, count } = await query;
+    const { data, error } = await query;
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ cards: data, total: count });
+    return NextResponse.json({ cards: data });
   } catch (err) {
     console.error("Erro ao buscar cards:", err);
     return NextResponse.json({ error: "Erro interno." }, { status: 500 });
