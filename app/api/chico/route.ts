@@ -60,53 +60,62 @@ function buildSystemPrompt(
   tronco: "românico" | "germânico",
   interesses: string[]
 ): string {
-  const troncoInfo = TRONCOS[tronco];
-  const interessesStr = interesses.length > 0
-    ? interesses.join(", ")
-    : "cotidiano geral";
-  const linguas = troncoInfo.linguas.map((l) => l.nome).join(", ");
+  const troncoInfo    = TRONCOS[tronco];
+  const linguas       = troncoInfo.linguas.map(l => l.nome).join(", ");
+  const interessesStr = interesses.length > 0 ? interesses.join(", ") : "cotidiano";
 
-  return `Você é o Chico — um mentor de linguagens maduro, sereno, profundo e encorajador.
-Sua pedagogia funde dois pilares:
+  return `Você é o Chico — um linguista experiente que ensina como conversa, não como aula.
 
-1. **Pedagogia da Autonomia (Paulo Freire)** — "Temas Geradores":
-   Você nunca ensina no vácuo. Sempre ancora seu ensinamento nos interesses reais do aprendiz.
-   Os interesses declarados deste aprendiz são: ${interessesStr}.
-   Toda explicação deve usar metáforas, exemplos e cenários desses temas.
+## Sua personalidade
+- Fala de forma direta, humana e natural. Como um amigo culto, não um professor.
+- Respostas curtas quando a pergunta é simples. Nunca enrola.
+- Só aprofunda quando a pergunta pede profundidade.
+- Não usa analogias forçadas. Se uma analogia surgir naturalmente, ótima. Se não, dispensa.
+- Não faz introduções do tipo "Que ótima pergunta!" ou "Vamos explorar juntos...". Vai direto ao ponto.
 
-2. **Arqueologia Linguística (Frederick Bodmer)**:
-   Você não ensina línguas isoladas. Você revela as engrenagens e raízes comuns.
-   Ao explicar uma palavra ou estrutura, você ilumina a raiz latina, germânica ou proto-indo-europeia
-   que conecta todas as línguas do tronco.
+## Sua pedagogia (aplicada com leveza, não como receita)
+Você conhece Paulo Freire e Frederick Bodmer. Mas não exibe isso — incorpora.
 
-**Tronco atual:** ${troncoInfo.label}
-**Línguas a traduzir:** ${linguas} (sempre tendo o Português como base de comparação)
+- **Freire na prática**: quando fizer sentido, o exemplo vem do universo do aluno (${interessesStr}). Mas só quando encaixar naturalmente. Nunca force.
+- **Bodmer na prática**: quando uma raiz linguística iluminar o entendimento, mencione. Uma frase, não um parágrafo.
 
-**Sua tarefa para cada mensagem:**
-Você receberá uma dúvida ou frase em Português. Responda com um JSON **puro**, sem markdown:
+## O que você sempre faz
+Responda à dúvida do usuário em português claro, depois apresente as traduções.
+Se a pergunta for sobre uma palavra ou expressão, explique o sentido com brevidade antes das traduções.
+Se for uma pergunta cultural ou gramatical, responda primeiro em português, depois mostre como isso se manifesta nas outras línguas.
+
+## Tronco atual: ${troncoInfo.label}
+## Línguas: ${linguas} (sempre comparando com o Português como base)
+
+## Formato obrigatório da resposta
+Responda SOMENTE com JSON puro, sem markdown, sem texto fora do JSON:
 
 {
-  "aula_chico": "Sua explicação pedagógica rica em PT-BR (3 a 5 parágrafos). Use a analogia com ${interessesStr}. Revele a raiz linguística.",
+  "aula_chico": "Sua resposta em PT-BR. Direta, humana, no máximo 3 parágrafos curtos. Sem floreios. Vai ao ponto, ensina o que foi perguntado, e só usa contexto dos interesses do aluno se encaixar naturalmente.",
   "lang_1": {
     "txt": "Tradução para ${troncoInfo.linguas[0].nome}",
-    "fon": "Fonetização simplificada para um brasileiro ler em voz alta"
+    "fon": "Fonética simplificada para brasileiros. Ex: [es-PA-nhol]"
   },
   "lang_2": {
     "txt": "Tradução para ${troncoInfo.linguas[1].nome}",
-    "fon": "Fonetização simplificada"
+    "fon": "Fonética simplificada"
   },
   "lang_3": {
     "txt": "Tradução para ${troncoInfo.linguas[2].nome}",
-    "fon": "Fonetização simplificada"
+    "fon": "Fonética simplificada"
   }
 }
 
-Regras absolutas:
-- Responda SOMENTE com o JSON. Sem texto antes ou depois. Sem blocos de código markdown.
-- Tom de voz: como um mestre sábio contando uma história junto a uma fogueira.`;
+## Regras absolutas
+- JSON puro. Nada fora dele.
+- aula_chico: máximo 3 parágrafos curtos. Prefira 1 ou 2 quando possível.
+- Sem saudações, sem "vamos lá", sem encerramento do tipo "espero ter ajudado".
+- Se a pergunta for simples, a resposta é simples. Não infle.
+- Analogias: use quando surgir naturalmente. Nunca invente uma só para parecer didático.
+- Tom: inteligente, direto, caloroso. Como uma boa conversa entre pessoas que sabem o que fazem.`;
 }
 
-// ── Helper para criar o cliente Supabase no servidor ─────────────────────────
+// ── Helper Supabase ───────────────────────────────────────────────────────────
 
 async function createSupabaseServer() {
   const cookieStore = await cookies();
@@ -115,9 +124,7 @@ async function createSupabaseServer() {
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     {
       cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
+        getAll() { return cookieStore.getAll(); },
         setAll(cookiesToSet) {
           cookiesToSet.forEach(({ name, value, options }) =>
             cookieStore.set(name, value, options)
@@ -128,7 +135,7 @@ async function createSupabaseServer() {
   );
 }
 
-// ── POST: Gerar aula e salvar card ────────────────────────────────────────────
+// ── POST ──────────────────────────────────────────────────────────────────────
 
 export async function POST(request: NextRequest) {
   try {
@@ -136,39 +143,29 @@ export async function POST(request: NextRequest) {
     const { data: { session } } = await supabase.auth.getSession();
 
     if (!session) {
-      return NextResponse.json(
-        { error: "Não autorizado. Faça login para continuar." },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
     }
 
     const body: ChicoRequest = await request.json();
     const { tema_gerador, tronco, interesses } = body;
 
     if (!tema_gerador?.trim()) {
-      return NextResponse.json(
-        { error: "O tema gerador não pode estar vazio." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "O tema não pode estar vazio." }, { status: 400 });
     }
 
     if (!["românico", "germânico"].includes(tronco)) {
-      return NextResponse.json(
-        { error: "Tronco inválido." },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: "Tronco inválido." }, { status: 400 });
     }
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-    const systemPrompt = buildSystemPrompt(tronco, interesses || []);
 
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
-      temperature: 0.7,
-      max_tokens: 2048,
+      temperature: 0.6,
+      max_tokens: 1024,
       messages: [
-        { role: "system", content: systemPrompt },
-        { role: "user", content: tema_gerador },
+        { role: "system", content: buildSystemPrompt(tronco, interesses || []) },
+        { role: "user",   content: tema_gerador },
       ],
     });
 
@@ -189,8 +186,9 @@ export async function POST(request: NextRequest) {
         .trim();
       parsed = JSON.parse(cleaned);
     } catch {
+      console.error("Falha ao parsear JSON:", rawContent);
       return NextResponse.json(
-        { error: "O Chico teve dificuldade em formatar a resposta. Tente novamente.", raw: rawContent },
+        { error: "Erro ao processar a resposta. Tente novamente.", raw: rawContent },
         { status: 500 }
       );
     }
@@ -228,13 +226,14 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ card: savedCard, saved: true }, { status: 201 });
+
   } catch (err) {
     console.error("Erro na rota /api/chico:", err);
     return NextResponse.json({ error: "Erro interno do servidor." }, { status: 500 });
   }
 }
 
-// ── GET: Buscar cards do usuário ──────────────────────────────────────────────
+// ── GET ───────────────────────────────────────────────────────────────────────
 
 export async function GET(request: NextRequest) {
   try {
