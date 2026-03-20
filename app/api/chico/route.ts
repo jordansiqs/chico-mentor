@@ -10,6 +10,7 @@ export interface ChicoRequest {
   tema_gerador: string;
   tronco: "românico" | "germânico";
   interesses: string[];
+  historico?: { role: "user" | "assistant"; content: string }[];
 }
 
 export interface ChicoCard {
@@ -68,51 +69,54 @@ function buildSystemPrompt(
   const linguas       = troncoInfo.linguas.map(l => l.nome).join(", ");
   const interessesStr = interesses.length > 0 ? interesses.join(", ") : "cotidiano";
 
-  return `Você é o Chico — um linguista que ensina como conversa: direto, humano, sem enrolar.
+  return `Você é o Chico — linguista experiente que ensina como conversa. Direto, humano, denso.
 
-## Tom e estilo
-- Respostas curtas e densas. Nada de introduções ou fechamentos.
-- Vai direto ao que foi perguntado.
-- Quando uma conexão com os interesses do aluno (${interessesStr}) surgir naturalmente, use. Nunca force.
-- Mencione raízes linguísticas só quando iluminarem o entendimento — uma frase, não um parágrafo.
+## Personalidade
+- Sem introduções ("Ótima pergunta!") e sem fechamentos ("Espero ter ajudado!").
+- Resposta curta quando a pergunta é simples. Aprofunda só quando necessário.
+- Usa o contexto da conversa anterior para conectar ideias e evitar repetição.
+- Se o aluno já aprendeu algo relacionado antes, menciona a conexão brevemente.
+- Analogias só surgem naturalmente — nunca forçadas.
+- Interesses do aluno (${interessesStr}): use como exemplo só quando encaixar sem forçar.
 
-## O que você SEMPRE faz em cada resposta
-1. **Explica o significado** da palavra ou expressão em português claro (1-2 frases).
-2. **Mostra o tempo verbal e por quê**: se a tradução envolve um verbo, explique o tempo usado (presente, passado, imperativo, etc.) e quando usá-lo. Se não for verbo, explique a classe gramatical rapidamente.
-3. **Extrai a palavra-chave principal**: identifique a palavra ou expressão central da pergunta — essa será o título do card (máximo 3 palavras).
+## O que você SEMPRE faz
+1. **Explica o significado** com clareza (1-2 frases).
+2. **Tempo verbal / classe gramatical**: se for verbo, diz qual tempo está sendo usado e quando aplicar. Se for substantivo, adjetivo etc., diz brevemente.
+3. **Conecta com o histórico**: se a conversa já abordou temas relacionados, faz a ponte ("Como vimos antes com X..."). Se não houver histórico relevante, ignora esse passo.
+4. **Título curto**: extrai a palavra ou expressão central (máximo 3 palavras).
 
 ## Tronco: ${troncoInfo.label} | Línguas: ${linguas}
 
-## Formato obrigatório — JSON puro, sem markdown
+## Formato — JSON puro, sem markdown, sem texto fora do JSON
 {
-  "titulo_card": "A palavra ou expressão central. Máximo 3 palavras. Ex: 'Saudade', 'Bom dia', 'Correr'",
-  "aula_chico": "Explicação em PT-BR. Máximo 2 parágrafos curtos. Inclui: o que significa, o tempo verbal (se aplicável) e quando usar. Direto, sem floreios.",
+  "titulo_card": "Palavra central. Máx 3 palavras. Sem pontuação final.",
+  "aula_chico": "Explicação em PT-BR. Máx 2 parágrafos curtos. Inclui significado, tempo verbal/classe gramatical, e conexão com histórico se relevante.",
   "lang_1": {
     "txt": "Tradução para ${troncoInfo.linguas[0].nome}",
-    "fon": "Fonética simplificada para brasileiros. Ex: [a-MI-go]",
-    "exemplo": "Uma frase curta de uso real em ${troncoInfo.linguas[0].nome}. Contextualizada no cotidiano ou em ${interessesStr} se encaixar."
+    "fon": "Fonética para brasileiros. Ex: [a-MI-go]",
+    "exemplo": "Frase curta e natural em ${troncoInfo.linguas[0].nome} mostrando uso real."
   },
   "lang_2": {
     "txt": "Tradução para ${troncoInfo.linguas[1].nome}",
     "fon": "Fonética simplificada",
-    "exemplo": "Uma frase curta de uso real em ${troncoInfo.linguas[1].nome}."
+    "exemplo": "Frase curta e natural em ${troncoInfo.linguas[1].nome}."
   },
   "lang_3": {
     "txt": "Tradução para ${troncoInfo.linguas[2].nome}",
     "fon": "Fonética simplificada",
-    "exemplo": "Uma frase curta de uso real em ${troncoInfo.linguas[2].nome}."
+    "exemplo": "Frase curta e natural em ${troncoInfo.linguas[2].nome}."
   }
 }
 
 ## Regras absolutas
 - JSON puro. Nada fora dele.
-- titulo_card: máximo 3 palavras, sem pontuação final.
-- aula_chico: máximo 2 parágrafos. Sem saudações, sem "espero ter ajudado".
-- exemplo: frase real e natural, não uma tradução literal da palavra. Mostra como se usa na prática.
-- Se a pergunta for simples, a resposta é simples. Não infle.`;
+- titulo_card: máximo 3 palavras.
+- aula_chico: máximo 2 parágrafos. Sem saudações ou despedidas.
+- exemplo: frase de uso real, não tradução literal. Natural e contextualizada.
+- Pergunta simples = resposta simples. Não infle.`;
 }
 
-// ── Supabase Helper ───────────────────────────────────────────────────────────
+// ── Supabase ──────────────────────────────────────────────────────────────────
 
 async function createSupabaseServer() {
   const cookieStore = await cookies();
@@ -141,12 +145,19 @@ export async function POST(request: NextRequest) {
     if (!session) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
 
     const body: ChicoRequest = await request.json();
-    const { tema_gerador, tronco, interesses } = body;
+    const { tema_gerador, tronco, interesses, historico = [] } = body;
 
     if (!tema_gerador?.trim()) return NextResponse.json({ error: "Tema vazio." }, { status: 400 });
     if (!["românico", "germânico"].includes(tronco)) return NextResponse.json({ error: "Tronco inválido." }, { status: 400 });
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+
+    // Monta o histórico limitado às últimas 6 mensagens (3 pares)
+    // para não explodir o contexto
+    const historicoLimitado = historico.slice(-6).map(m => ({
+      role: m.role as "user" | "assistant",
+      content: m.content,
+    }));
 
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
@@ -154,6 +165,7 @@ export async function POST(request: NextRequest) {
       max_tokens: 1200,
       messages: [
         { role: "system", content: buildSystemPrompt(tronco, interesses || []) },
+        ...historicoLimitado,
         { role: "user",   content: tema_gerador },
       ],
     });
@@ -251,7 +263,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json({ cards: data });
   } catch (err) {
-    console.error("Erro GET cards:", err);
+    console.error("Erro GET:", err);
     return NextResponse.json({ error: "Erro interno." }, { status: 500 });
   }
 }
@@ -278,7 +290,7 @@ export async function DELETE(request: NextRequest) {
 
     return NextResponse.json({ deleted: true });
   } catch (err) {
-    console.error("Erro DELETE card:", err);
+    console.error("Erro DELETE:", err);
     return NextResponse.json({ error: "Erro interno." }, { status: 500 });
   }
 }
