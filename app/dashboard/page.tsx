@@ -11,6 +11,10 @@ import type { ChicoCard } from "@/app/api/chico/route";
 interface MentoriaCard extends ChicoCard {
   id: string;
   criado_em: string;
+  titulo_card?: string;
+  lang_1_exemplo?: string;
+  lang_2_exemplo?: string;
+  lang_3_exemplo?: string;
 }
 
 interface ChatMessage {
@@ -24,10 +28,11 @@ interface UserProfile {
   display_name: string;
   avatar_url?: string;
   tronco: "românico" | "germânico";
+  troncos_selecionados?: ("românico" | "germânico")[];
   interesses: string[];
 }
 
-type MainTab = "chat" | "flashcards" | "progresso" | "imersao" | "diario";
+type MainTab = "chat" | "flashcards" | "progresso" | "imersao" | "diario" | "perfil";
 type SidebarFilter = "todos" | "românico" | "germânico";
 
 function createSupabase() {
@@ -40,26 +45,29 @@ function createSupabase() {
 // ── Ícones ────────────────────────────────────────────────────────────────────
 
 const Icon = {
-  Logo: () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>),
-  Chat: ({ c }: { c: string }) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>),
-  Cards: ({ c }: { c: string }) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>),
-  Progress: ({ c }: { c: string }) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>),
+  Logo:      () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>),
+  Chat:      ({ c }: { c: string }) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>),
+  Cards:     ({ c }: { c: string }) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>),
+  Progress:  ({ c }: { c: string }) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>),
   Immersion: ({ c }: { c: string }) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="11" y1="8" x2="11" y2="14"/><line x1="8" y1="11" x2="14" y2="11"/></svg>),
-  Diary: ({ c }: { c: string }) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>),
-  Library: ({ c }: { c: string }) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>),
-  Book: () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>),
-  Chevron: ({ down }: { down: boolean }) => (<svg width="12" height="12" viewBox="0 0 12 12" style={{ transform: down ? "rotate(180deg)" : "rotate(0deg)", transition: "transform 0.2s" }}><path d="M2 4l4 4 4-4" stroke="#0071E3" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>),
-  Play: () => (<svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><polygon points="1,0.5 9,5 1,9.5"/></svg>),
-  Wave: () => (<span style={{ display: "flex", gap: "2px", alignItems: "center" }}>{[10,14,8].map((h,i) => <span key={i} style={{ width:3, height:h, background:"currentColor", borderRadius:2, animation:`pulse 0.6s ${i*0.15}s ease-in-out infinite alternate` }}/>)}</span>),
-  Mic: ({ active }: { active: boolean }) => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={active?"#fff":"#86868B"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>),
-  Send: ({ active }: { active: boolean }) => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active?"#fff":"#86868B"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>),
-  Search: () => (<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#AEAEB2" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>),
-  Avatar: () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>),
-  Check: () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34C759" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>),
-  X: () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FF3B30" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>),
-  Copy: () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>),
-  Menu: () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1D1D1F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>),
-  Close: () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1D1D1F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>),
+  Diary:     ({ c }: { c: string }) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>),
+  Settings:  ({ c }: { c: string }) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>),
+  Library:   ({ c }: { c: string }) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>),
+  Book:      () => (<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>),
+  Chevron:   ({ down }: { down: boolean }) => (<svg width="12" height="12" viewBox="0 0 12 12" style={{ transform:down?"rotate(180deg)":"rotate(0deg)", transition:"transform 0.2s" }}><path d="M2 4l4 4 4-4" stroke="#0071E3" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  Play:      () => (<svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><polygon points="1,0.5 9,5 1,9.5"/></svg>),
+  Wave:      () => (<span style={{ display:"flex", gap:"2px", alignItems:"center" }}>{[10,14,8].map((h,i)=><span key={i} style={{ width:3, height:h, background:"currentColor", borderRadius:2, animation:`pulse 0.6s ${i*0.15}s ease-in-out infinite alternate` }}/>)}</span>),
+  Mic:       ({ active }: { active: boolean }) => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={active?"#fff":"#86868B"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>),
+  Send:      ({ active }: { active: boolean }) => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active?"#fff":"#86868B"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>),
+  Search:    () => (<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#AEAEB2" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>),
+  Avatar:    () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>),
+  Check:     () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34C759" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>),
+  X:         () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FF3B30" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>),
+  Trash:     () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>),
+  Copy:      () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>),
+  Menu:      () => (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#1D1D1F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>),
+  Close:     () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1D1D1F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>),
+  CheckMark: () => (<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>),
 };
 
 // ── Audio Hook ────────────────────────────────────────────────────────────────
@@ -79,7 +87,7 @@ function useAudio() {
     const best = voices.find(v => v.lang === bcp47) || voices.find(v => v.lang.startsWith(bcp47.split("-")[0]));
     if (best) utt.voice = best;
     utt.onstart = () => { setIsSpeaking(true); setSpeakingBcp47(bcp47); };
-    utt.onend = () => { setIsSpeaking(false); setSpeakingBcp47(null); };
+    utt.onend   = () => { setIsSpeaking(false); setSpeakingBcp47(null); };
     utt.onerror = () => { setIsSpeaking(false); setSpeakingBcp47(null); };
     window.speechSynthesis.speak(utt);
   }
@@ -92,12 +100,12 @@ function useAudio() {
   function startListening(onResult: (text: string) => void) {
     if (typeof window === "undefined") return;
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) { alert("Reconhecimento de voz não suportado neste navegador."); return; }
+    if (!SR) { alert("Reconhecimento de voz não suportado."); return; }
     const rec = new SR();
     rec.lang = "pt-BR"; rec.continuous = false; rec.interimResults = false;
-    rec.onstart = () => setIsListening(true);
-    rec.onend = () => setIsListening(false);
-    rec.onerror = () => setIsListening(false);
+    rec.onstart  = () => setIsListening(true);
+    rec.onend    = () => setIsListening(false);
+    rec.onerror  = () => setIsListening(false);
     rec.onresult = (e: any) => onResult(e.results[0][0].transcript);
     recognitionRef.current = rec;
     rec.start();
@@ -115,7 +123,7 @@ function AudioButton({ label, bcp47, isActive, onPlay, onStop }: {
 }) {
   return (
     <button onClick={isActive ? onStop : onPlay}
-      style={{ display:"flex", alignItems:"center", gap:"4px", padding:"4px 10px", borderRadius:"20px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:500, transition:"all 0.2s", flexShrink:0, background:isActive?"linear-gradient(135deg,#0071E3,#0077ED)":"rgba(0,113,227,0.08)", color:isActive?"#fff":"#0071E3" }}>
+      style={{ display:"flex", alignItems:"center", gap:"4px", padding:"3px 9px", borderRadius:"20px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:500, transition:"all 0.2s", flexShrink:0, background:isActive?"linear-gradient(135deg,#0071E3,#0077ED)":"rgba(0,113,227,0.08)", color:isActive?"#fff":"#0071E3" }}>
       {isActive ? <Icon.Wave /> : <Icon.Play />}{label}
     </button>
   );
@@ -123,48 +131,122 @@ function AudioButton({ label, bcp47, isActive, onPlay, onStop }: {
 
 // ── NexoCard ──────────────────────────────────────────────────────────────────
 
-function NexoCard({ card, audio }: { card: MentoriaCard; audio: ReturnType<typeof useAudio> }) {
-  const [expanded, setExpanded] = useState(false);
+function NexoCard({ card, audio, onDelete }: {
+  card: MentoriaCard;
+  audio: ReturnType<typeof useAudio>;
+  onDelete: (id: string) => void;
+}) {
+  const [expanded, setExpanded]       = useState(false);
+  const [confirmDelete, setConfirm]   = useState(false);
+  const [deleting, setDeleting]       = useState(false);
+
   const langs = [
-    { nome:card.lang_1_nome, txt:card.lang_1_txt, fon:card.lang_1_fon, bcp47:card.lang_1_bcp47 },
-    { nome:card.lang_2_nome, txt:card.lang_2_txt, fon:card.lang_2_fon, bcp47:card.lang_2_bcp47 },
-    { nome:card.lang_3_nome, txt:card.lang_3_txt, fon:card.lang_3_fon, bcp47:card.lang_3_bcp47 },
+    { nome:card.lang_1_nome, txt:card.lang_1_txt, fon:card.lang_1_fon, bcp47:card.lang_1_bcp47, exemplo:card.lang_1_exemplo },
+    { nome:card.lang_2_nome, txt:card.lang_2_txt, fon:card.lang_2_fon, bcp47:card.lang_2_bcp47, exemplo:card.lang_2_exemplo },
+    { nome:card.lang_3_nome, txt:card.lang_3_txt, fon:card.lang_3_fon, bcp47:card.lang_3_bcp47, exemplo:card.lang_3_exemplo },
   ];
+
   const isRom = card.tronco === "românico";
-  const tc = { dot:isRom?"#FF3B30":"#0071E3", bg:isRom?"rgba(255,59,48,0.07)":"rgba(0,113,227,0.07)", label:isRom?"Tear Românico":"Tear Germânico" };
+  const tc = {
+    dot:   isRom ? "#FF3B30" : "#0071E3",
+    bg:    isRom ? "rgba(255,59,48,0.07)" : "rgba(0,113,227,0.07)",
+    label: isRom ? "Tear Românico" : "Tear Germânico",
+  };
+
+  const titulo = card.titulo_card || card.tema_gerador;
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      await fetch(`/api/chico?id=${card.id}`, { method: "DELETE" });
+      onDelete(card.id);
+    } catch {
+      setDeleting(false);
+      setConfirm(false);
+    }
+  }
+
   return (
-    <article style={{ background:"#fff", borderRadius:"18px", padding:"18px", boxShadow:"0 1px 3px rgba(0,0,0,0.07),0 4px 16px rgba(0,0,0,0.04)", border:"1px solid rgba(0,0,0,0.05)", transition:"transform 0.2s,box-shadow 0.2s" }}
-      onMouseEnter={e=>{ (e.currentTarget as HTMLElement).style.transform="translateY(-2px)"; (e.currentTarget as HTMLElement).style.boxShadow="0 4px 20px rgba(0,0,0,0.09)"; }}
+    <article style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 1px 3px rgba(0,0,0,0.07),0 4px 16px rgba(0,0,0,0.04)", border:"1px solid rgba(0,0,0,0.05)", transition:"transform 0.2s,box-shadow 0.2s" }}
+      onMouseEnter={e=>{ (e.currentTarget as HTMLElement).style.transform="translateY(-1px)"; (e.currentTarget as HTMLElement).style.boxShadow="0 4px 20px rgba(0,0,0,0.09)"; }}
       onMouseLeave={e=>{ (e.currentTarget as HTMLElement).style.transform="translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow="0 1px 3px rgba(0,0,0,0.07),0 4px 16px rgba(0,0,0,0.04)"; }}>
+
+      {/* Header */}
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" }}>
         <div style={{ flex:1, minWidth:0 }}>
-          <span style={{ display:"inline-flex", alignItems:"center", gap:"4px", padding:"2px 7px", borderRadius:"7px", background:tc.bg, fontSize:"9px", fontWeight:600, color:tc.dot, textTransform:"uppercase" as const, letterSpacing:"0.04em", marginBottom:"6px" }}>
+          <span style={{ display:"inline-flex", alignItems:"center", gap:"4px", padding:"2px 7px", borderRadius:"6px", background:tc.bg, fontSize:"9px", fontWeight:600, color:tc.dot, textTransform:"uppercase" as const, letterSpacing:"0.04em", marginBottom:"5px" }}>
             <span style={{ width:4, height:4, borderRadius:"50%", background:tc.dot }}/>{tc.label}
           </span>
-          <h3 style={{ margin:0, fontSize:"14px", fontWeight:600, color:"#1D1D1F", lineHeight:1.35 }}>{card.tema_gerador}</h3>
+          {/* Título curto */}
+          <h3 style={{ margin:0, fontSize:"15px", fontWeight:700, color:"#1D1D1F", lineHeight:1.2, overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+            {titulo}
+          </h3>
+          {/* Pergunta original como subtítulo se diferente do título */}
+          {titulo !== card.tema_gerador && (
+            <p style={{ margin:"2px 0 0", fontSize:"11px", color:"#AEAEB2", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+              {card.tema_gerador}
+            </p>
+          )}
         </div>
-        <span style={{ fontSize:"10px", color:"#86868B", whiteSpace:"nowrap", marginLeft:"8px", flexShrink:0 }}>
-          {new Date(card.criado_em).toLocaleDateString("pt-BR",{day:"2-digit",month:"short"})}
-        </span>
+
+        {/* Botão apagar */}
+        <div style={{ display:"flex", gap:"6px", alignItems:"center", marginLeft:"8px", flexShrink:0 }}>
+          {confirmDelete ? (
+            <>
+              <button onClick={handleDelete} disabled={deleting}
+                style={{ padding:"4px 10px", borderRadius:"8px", border:"none", background:"#FF3B30", color:"#fff", fontSize:"11px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                {deleting ? "..." : "Apagar"}
+              </button>
+              <button onClick={()=>setConfirm(false)}
+                style={{ padding:"4px 10px", borderRadius:"8px", border:"1px solid rgba(0,0,0,0.12)", background:"transparent", color:"#86868B", fontSize:"11px", cursor:"pointer", fontFamily:"inherit" }}>
+                Cancelar
+              </button>
+            </>
+          ) : (
+            <button onClick={()=>setConfirm(true)} title="Apagar card"
+              style={{ width:28, height:28, borderRadius:"8px", border:"none", background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"#AEAEB2", transition:"all 0.2s" }}
+              onMouseEnter={e=>{ (e.currentTarget as HTMLElement).style.background="rgba(255,59,48,0.08)"; (e.currentTarget as HTMLElement).style.color="#FF3B30"; }}
+              onMouseLeave={e=>{ (e.currentTarget as HTMLElement).style.background="transparent"; (e.currentTarget as HTMLElement).style.color="#AEAEB2"; }}>
+              <Icon.Trash/>
+            </button>
+          )}
+        </div>
       </div>
+
+      {/* Traduções com exemplos */}
       <div style={{ display:"flex", flexDirection:"column", gap:"8px", marginBottom:"10px" }}>
-        {langs.map(l=>(
-          <div key={l.bcp47} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"8px", padding:"8px 10px", borderRadius:"10px", background:"#F5F5F7" }}>
-            <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:"12px", fontWeight:600, color:"#1D1D1F", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{l.txt}</div>
-              <div style={{ fontSize:"10px", color:"#86868B", fontStyle:"italic" }}>{l.fon}</div>
+        {langs.map(l => (
+          <div key={l.bcp47} style={{ borderRadius:"10px", background:"#F5F5F7", overflow:"hidden" }}>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", gap:"8px", padding:"8px 10px" }}>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:"13px", fontWeight:600, color:"#1D1D1F" }}>{l.txt}</div>
+                <div style={{ fontSize:"10px", color:"#86868B", fontStyle:"italic" }}>{l.fon}</div>
+              </div>
+              <AudioButton label={l.nome} bcp47={l.bcp47} isActive={audio.isSpeaking&&audio.speakingBcp47===l.bcp47} onPlay={()=>audio.speak(l.txt,l.bcp47)} onStop={audio.stopSpeaking}/>
             </div>
-            <AudioButton label={l.nome} bcp47={l.bcp47} isActive={audio.isSpeaking&&audio.speakingBcp47===l.bcp47} onPlay={()=>audio.speak(l.txt,l.bcp47)} onStop={audio.stopSpeaking}/>
+            {/* Exemplo de uso */}
+            {l.exemplo && (
+              <div style={{ padding:"6px 10px 8px", borderTop:"1px solid rgba(0,0,0,0.05)", display:"flex", alignItems:"flex-start", gap:"6px" }}>
+                <span style={{ fontSize:"10px", color:"#0071E3", fontWeight:600, flexShrink:0, marginTop:"1px" }}>Ex.</span>
+                <span style={{ fontSize:"11px", color:"#3A3A3C", lineHeight:1.5, fontStyle:"italic" }}>{l.exemplo}</span>
+                <button onClick={()=>audio.speak(l.exemplo!,l.bcp47)} title="Ouvir exemplo"
+                  style={{ marginLeft:"auto", width:20, height:20, borderRadius:"50%", border:"none", background:"rgba(0,113,227,0.08)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:"#0071E3" }}>
+                  <Icon.Play/>
+                </button>
+              </div>
+            )}
           </div>
         ))}
       </div>
+
+      {/* Lição expansível */}
       <button onClick={()=>setExpanded(v=>!v)} style={{ width:"100%", background:"none", border:"none", cursor:"pointer", padding:0 }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 10px", borderRadius:"10px", background:expanded?"rgba(0,113,227,0.06)":"#F5F5F7", transition:"background 0.2s" }}>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 10px", borderRadius:"10px", background:expanded?"rgba(0,113,227,0.06)":"#F5F5F7", transition:"background 0.2s" }}>
           <span style={{ fontSize:"11px", fontWeight:600, color:"#0071E3", display:"flex", alignItems:"center", gap:"5px" }}><Icon.Book/>Lição do Chico</span>
           <Icon.Chevron down={expanded}/>
         </div>
       </button>
-      {expanded && <div style={{ marginTop:"8px", padding:"10px", borderRadius:"10px", background:"rgba(0,113,227,0.04)", fontSize:"12px", lineHeight:"1.65", color:"#3A3A3C" }}>{card.aula_chico}</div>}
+      {expanded && <div style={{ marginTop:"6px", padding:"10px", borderRadius:"10px", background:"rgba(0,113,227,0.04)", fontSize:"12px", lineHeight:"1.65", color:"#3A3A3C" }}>{card.aula_chico}</div>}
     </article>
   );
 }
@@ -201,12 +283,11 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
   const shuffled              = useRef<MentoriaCard[]>([]);
 
   useEffect(()=>{ shuffled.current=[...cards].sort(()=>Math.random()-0.5).slice(0,Math.min(10,cards.length)); setIndex(0); setFlipped(false); setScore({acertos:0,erros:0}); setDone(false); },[cards.length]);
-
   function restart() { shuffled.current=[...cards].sort(()=>Math.random()-0.5).slice(0,Math.min(10,cards.length)); setIndex(0); setFlipped(false); setScore({acertos:0,erros:0}); setDone(false); }
-  function next(acertou: boolean) { setScore(s=>({acertos:s.acertos+(acertou?1:0),erros:s.erros+(acertou?0:1)})); if(index+1>=shuffled.current.length){setDone(true);return;} setIndex(i=>i+1); setFlipped(false); }
+  function next(ok: boolean) { setScore(s=>({acertos:s.acertos+(ok?1:0),erros:s.erros+(ok?0:1)})); if(index+1>=shuffled.current.length){setDone(true);return;} setIndex(i=>i+1); setFlipped(false); }
 
   if (cards.length===0) return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", gap:"14px", padding:"40px", textAlign:"center" }}>
+    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", gap:"12px", padding:"40px", textAlign:"center" }}>
       <Icon.Search/><p style={{ fontSize:"15px", fontWeight:600, color:"#1D1D1F", margin:0 }}>Nenhum nexo para revisar</p>
       <p style={{ fontSize:"13px", color:"#86868B", margin:0 }}>Converse com o Chico primeiro.</p>
     </div>
@@ -215,9 +296,9 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
   const card = shuffled.current[index];
   if (!card) return null;
   const langs = [
-    { nome:card.lang_1_nome, txt:card.lang_1_txt, fon:card.lang_1_fon, bcp47:card.lang_1_bcp47 },
-    { nome:card.lang_2_nome, txt:card.lang_2_txt, fon:card.lang_2_fon, bcp47:card.lang_2_bcp47 },
-    { nome:card.lang_3_nome, txt:card.lang_3_txt, fon:card.lang_3_fon, bcp47:card.lang_3_bcp47 },
+    { nome:card.lang_1_nome, txt:card.lang_1_txt, fon:card.lang_1_fon, bcp47:card.lang_1_bcp47, exemplo:card.lang_1_exemplo },
+    { nome:card.lang_2_nome, txt:card.lang_2_txt, fon:card.lang_2_fon, bcp47:card.lang_2_bcp47, exemplo:card.lang_2_exemplo },
+    { nome:card.lang_3_nome, txt:card.lang_3_txt, fon:card.lang_3_fon, bcp47:card.lang_3_bcp47, exemplo:card.lang_3_exemplo },
   ];
 
   if (done) return (
@@ -225,7 +306,7 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
       <div style={{ width:56, height:56, borderRadius:"18px", background:"linear-gradient(135deg,#0071E3,#34AADC)", display:"flex", alignItems:"center", justifyContent:"center" }}>
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
       </div>
-      <div><h3 style={{ fontSize:"20px", fontWeight:700, color:"#1D1D1F", margin:"0 0 6px" }}>Sessão concluída</h3><p style={{ fontSize:"13px", color:"#86868B", margin:0 }}>{shuffled.current.length} cards revisados</p></div>
+      <div><h3 style={{ fontSize:"20px", fontWeight:700, color:"#1D1D1F", margin:"0 0 6px" }}>Sessão concluída</h3><p style={{ fontSize:"13px", color:"#86868B", margin:0 }}>{shuffled.current.length} cards</p></div>
       <div style={{ display:"flex", gap:"28px" }}>
         <div style={{ textAlign:"center" }}><div style={{ fontSize:"32px", fontWeight:700, color:"#34C759" }}>{score.acertos}</div><div style={{ fontSize:"12px", color:"#86868B" }}>Acertos</div></div>
         <div style={{ width:1, background:"rgba(0,0,0,0.08)" }}/>
@@ -255,15 +336,18 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
         onMouseLeave={e=>(e.currentTarget as HTMLElement).style.transform="scale(1)"}>
         {!flipped ? (
           <><span style={{ fontSize:"10px", color:"#86868B", fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.06em" }}>Em Português</span>
-          <p style={{ fontSize:"20px", fontWeight:700, color:"#1D1D1F", textAlign:"center", margin:0, lineHeight:1.3 }}>{card.tema_gerador}</p>
+          <p style={{ fontSize:"22px", fontWeight:700, color:"#1D1D1F", textAlign:"center", margin:0 }}>{card.titulo_card||card.tema_gerador}</p>
           <span style={{ fontSize:"11px", color:"#AEAEB2" }}>Toque para ver as traduções</span></>
         ) : (
           <><span style={{ fontSize:"10px", color:"#0071E3", fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.06em" }}>Traduções</span>
           <div style={{ display:"flex", flexDirection:"column", gap:"8px", width:"100%" }}>
             {langs.map(l=>(
-              <div key={l.bcp47} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"9px 12px", borderRadius:"12px", background:"#F5F5F7" }}>
-                <div><div style={{ fontSize:"14px", fontWeight:600, color:"#1D1D1F" }}>{l.txt}</div><div style={{ fontSize:"10px", color:"#86868B", fontStyle:"italic" }}>{l.fon}</div></div>
-                <AudioButton label={l.nome} bcp47={l.bcp47} isActive={audio.isSpeaking&&audio.speakingBcp47===l.bcp47} onPlay={()=>audio.speak(l.txt,l.bcp47)} onStop={audio.stopSpeaking}/>
+              <div key={l.bcp47} style={{ borderRadius:"12px", background:"#F5F5F7", overflow:"hidden" }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 12px" }}>
+                  <div><div style={{ fontSize:"14px", fontWeight:600, color:"#1D1D1F" }}>{l.txt}</div><div style={{ fontSize:"10px", color:"#86868B", fontStyle:"italic" }}>{l.fon}</div></div>
+                  <AudioButton label={l.nome} bcp47={l.bcp47} isActive={audio.isSpeaking&&audio.speakingBcp47===l.bcp47} onPlay={()=>audio.speak(l.txt,l.bcp47)} onStop={audio.stopSpeaking}/>
+                </div>
+                {l.exemplo&&<div style={{ padding:"5px 12px 8px", borderTop:"1px solid rgba(0,0,0,0.05)", fontSize:"11px", color:"#3A3A3C", fontStyle:"italic" }}>{l.exemplo}</div>}
               </div>
             ))}
           </div></>
@@ -296,11 +380,7 @@ function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
   return (
     <div style={{ padding:"20px 16px", overflowY:"auto", height:"100%", display:"flex", flexDirection:"column", gap:"14px" }}>
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"10px" }}>
-        {[
-          { value:total,      label:"Nexos",    color:"#0071E3" },
-          { value:diasUnicos, label:"Dias",     color:"#FF9500" },
-          { value:total*3,    label:"Traduções", color:"#34C759" },
-        ].map(s=>(
+        {[{value:total,label:"Nexos",color:"#0071E3"},{value:diasUnicos,label:"Dias",color:"#FF9500"},{value:total*3,label:"Traduções",color:"#34C759"}].map(s=>(
           <div key={s.label} style={{ background:"#fff", borderRadius:"14px", padding:"14px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", textAlign:"center" }}>
             <div style={{ fontSize:"26px", fontWeight:700, color:s.color }}>{s.value}</div>
             <div style={{ fontSize:"11px", color:"#86868B", fontWeight:500, marginTop:"2px" }}>{s.label}</div>
@@ -352,7 +432,7 @@ function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
   );
 }
 
-// ── Modo Imersão ──────────────────────────────────────────────────────────────
+// ── Imersão ───────────────────────────────────────────────────────────────────
 
 function ImersaoTab({ profile }: { profile: UserProfile | null }) {
   const [texto, setTexto]       = useState("");
@@ -360,37 +440,32 @@ function ImersaoTab({ profile }: { profile: UserProfile | null }) {
   const [loading, setLoading]   = useState(false);
   const [copied, setCopied]     = useState(false);
 
-  async function handleTranslate() {
+  async function handle() {
     if (!texto.trim()||!profile) return;
     setLoading(true); setResultado(null);
     try {
-      const res  = await fetch("/api/chico",{ method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ tema_gerador:`MODO IMERSÃO — Traduza e explique este texto para as línguas do ${profile.tronco==="românico"?"Tear Românico (Espanhol, Francês, Italiano)":"Tear Germânico (Inglês, Alemão, Holandês)"}. Para cada trecho importante mostre a tradução e destaque cognatos e raízes comuns. Texto:\n\n${texto}`, tronco:profile.tronco, interesses:profile.interesses??[] }) });
+      const res  = await fetch("/api/chico",{ method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ tema_gerador:`MODO IMERSÃO — Traduza e explique este texto para as línguas do ${profile.tronco==="românico"?"Tear Românico (Espanhol, Francês, Italiano)":"Tear Germânico (Inglês, Alemão, Holandês)"}. Destaque cognatos e raízes comuns. Texto:\n\n${texto}`, tronco:profile.tronco, interesses:profile.interesses??[] }) });
       const data = await res.json();
-      setResultado(res.ok ? (data.card?.aula_chico??"") : "Erro ao processar. Tente novamente.");
-    } catch { setResultado("Erro de conexão. Tente novamente."); }
+      setResultado(res.ok?(data.card?.aula_chico??""):"Erro ao processar. Tente novamente.");
+    } catch { setResultado("Erro de conexão."); }
     setLoading(false);
   }
 
-  function handleCopy() { if(resultado){ navigator.clipboard.writeText(resultado); setCopied(true); setTimeout(()=>setCopied(false),2000); } }
-
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", padding:"20px 16px", gap:"14px", overflowY:"auto" }}>
-      <div>
-        <h2 style={{ margin:"0 0 5px", fontSize:"18px", fontWeight:700, color:"#1D1D1F", letterSpacing:"-0.02em" }}>Modo Imersão</h2>
-        <p style={{ margin:0, fontSize:"13px", color:"#86868B", lineHeight:1.5 }}>Cole qualquer texto em português. O Chico traduz e explica as raízes linguísticas de cada trecho.</p>
-      </div>
-      <textarea value={texto} onChange={e=>setTexto(e.target.value)} placeholder="Cole aqui um texto, notícia, trecho de livro ou qualquer conteúdo em português..." rows={6}
+      <div><h2 style={{ margin:"0 0 4px", fontSize:"17px", fontWeight:700, color:"#1D1D1F" }}>Modo Imersão</h2><p style={{ margin:0, fontSize:"13px", color:"#86868B", lineHeight:1.5 }}>Cole qualquer texto em português. O Chico traduz e explica as raízes linguísticas.</p></div>
+      <textarea value={texto} onChange={e=>setTexto(e.target.value)} placeholder="Cole aqui um texto, notícia, trecho de livro..." rows={6}
         style={{ width:"100%", padding:"13px", borderRadius:"14px", border:"1.5px solid rgba(0,0,0,0.10)", fontSize:"14px", lineHeight:"1.6", color:"#1D1D1F", fontFamily:"inherit", background:"#fff", resize:"vertical" as const, outline:"none", boxSizing:"border-box" as const }}
         onFocus={e=>(e.target.style.borderColor="#0071E3")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
-      <button onClick={handleTranslate} disabled={!texto.trim()||loading}
-        style={{ padding:"13px", borderRadius:"12px", border:"none", background:!texto.trim()||loading?"rgba(0,0,0,0.08)":"linear-gradient(135deg,#0071E3,#0077ED)", color:!texto.trim()||loading?"#86868B":"#fff", fontSize:"14px", fontWeight:600, cursor:!texto.trim()||loading?"not-allowed":"pointer", fontFamily:"inherit", boxShadow:!texto.trim()||loading?"none":"0 2px 12px rgba(0,113,227,0.25)" }}>
-        {loading ? "O Chico está processando..." : "Mergulhar no texto"}
+      <button onClick={handle} disabled={!texto.trim()||loading}
+        style={{ padding:"13px", borderRadius:"12px", border:"none", background:!texto.trim()||loading?"rgba(0,0,0,0.08)":"linear-gradient(135deg,#0071E3,#0077ED)", color:!texto.trim()||loading?"#86868B":"#fff", fontSize:"14px", fontWeight:600, cursor:!texto.trim()||loading?"not-allowed":"pointer", fontFamily:"inherit" }}>
+        {loading?"Processando...":"Mergulhar no texto"}
       </button>
       {resultado&&(
-        <div style={{ background:"#fff", borderRadius:"16px", padding:"18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", border:"1px solid rgba(0,0,0,0.05)" }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"12px" }}>
+        <div style={{ background:"#fff", borderRadius:"16px", padding:"18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"10px" }}>
             <span style={{ fontSize:"12px", fontWeight:600, color:"#0071E3" }}>Análise do Chico</span>
-            <button onClick={handleCopy} style={{ display:"flex", alignItems:"center", gap:"5px", padding:"4px 10px", borderRadius:"8px", border:"1px solid rgba(0,0,0,0.10)", background:copied?"rgba(52,199,89,0.08)":"transparent", color:copied?"#34C759":"#86868B", fontSize:"12px", cursor:"pointer", fontFamily:"inherit" }}>
+            <button onClick={()=>{ navigator.clipboard.writeText(resultado); setCopied(true); setTimeout(()=>setCopied(false),2000); }} style={{ display:"flex", alignItems:"center", gap:"5px", padding:"4px 10px", borderRadius:"8px", border:"1px solid rgba(0,0,0,0.10)", background:copied?"rgba(52,199,89,0.08)":"transparent", color:copied?"#34C759":"#86868B", fontSize:"12px", cursor:"pointer", fontFamily:"inherit" }}>
               <Icon.Copy/>{copied?"Copiado!":"Copiar"}
             </button>
           </div>
@@ -401,7 +476,7 @@ function ImersaoTab({ profile }: { profile: UserProfile | null }) {
   );
 }
 
-// ── Diário Bilíngue ───────────────────────────────────────────────────────────
+// ── Diário ────────────────────────────────────────────────────────────────────
 
 function DiarioTab({ profile }: { profile: UserProfile | null }) {
   const supabase  = createSupabase();
@@ -435,36 +510,146 @@ function DiarioTab({ profile }: { profile: UserProfile | null }) {
   return (
     <div style={{ display:"flex", flexDirection:"column", height:"100%", overflowY:"auto" }}>
       <div style={{ padding:"20px 16px 0", flexShrink:0 }}>
-        <h2 style={{ margin:"0 0 5px", fontSize:"18px", fontWeight:700, color:"#1D1D1F", letterSpacing:"-0.02em" }}>Diário Bilíngue</h2>
-        <p style={{ margin:"0 0 14px", fontSize:"13px", color:"#86868B", lineHeight:1.5 }}>Escreva sobre o seu dia. O Chico vai enriquecer seu texto com vocabulário das línguas que você aprende.</p>
+        <h2 style={{ margin:"0 0 4px", fontSize:"17px", fontWeight:700, color:"#1D1D1F" }}>Diário Bilíngue</h2>
+        <p style={{ margin:"0 0 12px", fontSize:"13px", color:"#86868B", lineHeight:1.5 }}>Escreva sobre o seu dia. O Chico enriquece com vocabulário das línguas que você aprende.</p>
         <textarea value={entrada} onChange={e=>setEntrada(e.target.value)} placeholder={`Conte algo sobre o seu dia, ${profile?.display_name?.split(" ")[0]??""}...`} rows={4}
           style={{ width:"100%", padding:"13px", borderRadius:"14px", border:"1.5px solid rgba(0,0,0,0.10)", fontSize:"14px", lineHeight:"1.6", color:"#1D1D1F", fontFamily:"inherit", background:"#fff", resize:"vertical" as const, outline:"none", boxSizing:"border-box" as const, marginBottom:"10px" }}
           onFocus={e=>(e.target.style.borderColor="#0071E3")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
         <button onClick={handleSave} disabled={!entrada.trim()||loading}
-          style={{ width:"100%", padding:"13px", borderRadius:"12px", border:"none", background:!entrada.trim()||loading?"rgba(0,0,0,0.08)":"linear-gradient(135deg,#0071E3,#0077ED)", color:!entrada.trim()||loading?"#86868B":"#fff", fontSize:"14px", fontWeight:600, cursor:!entrada.trim()||loading?"not-allowed":"pointer", fontFamily:"inherit", marginBottom:"20px", boxShadow:!entrada.trim()||loading?"none":"0 2px 12px rgba(0,113,227,0.25)" }}>
-          {loading ? "O Chico está escrevendo..." : "Salvar no diário"}
+          style={{ width:"100%", padding:"12px", borderRadius:"12px", border:"none", background:!entrada.trim()||loading?"rgba(0,0,0,0.08)":"linear-gradient(135deg,#0071E3,#0077ED)", color:!entrada.trim()||loading?"#86868B":"#fff", fontSize:"14px", fontWeight:600, cursor:!entrada.trim()||loading?"not-allowed":"pointer", fontFamily:"inherit", marginBottom:"18px" }}>
+          {loading?"Salvando...":"Salvar no diário"}
         </button>
       </div>
-      <div style={{ flex:1, padding:"0 16px 24px", display:"flex", flexDirection:"column", gap:"12px" }}>
-        {fetching ? Array.from({length:2}).map((_,i)=><div key={i} style={{ height:100, borderRadius:"16px", background:"#e8e8e8" }}/>)
+      <div style={{ flex:1, padding:"0 16px 24px", display:"flex", flexDirection:"column", gap:"10px" }}>
+        {fetching ? Array.from({length:2}).map((_,i)=><div key={i} style={{ height:100, borderRadius:"14px", background:"#e8e8e8" }}/>)
           : entradas.length===0
             ? <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"28px 16px", textAlign:"center", gap:"10px" }}>
                 <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#AEAEB2" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-                <p style={{ margin:0, fontSize:"13px", color:"#86868B" }}>Seu diário está em branco. Escreva a primeira entrada!</p>
+                <p style={{ margin:0, fontSize:"13px", color:"#86868B" }}>Diário vazio. Escreva a primeira entrada!</p>
               </div>
             : entradas.map(e=>(
-              <div key={e.id} style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", border:"1px solid rgba(0,0,0,0.05)" }}>
-                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"8px" }}>
+              <div key={e.id} style={{ background:"#fff", borderRadius:"14px", padding:"14px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"7px" }}>
                   <span style={{ fontSize:"10px", fontWeight:600, color:"#0071E3", textTransform:"uppercase" as const, letterSpacing:"0.04em" }}>Sua entrada</span>
-                  <span style={{ fontSize:"10px", color:"#86868B" }}>{new Date(e.criado_em).toLocaleDateString("pt-BR",{day:"2-digit",month:"short",year:"2-digit"})}</span>
+                  <span style={{ fontSize:"10px", color:"#86868B" }}>{new Date(e.criado_em).toLocaleDateString("pt-BR",{day:"2-digit",month:"short"})}</span>
                 </div>
-                <p style={{ margin:"0 0 10px", fontSize:"13px", color:"#1D1D1F", lineHeight:1.6 }}>{e.texto_pt}</p>
-                <div style={{ height:1, background:"rgba(0,0,0,0.06)", marginBottom:"10px" }}/>
-                <span style={{ fontSize:"10px", fontWeight:600, color:"#86868B", textTransform:"uppercase" as const, letterSpacing:"0.04em", display:"block", marginBottom:"6px" }}>Enriquecido pelo Chico</span>
+                <p style={{ margin:"0 0 8px", fontSize:"13px", color:"#1D1D1F", lineHeight:1.6 }}>{e.texto_pt}</p>
+                <div style={{ height:1, background:"rgba(0,0,0,0.06)", marginBottom:"8px" }}/>
+                <span style={{ fontSize:"10px", fontWeight:600, color:"#86868B", textTransform:"uppercase" as const, letterSpacing:"0.04em", display:"block", marginBottom:"5px" }}>Enriquecido pelo Chico</span>
                 <p style={{ margin:0, fontSize:"12px", color:"#3A3A3C", lineHeight:1.65, whiteSpace:"pre-wrap" }}>{e.texto_chico}</p>
               </div>
             ))
         }
+      </div>
+    </div>
+  );
+}
+
+// ── Perfil / Configurações ────────────────────────────────────────────────────
+
+function PerfilTab({ profile, onProfileUpdate }: { profile: UserProfile | null; onProfileUpdate: (p: UserProfile) => void }) {
+  const supabase = createSupabase();
+
+  const [troncos, setTroncos]   = useState<("românico" | "germânico")[]>(
+    profile?.troncos_selecionados ?? (profile?.tronco ? [profile.tronco] : [])
+  );
+  const [saving, setSaving]     = useState(false);
+  const [saved, setSaved]       = useState(false);
+  const [confirmLogout, setConfirmLogout] = useState(false);
+
+  function toggleTronco(id: "românico" | "germânico") {
+    setTroncos(prev => prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]);
+  }
+
+  async function handleSave() {
+    if (troncos.length === 0 || !profile) return;
+    setSaving(true);
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const tronco_principal = troncos[0];
+    await supabase.from("user_profiles").update({
+      tronco: tronco_principal,
+      troncos_selecionados: troncos,
+    }).eq("id", user.id);
+
+    onProfileUpdate({ ...profile, tronco: tronco_principal, troncos_selecionados: troncos });
+    setSaving(false); setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  }
+
+  const TRONCOS_CONFIG = [
+    { id: "românico" as const,  label: "Tear Românico",  desc: "Espanhol, Francês e Italiano", color: "#FF3B30", bg: "rgba(255,59,48,0.06)", border: "rgba(255,59,48,0.25)" },
+    { id: "germânico" as const, label: "Tear Germânico", desc: "Inglês, Alemão e Holandês",    color: "#0071E3", bg: "rgba(0,113,227,0.06)", border: "rgba(0,113,227,0.25)" },
+  ];
+
+  return (
+    <div style={{ padding:"24px 20px", overflowY:"auto", height:"100%", display:"flex", flexDirection:"column", gap:"20px" }}>
+
+      {/* Info do usuário */}
+      <div style={{ background:"#fff", borderRadius:"18px", padding:"20px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", display:"flex", alignItems:"center", gap:"16px" }}>
+        {profile?.avatar_url
+          ? <img src={profile.avatar_url} alt="" style={{ width:52, height:52, borderRadius:"50%", objectFit:"cover" }}/>
+          : <div style={{ width:52, height:52, borderRadius:"50%", background:"linear-gradient(135deg,#5E5CE6,#BF5AF2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"20px", fontWeight:700, color:"#fff" }}>
+              {profile?.display_name?.[0]?.toUpperCase()??"U"}
+            </div>
+        }
+        <div>
+          <div style={{ fontSize:"16px", fontWeight:700, color:"#1D1D1F" }}>{profile?.display_name}</div>
+          <div style={{ fontSize:"13px", color:"#86868B", marginTop:"2px" }}>
+            {profile?.interesses?.slice(0,3).join(" · ")}
+          </div>
+        </div>
+      </div>
+
+      {/* Gerenciar Troncos */}
+      <div style={{ background:"#fff", borderRadius:"18px", padding:"20px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+        <h3 style={{ margin:"0 0 6px", fontSize:"15px", fontWeight:700, color:"#1D1D1F" }}>Meus Troncos</h3>
+        <p style={{ margin:"0 0 16px", fontSize:"13px", color:"#86868B", lineHeight:1.5 }}>Adicione ou remova os troncos que deseja aprender. Você pode ter os dois ao mesmo tempo.</p>
+
+        <div style={{ display:"flex", flexDirection:"column", gap:"10px", marginBottom:"16px" }}>
+          {TRONCOS_CONFIG.map(t => {
+            const selected = troncos.includes(t.id);
+            return (
+              <button key={t.id} onClick={() => toggleTronco(t.id)}
+                style={{ width:"100%", padding:"14px 16px", borderRadius:"12px", border:`2px solid ${selected ? t.color : "rgba(0,0,0,0.08)"}`, background:selected?t.bg:"#FAFAFA", cursor:"pointer", textAlign:"left", fontFamily:"inherit", transition:"all 0.2s", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+                <div>
+                  <div style={{ fontSize:"14px", fontWeight:700, color:selected?t.color:"#1D1D1F" }}>{t.label}</div>
+                  <div style={{ fontSize:"12px", color:"#86868B", marginTop:"2px" }}>{t.desc}</div>
+                </div>
+                <div style={{ width:22, height:22, borderRadius:"6px", border:`2px solid ${selected?t.color:"rgba(0,0,0,0.2)"}`, background:selected?t.color:"transparent", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.2s", flexShrink:0 }}>
+                  {selected && <Icon.CheckMark/>}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <button onClick={handleSave} disabled={troncos.length === 0 || saving}
+          style={{ width:"100%", padding:"12px", borderRadius:"12px", border:"none", background:troncos.length===0||saving?"rgba(0,0,0,0.08)":saved?"rgba(52,199,89,0.15)":"linear-gradient(135deg,#0071E3,#0077ED)", color:troncos.length===0||saving?"#86868B":saved?"#34C759":"#fff", fontSize:"14px", fontWeight:600, cursor:troncos.length===0||saving?"not-allowed":"pointer", fontFamily:"inherit", transition:"all 0.3s" }}>
+          {saving ? "Salvando..." : saved ? "Salvo!" : "Salvar alterações"}
+        </button>
+      </div>
+
+      {/* Sair */}
+      <div style={{ background:"#fff", borderRadius:"18px", padding:"20px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+        <h3 style={{ margin:"0 0 12px", fontSize:"15px", fontWeight:700, color:"#1D1D1F" }}>Conta</h3>
+        {!confirmLogout ? (
+          <button onClick={() => setConfirmLogout(true)}
+            style={{ width:"100%", padding:"12px", borderRadius:"12px", border:"1.5px solid rgba(255,59,48,0.25)", background:"rgba(255,59,48,0.05)", color:"#FF3B30", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+            Sair da conta
+          </button>
+        ) : (
+          <div style={{ display:"flex", gap:"10px" }}>
+            <button onClick={() => setConfirmLogout(false)} style={{ flex:1, padding:"12px", borderRadius:"12px", border:"1.5px solid rgba(0,0,0,0.12)", background:"transparent", color:"#86868B", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
+            <button onClick={handleLogout} style={{ flex:1, padding:"12px", borderRadius:"12px", border:"none", background:"#FF3B30", color:"#fff", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Confirmar saída</button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -515,7 +700,7 @@ export default function ChicoDashboard() {
       const desafios = [
         `Como se diz "${profile.interesses?.[0]??"amigo"}" nas línguas do ${troncoLabel}?`,
         `Qual a origem da palavra "${profile.interesses?.[0]??"trabalho"}" no ${troncoLabel}?`,
-        `Como expressar entusiasmo sobre ${profile.interesses?.[0]??"um tema"} nas línguas do ${troncoLabel}?`,
+        `Como expressar entusiasmo sobre ${profile.interesses?.[0]??"um tema"} no ${troncoLabel}?`,
         `Quais cognatos de "${profile.interesses?.[0]??"arte"}" existem no ${troncoLabel}?`,
       ];
       const desafio = desafios[new Date().getDate()%desafios.length];
@@ -539,10 +724,13 @@ export default function ChicoDashboard() {
     } finally { setIsLoading(false); }
   },[isLoading,profile]);
 
+  function handleDeleteCard(id: string) {
+    setCards(prev => prev.filter(c => c.id !== id));
+  }
+
   function handleSubmit(e:FormEvent){e.preventDefault();sendMessage(inputText);}
   function handleKeyDown(e:React.KeyboardEvent<HTMLTextAreaElement>){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage(inputText);}}
   function handleMic(){if(audio.isListening){audio.stopListening();return;}audio.startListening(text=>setInputText(prev=>(prev?`${prev} ${text}`:text).trim()));}
-  async function handleLogout(){await supabase.auth.signOut();window.location.href="/";}
 
   const filteredCards = sidebarFilter==="todos"?cards:cards.filter(c=>c.tronco===sidebarFilter);
 
@@ -552,10 +740,11 @@ export default function ChicoDashboard() {
     {id:"progresso",  label:"Progresso",  icon:c=><Icon.Progress c={c}/>},
     {id:"imersao",    label:"Imersão",    icon:c=><Icon.Immersion c={c}/>},
     {id:"diario",     label:"Diário",     icon:c=><Icon.Diary c={c}/>},
+    {id:"perfil",     label:"Perfil",     icon:c=><Icon.Settings c={c}/>},
   ];
 
-  const MOBILE_NAV_H = 68;
   const TOPBAR_H     = 52;
+  const MOBILE_NAV_H = 68;
 
   return (
     <>
@@ -583,11 +772,11 @@ export default function ChicoDashboard() {
               </span>
             )}
           </div>
-          {profile&&(
+          {profile&&!isMobile&&(
             <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-              {!isMobile&&<span style={{ fontSize:"13px", color:"#86868B" }}>{profile.display_name}</span>}
+              <span style={{ fontSize:"13px", color:"#86868B" }}>{profile.display_name}</span>
               {profile.avatar_url?<img src={profile.avatar_url} alt="" style={{ width:28, height:28, borderRadius:"50%", objectFit:"cover" }}/>:<div style={{ width:28, height:28, borderRadius:"50%", background:"linear-gradient(135deg,#5E5CE6,#BF5AF2)", display:"flex", alignItems:"center", justifyContent:"center" }}><Icon.Avatar/></div>}
-              {!isMobile&&<button onClick={handleLogout} style={{ padding:"5px 10px", borderRadius:"8px", border:"1px solid rgba(0,0,0,0.10)", background:"transparent", fontSize:"12px", color:"#86868B", cursor:"pointer", fontFamily:"inherit" }}>Sair</button>}
+              <button onClick={()=>setActiveTab("perfil")} style={{ padding:"5px 10px", borderRadius:"8px", border:"1px solid rgba(0,0,0,0.10)", background:"transparent", fontSize:"12px", color:"#86868B", cursor:"pointer", fontFamily:"inherit" }}>Perfil</button>
             </div>
           )}
         </header>
@@ -595,7 +784,6 @@ export default function ChicoDashboard() {
         {/* Layout */}
         <div style={{ display:"flex", flex:1, overflow:"hidden", position:"relative" }}>
 
-          {/* Overlay mobile */}
           {isMobile&&sidebarOpen&&<div style={{ position:"fixed", inset:0, background:"rgba(0,0,0,0.4)", zIndex:150 }} onClick={()=>setSidebarOpen(false)}/>}
 
           {/* Sidebar */}
@@ -614,10 +802,10 @@ export default function ChicoDashboard() {
             </div>
             <div style={{ flex:1, overflowY:"auto", padding:"0 12px 16px", display:"flex", flexDirection:"column", gap:"10px" }}>
               {isFetchingCards
-                ?Array.from({length:3}).map((_,i)=><div key={i} style={{ height:130, borderRadius:"16px", background:"#e8e8e8" }}/>)
+                ?Array.from({length:3}).map((_,i)=><div key={i} style={{ height:120, borderRadius:"14px", background:"#e8e8e8" }}/>)
                 :filteredCards.length===0
                   ?<div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"36px 12px", textAlign:"center", gap:"10px" }}><Icon.Search/><p style={{ margin:0, fontSize:"13px", color:"#86868B", lineHeight:1.5 }}>Biblioteca vazia.<br/>Pergunte algo ao Chico.</p></div>
-                  :filteredCards.map(card=><div key={card.id} style={{ animation:"fadeIn 0.3s ease forwards" }}><NexoCard card={card} audio={audio}/></div>)
+                  :filteredCards.map(card=><div key={card.id} style={{ animation:"fadeIn 0.3s ease forwards" }}><NexoCard card={card} audio={audio} onDelete={handleDeleteCard}/></div>)
               }
             </div>
           </aside>
@@ -625,26 +813,19 @@ export default function ChicoDashboard() {
           {/* Área principal */}
           <main style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", minWidth:0 }}>
 
-            {/* Abas — desktop */}
+            {/* Abas desktop */}
             {!isMobile&&(
               <div style={{ display:"flex", gap:"2px", padding:"8px 20px 0", background:"rgba(255,255,255,0.92)", backdropFilter:"blur(20px)", borderBottom:"1px solid rgba(0,0,0,0.07)", flexShrink:0 }}>
-                {navTabs.map(tab=>{
-                  const active = activeTab===tab.id;
-                  const color  = active?"#0071E3":"#86868B";
-                  return (
-                    <button key={tab.id} onClick={()=>setActiveTab(tab.id)}
-                      style={{ display:"flex", alignItems:"center", gap:"6px", padding:"8px 14px", borderRadius:"10px 10px 0 0", border:"none", cursor:"pointer", fontSize:"13px", fontWeight:active?600:500, fontFamily:"inherit", transition:"all 0.15s", background:active?"#F5F5F7":"transparent", color, borderBottom:active?"2px solid #0071E3":"2px solid transparent" }}>
-                      {tab.icon(color)}{tab.label}
-                    </button>
-                  );
-                })}
+                {navTabs.map(tab=>{ const active=activeTab===tab.id; const color=active?"#0071E3":"#86868B"; return (
+                  <button key={tab.id} onClick={()=>setActiveTab(tab.id)} style={{ display:"flex", alignItems:"center", gap:"6px", padding:"8px 14px", borderRadius:"10px 10px 0 0", border:"none", cursor:"pointer", fontSize:"13px", fontWeight:active?600:500, fontFamily:"inherit", transition:"all 0.15s", background:active?"#F5F5F7":"transparent", color, borderBottom:active?"2px solid #0071E3":"2px solid transparent" }}>
+                    {tab.icon(color)}{tab.label}
+                  </button>
+                );})}
               </div>
             )}
 
             {/* Conteúdo */}
             <div style={{ flex:1, overflow:"hidden", display:"flex", flexDirection:"column", paddingBottom:isMobile?`${MOBILE_NAV_H}px`:"0" }}>
-
-              {/* Chat */}
               {activeTab==="chat"&&(
                 <>
                   <div style={{ flex:1, overflowY:"auto", padding:isMobile?"14px":"24px 28px", display:"flex", flexDirection:"column", gap:"14px" }}>
@@ -675,31 +856,25 @@ export default function ChicoDashboard() {
                   </div>
                 </>
               )}
-
               {activeTab==="flashcards"&&<div style={{ flex:1, overflow:"hidden" }}><FlashcardsTab cards={cards} audio={audio}/></div>}
               {activeTab==="progresso" &&<div style={{ flex:1, overflow:"hidden" }}><ProgressoTab cards={cards}/></div>}
               {activeTab==="imersao"   &&<div style={{ flex:1, overflow:"hidden" }}><ImersaoTab profile={profile}/></div>}
               {activeTab==="diario"    &&<div style={{ flex:1, overflow:"hidden" }}><DiarioTab profile={profile}/></div>}
+              {activeTab==="perfil"    &&<div style={{ flex:1, overflow:"hidden" }}><PerfilTab profile={profile} onProfileUpdate={setProfile}/></div>}
             </div>
           </main>
         </div>
 
-        {/* Bottom Nav — mobile */}
+        {/* Bottom Nav mobile */}
         {isMobile&&(
           <nav style={{ position:"fixed", bottom:0, left:0, right:0, height:MOBILE_NAV_H, background:"rgba(255,255,255,0.96)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(0,0,0,0.08)", display:"flex", alignItems:"center", zIndex:200, paddingBottom:"env(safe-area-inset-bottom)" }}>
-            {navTabs.map(tab=>{
-              const active = activeTab===tab.id;
-              const color  = active?"#0071E3":"#86868B";
-              return (
-                <button key={tab.id} onClick={()=>{setActiveTab(tab.id);setSidebarOpen(false);}}
-                  style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", padding:"6px 0", border:"none", background:"transparent", cursor:"pointer", fontFamily:"inherit", flex:1 }}>
-                  {tab.icon(color)}
-                  <span style={{ fontSize:"9px", fontWeight:active?600:500, color, transition:"color 0.15s" }}>{tab.label}</span>
-                </button>
-              );
-            })}
-            <button onClick={()=>setSidebarOpen(v=>!v)}
-              style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", padding:"6px 0", border:"none", background:"transparent", cursor:"pointer", fontFamily:"inherit", flex:1 }}>
+            {navTabs.map(tab=>{ const active=activeTab===tab.id; const color=active?"#0071E3":"#86868B"; return (
+              <button key={tab.id} onClick={()=>{setActiveTab(tab.id);setSidebarOpen(false);}} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", padding:"6px 0", border:"none", background:"transparent", cursor:"pointer", fontFamily:"inherit", flex:1 }}>
+                {tab.icon(color)}
+                <span style={{ fontSize:"9px", fontWeight:active?600:500, color }}>{tab.label}</span>
+              </button>
+            );})}
+            <button onClick={()=>setSidebarOpen(v=>!v)} style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", padding:"6px 0", border:"none", background:"transparent", cursor:"pointer", fontFamily:"inherit", flex:1 }}>
               <Icon.Library c={sidebarOpen?"#0071E3":"#86868B"}/>
               <span style={{ fontSize:"9px", fontWeight:sidebarOpen?600:500, color:sidebarOpen?"#0071E3":"#86868B" }}>Nexos</span>
             </button>
