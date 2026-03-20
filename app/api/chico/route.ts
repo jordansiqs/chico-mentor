@@ -14,26 +14,30 @@ export interface ChicoRequest {
 
 export interface ChicoCard {
   tema_gerador: string;
+  titulo_card: string;
   tronco: "românico" | "germânico";
   aula_chico: string;
 
   lang_1_nome: string;
   lang_1_txt: string;
   lang_1_fon: string;
+  lang_1_exemplo: string;
   lang_1_bcp47: string;
 
   lang_2_nome: string;
   lang_2_txt: string;
   lang_2_fon: string;
+  lang_2_exemplo: string;
   lang_2_bcp47: string;
 
   lang_3_nome: string;
   lang_3_txt: string;
   lang_3_fon: string;
+  lang_3_exemplo: string;
   lang_3_bcp47: string;
 }
 
-// ── Configuração dos Troncos ──────────────────────────────────────────────────
+// ── Troncos ───────────────────────────────────────────────────────────────────
 
 const TRONCOS = {
   românico: {
@@ -64,58 +68,51 @@ function buildSystemPrompt(
   const linguas       = troncoInfo.linguas.map(l => l.nome).join(", ");
   const interessesStr = interesses.length > 0 ? interesses.join(", ") : "cotidiano";
 
-  return `Você é o Chico — um linguista experiente que ensina como conversa, não como aula.
+  return `Você é o Chico — um linguista que ensina como conversa: direto, humano, sem enrolar.
 
-## Sua personalidade
-- Fala de forma direta, humana e natural. Como um amigo culto, não um professor.
-- Respostas curtas quando a pergunta é simples. Nunca enrola.
-- Só aprofunda quando a pergunta pede profundidade.
-- Não usa analogias forçadas. Se uma analogia surgir naturalmente, ótima. Se não, dispensa.
-- Não faz introduções do tipo "Que ótima pergunta!" ou "Vamos explorar juntos...". Vai direto ao ponto.
+## Tom e estilo
+- Respostas curtas e densas. Nada de introduções ou fechamentos.
+- Vai direto ao que foi perguntado.
+- Quando uma conexão com os interesses do aluno (${interessesStr}) surgir naturalmente, use. Nunca force.
+- Mencione raízes linguísticas só quando iluminarem o entendimento — uma frase, não um parágrafo.
 
-## Sua pedagogia (aplicada com leveza, não como receita)
-Você conhece Paulo Freire e Frederick Bodmer. Mas não exibe isso — incorpora.
+## O que você SEMPRE faz em cada resposta
+1. **Explica o significado** da palavra ou expressão em português claro (1-2 frases).
+2. **Mostra o tempo verbal e por quê**: se a tradução envolve um verbo, explique o tempo usado (presente, passado, imperativo, etc.) e quando usá-lo. Se não for verbo, explique a classe gramatical rapidamente.
+3. **Extrai a palavra-chave principal**: identifique a palavra ou expressão central da pergunta — essa será o título do card (máximo 3 palavras).
 
-- **Freire na prática**: quando fizer sentido, o exemplo vem do universo do aluno (${interessesStr}). Mas só quando encaixar naturalmente. Nunca force.
-- **Bodmer na prática**: quando uma raiz linguística iluminar o entendimento, mencione. Uma frase, não um parágrafo.
+## Tronco: ${troncoInfo.label} | Línguas: ${linguas}
 
-## O que você sempre faz
-Responda à dúvida do usuário em português claro, depois apresente as traduções.
-Se a pergunta for sobre uma palavra ou expressão, explique o sentido com brevidade antes das traduções.
-Se for uma pergunta cultural ou gramatical, responda primeiro em português, depois mostre como isso se manifesta nas outras línguas.
-
-## Tronco atual: ${troncoInfo.label}
-## Línguas: ${linguas} (sempre comparando com o Português como base)
-
-## Formato obrigatório da resposta
-Responda SOMENTE com JSON puro, sem markdown, sem texto fora do JSON:
-
+## Formato obrigatório — JSON puro, sem markdown
 {
-  "aula_chico": "Sua resposta em PT-BR. Direta, humana, no máximo 3 parágrafos curtos. Sem floreios. Vai ao ponto, ensina o que foi perguntado, e só usa contexto dos interesses do aluno se encaixar naturalmente.",
+  "titulo_card": "A palavra ou expressão central. Máximo 3 palavras. Ex: 'Saudade', 'Bom dia', 'Correr'",
+  "aula_chico": "Explicação em PT-BR. Máximo 2 parágrafos curtos. Inclui: o que significa, o tempo verbal (se aplicável) e quando usar. Direto, sem floreios.",
   "lang_1": {
     "txt": "Tradução para ${troncoInfo.linguas[0].nome}",
-    "fon": "Fonética simplificada para brasileiros. Ex: [es-PA-nhol]"
+    "fon": "Fonética simplificada para brasileiros. Ex: [a-MI-go]",
+    "exemplo": "Uma frase curta de uso real em ${troncoInfo.linguas[0].nome}. Contextualizada no cotidiano ou em ${interessesStr} se encaixar."
   },
   "lang_2": {
     "txt": "Tradução para ${troncoInfo.linguas[1].nome}",
-    "fon": "Fonética simplificada"
+    "fon": "Fonética simplificada",
+    "exemplo": "Uma frase curta de uso real em ${troncoInfo.linguas[1].nome}."
   },
   "lang_3": {
     "txt": "Tradução para ${troncoInfo.linguas[2].nome}",
-    "fon": "Fonética simplificada"
+    "fon": "Fonética simplificada",
+    "exemplo": "Uma frase curta de uso real em ${troncoInfo.linguas[2].nome}."
   }
 }
 
 ## Regras absolutas
 - JSON puro. Nada fora dele.
-- aula_chico: máximo 3 parágrafos curtos. Prefira 1 ou 2 quando possível.
-- Sem saudações, sem "vamos lá", sem encerramento do tipo "espero ter ajudado".
-- Se a pergunta for simples, a resposta é simples. Não infle.
-- Analogias: use quando surgir naturalmente. Nunca invente uma só para parecer didático.
-- Tom: inteligente, direto, caloroso. Como uma boa conversa entre pessoas que sabem o que fazem.`;
+- titulo_card: máximo 3 palavras, sem pontuação final.
+- aula_chico: máximo 2 parágrafos. Sem saudações, sem "espero ter ajudado".
+- exemplo: frase real e natural, não uma tradução literal da palavra. Mostra como se usa na prática.
+- Se a pergunta for simples, a resposta é simples. Não infle.`;
 }
 
-// ── Helper Supabase ───────────────────────────────────────────────────────────
+// ── Supabase Helper ───────────────────────────────────────────────────────────
 
 async function createSupabaseServer() {
   const cookieStore = await cookies();
@@ -141,28 +138,20 @@ export async function POST(request: NextRequest) {
   try {
     const supabase = await createSupabaseServer();
     const { data: { session } } = await supabase.auth.getSession();
-
-    if (!session) {
-      return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
-    }
+    if (!session) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
 
     const body: ChicoRequest = await request.json();
     const { tema_gerador, tronco, interesses } = body;
 
-    if (!tema_gerador?.trim()) {
-      return NextResponse.json({ error: "O tema não pode estar vazio." }, { status: 400 });
-    }
-
-    if (!["românico", "germânico"].includes(tronco)) {
-      return NextResponse.json({ error: "Tronco inválido." }, { status: 400 });
-    }
+    if (!tema_gerador?.trim()) return NextResponse.json({ error: "Tema vazio." }, { status: 400 });
+    if (!["românico", "germânico"].includes(tronco)) return NextResponse.json({ error: "Tronco inválido." }, { status: 400 });
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       temperature: 0.6,
-      max_tokens: 1024,
+      max_tokens: 1200,
       messages: [
         { role: "system", content: buildSystemPrompt(tronco, interesses || []) },
         { role: "user",   content: tema_gerador },
@@ -172,10 +161,11 @@ export async function POST(request: NextRequest) {
     const rawContent = completion.choices[0]?.message?.content ?? "";
 
     let parsed: {
+      titulo_card: string;
       aula_chico: string;
-      lang_1: { txt: string; fon: string };
-      lang_2: { txt: string; fon: string };
-      lang_3: { txt: string; fon: string };
+      lang_1: { txt: string; fon: string; exemplo: string };
+      lang_2: { txt: string; fon: string; exemplo: string };
+      lang_3: { txt: string; fon: string; exemplo: string };
     };
 
     try {
@@ -186,33 +176,34 @@ export async function POST(request: NextRequest) {
         .trim();
       parsed = JSON.parse(cleaned);
     } catch {
-      console.error("Falha ao parsear JSON:", rawContent);
-      return NextResponse.json(
-        { error: "Erro ao processar a resposta. Tente novamente.", raw: rawContent },
-        { status: 500 }
-      );
+      console.error("Parse error:", rawContent);
+      return NextResponse.json({ error: "Erro ao processar resposta. Tente novamente." }, { status: 500 });
     }
 
     const troncoInfo = TRONCOS[tronco];
     const card: ChicoCard = {
       tema_gerador,
+      titulo_card:  parsed.titulo_card ?? tema_gerador.slice(0, 40),
       tronco,
-      aula_chico: parsed.aula_chico,
+      aula_chico:   parsed.aula_chico,
 
-      lang_1_nome:  troncoInfo.linguas[0].nome,
-      lang_1_txt:   parsed.lang_1.txt,
-      lang_1_fon:   parsed.lang_1.fon,
-      lang_1_bcp47: troncoInfo.linguas[0].bcp47,
+      lang_1_nome:    troncoInfo.linguas[0].nome,
+      lang_1_txt:     parsed.lang_1.txt,
+      lang_1_fon:     parsed.lang_1.fon,
+      lang_1_exemplo: parsed.lang_1.exemplo,
+      lang_1_bcp47:   troncoInfo.linguas[0].bcp47,
 
-      lang_2_nome:  troncoInfo.linguas[1].nome,
-      lang_2_txt:   parsed.lang_2.txt,
-      lang_2_fon:   parsed.lang_2.fon,
-      lang_2_bcp47: troncoInfo.linguas[1].bcp47,
+      lang_2_nome:    troncoInfo.linguas[1].nome,
+      lang_2_txt:     parsed.lang_2.txt,
+      lang_2_fon:     parsed.lang_2.fon,
+      lang_2_exemplo: parsed.lang_2.exemplo,
+      lang_2_bcp47:   troncoInfo.linguas[1].bcp47,
 
-      lang_3_nome:  troncoInfo.linguas[2].nome,
-      lang_3_txt:   parsed.lang_3.txt,
-      lang_3_fon:   parsed.lang_3.fon,
-      lang_3_bcp47: troncoInfo.linguas[2].bcp47,
+      lang_3_nome:    troncoInfo.linguas[2].nome,
+      lang_3_txt:     parsed.lang_3.txt,
+      lang_3_fon:     parsed.lang_3.fon,
+      lang_3_exemplo: parsed.lang_3.exemplo,
+      lang_3_bcp47:   troncoInfo.linguas[2].bcp47,
     };
 
     const { data: savedCard, error: dbError } = await supabase
@@ -221,15 +212,13 @@ export async function POST(request: NextRequest) {
       .select()
       .single();
 
-    if (dbError) {
-      return NextResponse.json({ card, saved: false, db_error: dbError.message });
-    }
+    if (dbError) return NextResponse.json({ card, saved: false, db_error: dbError.message });
 
     return NextResponse.json({ card: savedCard, saved: true }, { status: 201 });
 
   } catch (err) {
-    console.error("Erro na rota /api/chico:", err);
-    return NextResponse.json({ error: "Erro interno do servidor." }, { status: 500 });
+    console.error("Erro /api/chico:", err);
+    return NextResponse.json({ error: "Erro interno." }, { status: 500 });
   }
 }
 
@@ -239,10 +228,7 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createSupabaseServer();
     const { data: { session } } = await supabase.auth.getSession();
-
-    if (!session) {
-      return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
-    }
+    if (!session) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
 
     const { searchParams } = new URL(request.url);
     const tronco = searchParams.get("tronco");
@@ -261,14 +247,38 @@ export async function GET(request: NextRequest) {
     }
 
     const { data, error } = await query;
-
-    if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     return NextResponse.json({ cards: data });
   } catch (err) {
-    console.error("Erro ao buscar cards:", err);
+    console.error("Erro GET cards:", err);
+    return NextResponse.json({ error: "Erro interno." }, { status: 500 });
+  }
+}
+
+// ── DELETE ────────────────────────────────────────────────────────────────────
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const supabase = await createSupabaseServer();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+
+    const { searchParams } = new URL(request.url);
+    const id = searchParams.get("id");
+    if (!id) return NextResponse.json({ error: "ID obrigatório." }, { status: 400 });
+
+    const { error } = await supabase
+      .from("mentoria_cards")
+      .delete()
+      .eq("id", id)
+      .eq("user_id", session.user.id);
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    return NextResponse.json({ deleted: true });
+  } catch (err) {
+    console.error("Erro DELETE card:", err);
     return NextResponse.json({ error: "Erro interno." }, { status: 500 });
   }
 }
