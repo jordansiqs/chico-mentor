@@ -14,26 +14,26 @@ export interface ChicoRequest {
 
 export interface ChicoCard {
   tema_gerador: string;
-  titulo_card: string;
+  titulo_card?: string;
   tronco: "românico" | "germânico";
   aula_chico: string;
 
   lang_1_nome: string;
   lang_1_txt: string;
   lang_1_fon: string;
-  lang_1_exemplo: string;
+  lang_1_exemplo?: string;
   lang_1_bcp47: string;
 
   lang_2_nome: string;
   lang_2_txt: string;
   lang_2_fon: string;
-  lang_2_exemplo: string;
+  lang_2_exemplo?: string;
   lang_2_bcp47: string;
 
   lang_3_nome: string;
   lang_3_txt: string;
   lang_3_fon: string;
-  lang_3_exemplo: string;
+  lang_3_exemplo?: string;
   lang_3_bcp47: string;
 }
 
@@ -183,9 +183,9 @@ export async function POST(request: NextRequest) {
     const troncoInfo = TRONCOS[tronco];
     const card: ChicoCard = {
       tema_gerador,
-      titulo_card:  parsed.titulo_card ?? tema_gerador.slice(0, 40),
+      titulo_card:    parsed.titulo_card ?? tema_gerador.slice(0, 40),
       tronco,
-      aula_chico:   parsed.aula_chico,
+      aula_chico:     parsed.aula_chico,
 
       lang_1_nome:    troncoInfo.linguas[0].nome,
       lang_1_txt:     parsed.lang_1.txt,
