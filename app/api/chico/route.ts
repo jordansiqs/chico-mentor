@@ -127,7 +127,7 @@ Nunca dê tudo de uma vez.
 
 ## FORMATO DE SAÍDA — CRÍTICO
 Responda SOMENTE com o JSON abaixo. Nenhum texto antes ou depois.
-Não use markdown. Não use ```json. Não escreva explicações fora do JSON.
+Não use markdown. Não use blocos de código. Não escreva nada fora do JSON.
 A primeira linha deve ser { e a última linha deve ser }
 
 {
