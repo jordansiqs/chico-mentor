@@ -1164,7 +1164,7 @@ export default function ChicoDashboard() {
       fetch("/api/chico", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ acao:"sugestao_proativa", tronco:profile.tronco, interesses:profile.interesses??[], nexos:cards.slice(0,10).map(c=>c.titulo_card||c.tema_gerador), memoria }) })
         .then(r=>r.json()).then(d=>{ if(d.sugestao) setSugestao(d.sugestao); }).catch(()=>{});
 
-      let welcomeContent = `Bom dia, ${profile.display_name?.split(" ")[0]??""}.`}. Hoje é ${hoje}.\n\n${desafio}`;
+      let welcomeContent = `Bom dia, ${profile.display_name?.split(" ")[0]??""}. Hoje é ${hoje}.\n\n${desafio}`;
       if (paraRevisar > 0) welcomeContent += `\n\nTem ${paraRevisar} card${paraRevisar>1?"s":""} aguardando revisão. Vale abrir os Flashcards.`;
       setMessages([{ id:"welcome", role:"chico", content:welcomeContent }]);
       chatHistoryRef.current = [{ role:"assistant", content:welcomeContent }];
