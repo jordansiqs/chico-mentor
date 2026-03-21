@@ -36,7 +36,15 @@ interface UserProfile {
   interesses: string[];
 }
 
-type MainTab       = "chat" | "flashcards" | "progresso" | "imersao" | "diario" | "perfil";
+interface ChicoMemoria {
+  resumo?: string;
+  pontos_fortes?: string[];
+  pontos_fracos?: string[];
+  estilo?: string;
+  ultima_sessao?: string;
+}
+
+type MainTab       = "chat" | "flashcards" | "progresso" | "viagem" | "musica" | "perfil";
 type SidebarFilter = "todos" | "românico" | "germânico";
 
 function createSupabase() {
@@ -694,53 +702,170 @@ function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
 
 // ── Imersão ───────────────────────────────────────────────────────────────────
 
-function ImersaoTab({ profile }: { profile: UserProfile | null }) {
-  const [texto,setTexto]=useState(""),[resultado,setResultado]=useState<string|null>(null),[loading,setLoading]=useState(false),[copied,setCopied]=useState(false);
-  async function handle(){if(!texto.trim()||!profile)return;setLoading(true);setResultado(null);try{const res=await fetch("/api/chico",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tema_gerador:`MODO IMERSÃO — Traduza e explique este texto para as línguas do ${profile.tronco==="românico"?"Tear Românico":"Tear Germânico"}. Destaque cognatos e raízes. Texto:\n\n${texto}`,tronco:profile.tronco,interesses:profile.interesses??[]})});const data=await res.json();setResultado(res.ok?(data.card?.aula_chico??""):"Erro.");}catch{setResultado("Erro.");}setLoading(false);}
-  return(<div style={{display:"flex",flexDirection:"column",height:"100%",padding:"20px 16px",gap:"14px",overflowY:"auto"}}>
-    <div><h2 style={{margin:"0 0 4px",fontSize:"17px",fontWeight:700,color:"#1D1D1F"}}>Modo Imersão</h2><p style={{margin:0,fontSize:"13px",color:"#86868B",lineHeight:1.5}}>Cole qualquer texto. O Chico traduz e explica as raízes linguísticas.</p></div>
-    <textarea value={texto} onChange={e=>setTexto(e.target.value)} placeholder="Cole aqui um texto, notícia, trecho de livro..." rows={6} style={{width:"100%",padding:"13px",borderRadius:"14px",border:"1.5px solid rgba(0,0,0,0.10)",fontSize:"14px",lineHeight:"1.6",color:"#1D1D1F",fontFamily:"inherit",background:"#fff",resize:"vertical" as const,outline:"none",boxSizing:"border-box" as const}} onFocus={e=>(e.target.style.borderColor="#0071E3")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
-    <button onClick={handle} disabled={!texto.trim()||loading} style={{padding:"13px",borderRadius:"12px",border:"none",background:!texto.trim()||loading?"rgba(0,0,0,0.08)":"linear-gradient(135deg,#0071E3,#0077ED)",color:!texto.trim()||loading?"#86868B":"#fff",fontSize:"14px",fontWeight:600,cursor:!texto.trim()||loading?"not-allowed":"pointer",fontFamily:"inherit"}}>{loading?"Processando...":"Mergulhar no texto"}</button>
-    {resultado&&<div style={{background:"#fff",borderRadius:"16px",padding:"18px",boxShadow:"0 1px 4px rgba(0,0,0,0.06)"}}>
-      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:"10px"}}>
-        <span style={{fontSize:"12px",fontWeight:600,color:"#0071E3"}}>Análise do Chico</span>
-        <button onClick={()=>{navigator.clipboard.writeText(resultado);setCopied(true);setTimeout(()=>setCopied(false),2000);}} style={{display:"flex",alignItems:"center",gap:"5px",padding:"4px 10px",borderRadius:"8px",border:"1px solid rgba(0,0,0,0.10)",background:copied?"rgba(52,199,89,0.08)":"transparent",color:copied?"#34C759":"#86868B",fontSize:"12px",cursor:"pointer",fontFamily:"inherit"}}><Icon.Copy/>{copied?"Copiado!":"Copiar"}</button>
+// ── Viagem ────────────────────────────────────────────────────────────────────
+
+function ViagemTab({ profile, audio }: { profile: UserProfile | null; audio: ReturnType<typeof useAudio> }) {
+  const [destino, setDestino]     = useState("");
+  const [guia, setGuia]           = useState<any>(null);
+  const [troncoInfo, setTroncoInfo] = useState<any[]>([]);
+  const [loading, setLoading]     = useState(false);
+
+  async function handleGerar() {
+    if (!destino.trim() || !profile) return;
+    setLoading(true); setGuia(null);
+    try {
+      const res  = await fetch("/api/chico", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ acao:"viagem", tronco:profile.tronco, destino:destino.trim() }) });
+      const data = await res.json();
+      if (res.ok) { setGuia(data.viagem); setTroncoInfo(data.troncoInfo||[]); }
+    } catch {}
+    setLoading(false);
+  }
+
+  const langNomes = troncoInfo.map((l:any) => l.nome);
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", height:"100%", padding:"20px 16px", gap:"14px", overflowY:"auto" }}>
+      <div>
+        <h2 style={{ margin:"0 0 4px", fontSize:"17px", fontWeight:700, color:"#1D1D1F" }}>Modo Viagem</h2>
+        <p style={{ margin:0, fontSize:"13px", color:"#86868B", lineHeight:1.5 }}>Digite um destino e o Chico cria um guia de sobrevivência linguística para a sua viagem.</p>
       </div>
-      <p style={{margin:0,fontSize:"13px",lineHeight:"1.7",color:"#3A3A3C",whiteSpace:"pre-wrap"}}>{resultado}</p>
-    </div>}
-  </div>);
+
+      <div style={{ display:"flex", gap:"8px" }}>
+        <input value={destino} onChange={e=>setDestino(e.target.value)} placeholder="Ex: Buenos Aires, Paris, Roma..."
+          style={{ flex:1, padding:"12px 14px", borderRadius:"12px", border:"1.5px solid rgba(0,0,0,0.10)", fontSize:"14px", color:"#1D1D1F", fontFamily:"inherit", background:"#fff", outline:"none" }}
+          onFocus={e=>(e.target.style.borderColor="#0071E3")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}
+          onKeyDown={e=>e.key==="Enter"&&handleGerar()}/>
+        <button onClick={handleGerar} disabled={!destino.trim()||loading}
+          style={{ padding:"12px 20px", borderRadius:"12px", border:"none", background:!destino.trim()||loading?"rgba(0,0,0,0.08)":"linear-gradient(135deg,#0071E3,#0077ED)", color:!destino.trim()||loading?"#86868B":"#fff", fontSize:"14px", fontWeight:600, cursor:!destino.trim()||loading?"not-allowed":"pointer", fontFamily:"inherit", whiteSpace:"nowrap" as const }}>
+          {loading?"Gerando...":"Gerar guia"}
+        </button>
+      </div>
+
+      {guia && (
+        <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
+          {/* Dica cultural */}
+          <div style={{ padding:"14px 16px", borderRadius:"14px", background:"rgba(0,113,227,0.06)", border:"1px solid rgba(0,113,227,0.15)" }}>
+            <div style={{ fontSize:"10px", fontWeight:700, color:"#0071E3", textTransform:"uppercase" as const, letterSpacing:"0.05em", marginBottom:"5px" }}>Dica cultural</div>
+            <p style={{ margin:0, fontSize:"13px", color:"#1D1D1F", lineHeight:1.6 }}>{guia.dica_cultural}</p>
+          </div>
+
+          {/* Palavras essenciais */}
+          <h3 style={{ margin:"4px 0 0", fontSize:"14px", fontWeight:700, color:"#1D1D1F" }}>Palavras essenciais para {guia.destino}</h3>
+          {(guia.palavras||[]).map((p: any, i: number) => (
+            <div key={i} style={{ background:"#fff", borderRadius:"14px", padding:"14px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"10px" }}>
+                <div>
+                  <div style={{ fontSize:"15px", fontWeight:700, color:"#1D1D1F" }}>{p.pt}</div>
+                  <div style={{ fontSize:"11px", color:"#86868B", marginTop:"2px" }}>{p.contexto}</div>
+                </div>
+              </div>
+              <div style={{ display:"flex", flexDirection:"column", gap:"7px" }}>
+                {[
+                  { txt:p.lang_1, fon:p.fon_1, nome:langNomes[0]||"Língua 1", bcp47:troncoInfo[0]?.bcp47||"es-ES" },
+                  { txt:p.lang_2, fon:p.fon_2, nome:langNomes[1]||"Língua 2", bcp47:troncoInfo[1]?.bcp47||"fr-FR" },
+                  { txt:p.lang_3, fon:p.fon_3, nome:langNomes[2]||"Língua 3", bcp47:troncoInfo[2]?.bcp47||"it-IT" },
+                ].map((l, li) => {
+                  const vkey = "v-" + i + "-" + li + l.txt.slice(0,5);
+                  const isPlay = audio.isSpeaking && audio.speakingKey === vkey;
+                  return (
+                    <button key={li} onClick={() => isPlay ? audio.stopSpeaking() : audio.speak(l.txt, l.bcp47, vkey)}
+                      style={{ display:"flex", alignItems:"center", gap:"10px", padding:"8px 12px", borderRadius:"10px", background:isPlay?"rgba(0,113,227,0.06)":"#F5F5F7", border:isPlay?"1.5px solid rgba(0,113,227,0.20)":"1.5px solid transparent", cursor:"pointer", textAlign:"left" as const, fontFamily:"inherit", transition:"all 0.2s" }}>
+                      <div style={{ width:28, height:28, borderRadius:"50%", background:isPlay?"#0071E3":"rgba(0,113,227,0.12)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:isPlay?"#fff":"#0071E3" }}>
+                        {isPlay ? <Icon.Wave/> : <Icon.Volume/>}
+                      </div>
+                      <div>
+                        <div style={{ fontSize:"11px", fontWeight:600, color:isPlay?"#0071E3":"#86868B", textTransform:"uppercase" as const, letterSpacing:"0.04em" }}>{l.nome}</div>
+                        <div style={{ fontSize:"14px", fontWeight:600, color:isPlay?"#0071E3":"#1D1D1F" }}>{l.txt}</div>
+                        <div style={{ fontSize:"11px", color:"#86868B", fontStyle:"italic" }}>{l.fon}</div>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
 }
 
-// ── Diário ────────────────────────────────────────────────────────────────────
+// ── Música ────────────────────────────────────────────────────────────────────
 
-function DiarioTab({ profile }: { profile: UserProfile | null }) {
-  const supabase=createSupabase();
-  const [entrada,setEntrada]=useState(""),[entradas,setEntradas]=useState<{id:string;texto_pt:string;texto_chico:string;criado_em:string}[]>([]),[loading,setLoading]=useState(false),[fetching,setFetching]=useState(true);
-  useEffect(()=>{async function load(){const{data:{user}}=await supabase.auth.getUser();if(!user)return;const{data}=await supabase.from("mentoria_cards").select("id,tema_gerador,aula_chico,criado_em").eq("user_id",user.id).like("tema_gerador","DIÁRIO:%").order("criado_em",{ascending:false}).limit(20);if(data)setEntradas(data.map(d=>({id:d.id,texto_pt:d.tema_gerador.replace("DIÁRIO: ",""),texto_chico:d.aula_chico,criado_em:d.criado_em})));setFetching(false);}load();},[]);
-  async function handleSave(){if(!entrada.trim()||!profile)return;setLoading(true);try{const res=await fetch("/api/chico",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({tema_gerador:`DIÁRIO: ${entrada}`,tronco:profile.tronco,interesses:profile.interesses??[]})});const data=await res.json();if(res.ok){setEntradas(prev=>[{id:data.card.id,texto_pt:entrada,texto_chico:data.card.aula_chico,criado_em:data.card.criado_em},...prev]);setEntrada("");}}catch{}setLoading(false);}
-  return(<div style={{display:"flex",flexDirection:"column",height:"100%",overflowY:"auto"}}>
-    <div style={{padding:"20px 16px 0",flexShrink:0}}>
-      <h2 style={{margin:"0 0 4px",fontSize:"17px",fontWeight:700,color:"#1D1D1F"}}>Diário Bilíngue</h2>
-      <p style={{margin:"0 0 12px",fontSize:"13px",color:"#86868B",lineHeight:1.5}}>Escreva sobre o seu dia. O Chico enriquece com vocabulário das línguas que você aprende.</p>
-      <textarea value={entrada} onChange={e=>setEntrada(e.target.value)} placeholder={`Conte algo sobre o seu dia, ${profile?.display_name?.split(" ")[0]??""}...`} rows={4} style={{width:"100%",padding:"13px",borderRadius:"14px",border:"1.5px solid rgba(0,0,0,0.10)",fontSize:"14px",lineHeight:"1.6",color:"#1D1D1F",fontFamily:"inherit",background:"#fff",resize:"vertical" as const,outline:"none",boxSizing:"border-box" as const,marginBottom:"10px"}} onFocus={e=>(e.target.style.borderColor="#0071E3")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
-      <button onClick={handleSave} disabled={!entrada.trim()||loading} style={{width:"100%",padding:"12px",borderRadius:"12px",border:"none",background:!entrada.trim()||loading?"rgba(0,0,0,0.08)":"linear-gradient(135deg,#0071E3,#0077ED)",color:!entrada.trim()||loading?"#86868B":"#fff",fontSize:"14px",fontWeight:600,cursor:!entrada.trim()||loading?"not-allowed":"pointer",fontFamily:"inherit",marginBottom:"18px"}}>{loading?"Salvando...":"Salvar no diário"}</button>
+function MusicaTab({ profile }: { profile: UserProfile | null }) {
+  const [letra, setLetra]         = useState("");
+  const [artista, setArtista]     = useState("");
+  const [resultado, setResultado] = useState<string | null>(null);
+  const [loading, setLoading]     = useState(false);
+  const [copied, setCopied]       = useState(false);
+
+  async function handleAnalisar() {
+    if (!letra.trim() || !profile) return;
+    setLoading(true); setResultado(null);
+    const tema = artista.trim()
+      ? `MODO MÚSICA — Analise estes versos de ${artista} linguisticamente. Para cada verso ou expressão importante: traduza para as línguas do tronco, destaque cognatos e raízes, explique o que a escolha de palavras revela sobre a língua e cultura. Trate como texto literário.
+
+Versos:
+${letra}`
+      : `MODO MÚSICA — Analise estes versos linguisticamente. Para cada verso ou expressão importante: traduza para as línguas do tronco, destaque cognatos e raízes, explique o que a escolha de palavras revela sobre a língua e cultura.
+
+Versos:
+${letra}`;
+    try {
+      const res  = await fetch("/api/chico", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ tema_gerador:tema, tronco:profile.tronco, interesses:profile.interesses??[], modo_especial:"musica" }) });
+      const data = await res.json();
+      setResultado(res.ok ? (data.card?.aula_chico ?? "") : "Erro ao analisar. Tente novamente.");
+    } catch { setResultado("Erro de conexão."); }
+    setLoading(false);
+  }
+
+  return (
+    <div style={{ display:"flex", flexDirection:"column", height:"100%", padding:"20px 16px", gap:"14px", overflowY:"auto" }}>
+      <div>
+        <h2 style={{ margin:"0 0 4px", fontSize:"17px", fontWeight:700, color:"#1D1D1F" }}>Modo Música</h2>
+        <p style={{ margin:0, fontSize:"13px", color:"#86868B", lineHeight:1.5 }}>Cole versos de uma música. O Chico analisa linguisticamente, traduz e revela as raízes de cada palavra.</p>
+      </div>
+
+      <input value={artista} onChange={e=>setArtista(e.target.value)} placeholder="Artista ou banda (opcional)"
+        style={{ width:"100%", padding:"10px 12px", borderRadius:"10px", border:"1.5px solid rgba(0,0,0,0.10)", fontSize:"14px", color:"#1D1D1F", fontFamily:"inherit", background:"#fff", outline:"none", boxSizing:"border-box" as const }}
+        onFocus={e=>(e.target.style.borderColor="#0071E3")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
+
+      <textarea value={letra} onChange={e=>setLetra(e.target.value)}
+        placeholder={"Cole aqui os versos da música...
+
+Ex:
+La vie en rose
+Des yeux qui font baisser les miens"}
+        rows={7}
+        style={{ width:"100%", padding:"13px", borderRadius:"14px", border:"1.5px solid rgba(0,0,0,0.10)", fontSize:"14px", lineHeight:"1.7", color:"#1D1D1F", fontFamily:"inherit", background:"#fff", resize:"vertical" as const, outline:"none", boxSizing:"border-box" as const }}
+        onFocus={e=>(e.target.style.borderColor="#0071E3")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
+
+      <button onClick={handleAnalisar} disabled={!letra.trim()||loading}
+        style={{ padding:"13px", borderRadius:"12px", border:"none", background:!letra.trim()||loading?"rgba(0,0,0,0.08)":"linear-gradient(135deg,#0071E3,#0077ED)", color:!letra.trim()||loading?"#86868B":"#fff", fontSize:"14px", fontWeight:600, cursor:!letra.trim()||loading?"not-allowed":"pointer", fontFamily:"inherit", boxShadow:!letra.trim()||loading?"none":"0 2px 10px rgba(0,113,227,0.25)" }}>
+        {loading ? "O Chico está analisando..." : "Analisar com o Chico"}
+      </button>
+
+      {resultado && (
+        <div style={{ background:"#fff", borderRadius:"16px", padding:"18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", border:"1px solid rgba(0,0,0,0.05)" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"12px" }}>
+            <div>
+              <div style={{ fontSize:"12px", fontWeight:700, color:"#0071E3" }}>Análise do Chico</div>
+              {artista && <div style={{ fontSize:"11px", color:"#86868B", marginTop:"1px" }}>{artista}</div>}
+            </div>
+            <button onClick={()=>{ navigator.clipboard.writeText(resultado); setCopied(true); setTimeout(()=>setCopied(false),2000); }}
+              style={{ display:"flex", alignItems:"center", gap:"5px", padding:"4px 10px", borderRadius:"8px", border:"1px solid rgba(0,0,0,0.10)", background:copied?"rgba(52,199,89,0.08)":"transparent", color:copied?"#34C759":"#86868B", fontSize:"12px", cursor:"pointer", fontFamily:"inherit" }}>
+              <Icon.Copy/>{copied?"Copiado!":"Copiar"}
+            </button>
+          </div>
+          <p style={{ margin:0, fontSize:"13px", lineHeight:"1.75", color:"#3A3A3C", whiteSpace:"pre-wrap" }}>{resultado}</p>
+        </div>
+      )}
     </div>
-    <div style={{flex:1,padding:"0 16px 24px",display:"flex",flexDirection:"column",gap:"10px"}}>
-      {fetching?Array.from({length:2}).map((_,i)=><div key={i} style={{height:100,borderRadius:"14px",background:"#e8e8e8"}}/>)
-        :entradas.length===0?<div style={{display:"flex",flexDirection:"column",alignItems:"center",padding:"28px 16px",textAlign:"center",gap:"10px"}}><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#AEAEB2" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><p style={{margin:0,fontSize:"13px",color:"#86868B"}}>Diário vazio.</p></div>
-        :entradas.map(e=><div key={e.id} style={{background:"#fff",borderRadius:"14px",padding:"14px",boxShadow:"0 1px 4px rgba(0,0,0,0.06)"}}>
-          <div style={{display:"flex",justifyContent:"space-between",marginBottom:"7px"}}><span style={{fontSize:"10px",fontWeight:600,color:"#0071E3",textTransform:"uppercase" as const,letterSpacing:"0.04em"}}>Sua entrada</span><span style={{fontSize:"10px",color:"#86868B"}}>{new Date(e.criado_em).toLocaleDateString("pt-BR",{day:"2-digit",month:"short"})}</span></div>
-          <p style={{margin:"0 0 8px",fontSize:"13px",color:"#1D1D1F",lineHeight:1.6}}>{e.texto_pt}</p>
-          <div style={{height:1,background:"rgba(0,0,0,0.06)",marginBottom:"8px"}}/>
-          <span style={{fontSize:"10px",fontWeight:600,color:"#86868B",textTransform:"uppercase" as const,letterSpacing:"0.04em",display:"block",marginBottom:"5px"}}>Enriquecido pelo Chico</span>
-          <p style={{margin:0,fontSize:"12px",color:"#3A3A3C",lineHeight:1.65,whiteSpace:"pre-wrap"}}>{e.texto_chico}</p>
-        </div>)
-      }
-    </div>
-  </div>);
+  );
 }
 
 // ── Perfil ────────────────────────────────────────────────────────────────────
+
 
 function PerfilTab({ profile, onProfileUpdate, cards }: {
   profile: UserProfile | null;
@@ -993,6 +1118,9 @@ export default function ChicoDashboard() {
   const [sidebarOpen, setSidebarOpen]       = useState(false);
   const [isMobile, setIsMobile]             = useState(false);
   const [gerandoRoteiro, setGerandoRoteiro] = useState(false);
+  const [memoria, setMemoria]               = useState<ChicoMemoria>({});
+  const [sugestao, setSugestao]             = useState<{titulo:string;mensagem:string;acao:string;palavra_sugerida?:string}|null>(null);
+  const [modoCultura, setModoCultura]       = useState(false);
   const [temaRoteiro, setTemaRoteiro]       = useState("");
   const [showRoteiroInput, setShowRoteiroInput] = useState(false);
 
@@ -1011,6 +1139,13 @@ export default function ChicoDashboard() {
       const { data:c } = await supabase.from("mentoria_cards").select("*").eq("user_id",user.id).order("criado_em",{ascending:false}).limit(50);
       if (c) setCards(c.filter((x:any)=>!x.tema_gerador?.startsWith("DIÁRIO:")&&!x.tema_gerador?.startsWith("MODO IMERSÃO")) as MentoriaCard[]);
       setFetchingCards(false);
+
+      // Carrega memória persistente
+      try {
+        const memRes = await fetch("/api/chico?tipo=memoria");
+        const memData = await memRes.json();
+        if (memData.memoria) setMemoria(memData.memoria);
+      } catch {}
     }
     load();
   },[]);
@@ -1029,7 +1164,11 @@ export default function ChicoDashboard() {
         `Tem alguma palavra em português que sempre quis saber como diz em ${troncoLabel === "Tear Românico" ? "espanhol" : "inglês"}?`,
       ];
       const desafio = desafios[new Date().getDate() % desafios.length];
-      let welcomeContent = `Bom dia, ${profile.display_name?.split(" ")[0]??""}. Hoje é ${hoje}.\n\n${desafio}`;
+      // Busca sugestão proativa em background
+      fetch("/api/chico", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ acao:"sugestao_proativa", tronco:profile.tronco, interesses:profile.interesses??[], nexos:cards.slice(0,10).map(c=>c.titulo_card||c.tema_gerador), memoria }) })
+        .then(r=>r.json()).then(d=>{ if(d.sugestao) setSugestao(d.sugestao); }).catch(()=>{});
+
+      let welcomeContent = `Bom dia, ${profile.display_name?.split(" ")[0]??""}.`}. Hoje é ${hoje}.\n\n${desafio}`;
       if (paraRevisar > 0) welcomeContent += `\n\nTem ${paraRevisar} card${paraRevisar>1?"s":""} aguardando revisão. Vale abrir os Flashcards.`;
       setMessages([{ id:"welcome", role:"chico", content:welcomeContent }]);
       chatHistoryRef.current = [{ role:"assistant", content:welcomeContent }];
@@ -1051,7 +1190,7 @@ export default function ChicoDashboard() {
       const res = await fetch("/api/chico",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ tema_gerador:text.trim(), tronco:profile.tronco, interesses:profile.interesses??[], historico:chatHistoryRef.current, nexos_recentes })
+        body:JSON.stringify({ tema_gerador:text.trim(), tronco:profile.tronco, interesses:profile.interesses??[], historico:chatHistoryRef.current, nexos_recentes, memoria, modo_especial: modoCultura ? "cultura" : "normal" })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error??"Erro desconhecido");
@@ -1068,6 +1207,12 @@ export default function ChicoDashboard() {
       ));
 
       chatHistoryRef.current = [...chatHistoryRef.current, { role:"assistant" as const, content:chicoContent }].slice(-8);
+
+      // Atualiza memória em background a cada 5 nexos
+      if (cards.length > 0 && cards.length % 5 === 0) {
+        fetch("/api/chico", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ acao:"atualizar_memoria", nexos:cards.map(c=>c.titulo_card||c.tema_gerador), historico:chatHistoryRef.current, memoria_atual:memoria }) })
+          .then(r=>r.json()).then(d=>{ if(d.memoria) setMemoria(d.memoria); }).catch(()=>{});
+      }
 
       // Pergunta de verificação separada após 800ms
       if (savedCard.pergunta_verificacao) {
@@ -1113,8 +1258,8 @@ export default function ChicoDashboard() {
     {id:"chat",       label:"Conversar",  icon:c=><Icon.Chat c={c}/>},
     {id:"flashcards", label:"Flashcards", icon:c=><Icon.Cards c={c}/>},
     {id:"progresso",  label:"Progresso",  icon:c=><Icon.Progress c={c}/>},
-    {id:"imersao",    label:"Imersão",    icon:c=><Icon.Immersion c={c}/>},
-    {id:"diario",     label:"Diário",     icon:c=><Icon.Diary c={c}/>},
+    {id:"viagem",     label:"Viagem",     icon:c=><Icon.Immersion c={c}/>},
+    {id:"musica",     label:"Música",     icon:c=><Icon.Diary c={c}/>},
     {id:"perfil",     label:"Perfil",     icon:c=><Icon.Settings c={c}/>},
   ];
 
@@ -1212,8 +1357,12 @@ export default function ChicoDashboard() {
                   <div style={{ padding:"8px 16px", background:"rgba(255,255,255,0.80)", borderBottom:"1px solid rgba(0,0,0,0.05)", flexShrink:0, display:"flex", alignItems:"center", gap:"8px" }}>
                     {!showRoteiroInput ? (
                       <button onClick={()=>setShowRoteiroInput(true)} style={{ display:"flex", alignItems:"center", gap:"5px", padding:"4px 10px", borderRadius:"20px", border:"1px solid rgba(255,149,0,0.35)", background:"transparent", color:"#FF9500", fontSize:"11px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
-                        <Icon.Route/>Gerar roteiro
+                        <Icon.Route/>Roteiro
                       </button>
+                    <button onClick={()=>setModoCultura(v=>!v)}
+                      style={{ display:"flex", alignItems:"center", gap:"5px", padding:"4px 10px", borderRadius:"20px", border:`1px solid ${modoCultura?"rgba(88,86,214,0.35)":"rgba(0,0,0,0.10)"}`, background:modoCultura?"rgba(88,86,214,0.10)":"transparent", color:modoCultura?"#5E5CE6":"#86868B", fontSize:"11px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                      🏛 {modoCultura?"Cultura ON":"Cultura"}
+                    </button>
                     ) : (
                       <>
                         <input value={temaRoteiro} onChange={e=>setTemaRoteiro(e.target.value)} placeholder="Tema do roteiro (ex: emoções, viagens...)"
@@ -1229,6 +1378,27 @@ export default function ChicoDashboard() {
                     )}
                   </div>
 
+                  {/* Banner sugestão proativa */}
+                  {sugestao && (
+                    <div style={{ padding:"10px 16px", background:"linear-gradient(135deg,rgba(88,86,214,0.08),rgba(191,90,242,0.06))", borderBottom:"1px solid rgba(88,86,214,0.12)", display:"flex", alignItems:"center", gap:"10px" }}>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:"11px", fontWeight:700, color:"#5E5CE6", marginBottom:"2px" }}>{sugestao.titulo}</div>
+                        <div style={{ fontSize:"12px", color:"#3A3A3C", lineHeight:1.4 }}>{sugestao.mensagem}</div>
+                      </div>
+                      <div style={{ display:"flex", gap:"6px", flexShrink:0 }}>
+                        {sugestao.palavra_sugerida && (
+                          <button onClick={()=>{ setInputText(sugestao.palavra_sugerida!); setSugestao(null); }}
+                            style={{ padding:"5px 10px", borderRadius:"8px", border:"none", background:"#5E5CE6", color:"#fff", fontSize:"11px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                            Iniciar
+                          </button>
+                        )}
+                        <button onClick={()=>setSugestao(null)}
+                          style={{ width:22, height:22, borderRadius:"50%", border:"none", background:"rgba(0,0,0,0.08)", color:"#86868B", fontSize:"13px", cursor:"pointer", lineHeight:1 }}>
+                          ×
+                        </button>
+                      </div>
+                    </div>
+                  )}
                   {/* Mensagens — fundo levemente acinzentado estilo iMessage */}
                   <div style={{ flex:1, overflowY:"auto", padding:isMobile?"12px 14px":"16px 28px", display:"flex", flexDirection:"column", gap:"8px", background:"#F0F0F5" }}>
                     {messages.map(msg=>(
@@ -1270,8 +1440,8 @@ export default function ChicoDashboard() {
 
               {activeTab==="flashcards"&&<div style={{ flex:1, overflow:"hidden" }}><FlashcardsTab cards={cards} audio={audio}/></div>}
               {activeTab==="progresso" &&<div style={{ flex:1, overflow:"hidden" }}><ProgressoTab cards={cards}/></div>}
-              {activeTab==="imersao"   &&<div style={{ flex:1, overflow:"hidden" }}><ImersaoTab profile={profile}/></div>}
-              {activeTab==="diario"    &&<div style={{ flex:1, overflow:"hidden" }}><DiarioTab profile={profile}/></div>}
+              {activeTab==="viagem"    &&<div style={{ flex:1, overflow:"hidden" }}><ViagemTab profile={profile} audio={audio}/></div>}
+              {activeTab==="musica"    &&<div style={{ flex:1, overflow:"hidden" }}><MusicaTab profile={profile}/></div>}
               {activeTab==="perfil"    &&<div style={{ flex:1, overflow:"hidden" }}><PerfilTab profile={profile} onProfileUpdate={setProfile} cards={cards}/></div>}
             </div>
           </main>
