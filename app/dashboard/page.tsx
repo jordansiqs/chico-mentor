@@ -804,7 +804,7 @@ export default function ChicoDashboard() {
     setInputText(""); setIsLoading(true);
 
     // Adiciona ao histórico
-    chatHistoryRef.current = [...chatHistoryRef.current, { role:"user", content:text.trim() }].slice(-6);
+    chatHistoryRef.current = [...chatHistoryRef.current, { role:"user" as const, content:text.trim() }].slice(-6);
 
     try {
       const res = await fetch("/api/chico",{
@@ -827,7 +827,7 @@ export default function ChicoDashboard() {
       setMessages(prev=>prev.map(m=>m.isLoading?{id:`c-${Date.now()}`,role:"chico" as const,content:chicoContent}:m));
 
       // Adiciona resposta ao histórico
-      chatHistoryRef.current = [...chatHistoryRef.current, { role:"assistant", content:chicoContent }].slice(-6);
+      chatHistoryRef.current = [...chatHistoryRef.current, { role:"assistant" as const, content:chicoContent }].slice(-6);
     } catch(err) {
       const errContent = `Perdoe-me — ${(err as Error).message}. Podemos tentar novamente?`;
       setMessages(prev=>prev.map(m=>m.isLoading?{id:`e-${Date.now()}`,role:"chico" as const,content:errContent}:m));
