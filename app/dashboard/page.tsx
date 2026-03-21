@@ -548,18 +548,61 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
       )}
       {mode==="quiz"&&(
         <>
+          {/* Pergunta */}
           <div style={{ width:"100%", maxWidth:"500px", borderRadius:"20px", background:"#fff", boxShadow:"0 4px 24px rgba(0,0,0,0.09)", padding:"24px", border:"1.5px solid rgba(0,0,0,0.06)" }}>
             <p style={{ margin:"0 0 6px", fontSize:"11px", color:"#86868B", fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.06em" }}>Como se diz em {quizLangNome}?</p>
             <p style={{ margin:0, fontSize:"20px", fontWeight:700, color:"#1D1D1F" }}>{card.titulo_card||card.tema_gerador}</p>
           </div>
+
+          {/* Opções — após responder, a correta ganha botão de áudio */}
           <div style={{ display:"flex", flexDirection:"column", gap:"10px", width:"100%", maxWidth:"500px" }}>
             {quizOpts.length===0
               ? <p style={{ textAlign:"center", color:"#86868B", fontSize:"13px" }}>Carregando...</p>
               : quizOpts.map((opt,i)=>{
-                  const isCorrect=opt===quizCorrect, isSelected=quizAnswer===i;
-                  let bg="#fff", borderColor="rgba(0,0,0,0.10)", color="#1D1D1F";
-                  if(quizAnswer!==null){ if(isCorrect){bg="rgba(52,199,89,0.08)";borderColor="#34C759";color="#34C759";} else if(isSelected){bg="rgba(255,59,48,0.08)";borderColor="#FF3B30";color="#FF3B30";} }
-                  return <button key={i} disabled={quizAnswer!==null} onClick={()=>{setQuizAnswer(i);setTimeout(()=>next(isCorrect),800);}} style={{ width:"100%", padding:"14px 16px", borderRadius:"12px", border:`1.5px solid ${borderColor}`, background:bg, color, fontSize:"14px", fontWeight:500, cursor:quizAnswer!==null?"default":"pointer", fontFamily:"inherit", textAlign:"left", transition:"all 0.2s" }}>{opt}</button>;
+                  const isCorrect  = opt === quizCorrect;
+                  const isSelected = quizAnswer === i;
+                  const answered   = quizAnswer !== null;
+
+                  let bg = "#fff", borderColor = "rgba(0,0,0,0.10)", textColor = "#1D1D1F";
+                  if (answered) {
+                    if (isCorrect)       { bg="rgba(52,199,89,0.08)"; borderColor="#34C759"; textColor="#34C759"; }
+                    else if (isSelected) { bg="rgba(255,59,48,0.08)"; borderColor="#FF3B30"; textColor="#FF3B30"; }
+                  }
+
+                  // Fonética da opção correta (busca no langs)
+                  const langFon = isCorrect ? (langs[quizLang]?.fon ?? "") : "";
+                  const qkey    = "quiz-" + i + opt.slice(0,8);
+                  const isPlay  = audio.isSpeaking && audio.speakingKey === qkey;
+
+                  return (
+                    <button key={i} disabled={answered && !isCorrect}
+                      onClick={() => {
+                        if (!answered) {
+                          setQuizAnswer(i);
+                          // Pronuncia automaticamente a resposta correta após 400ms
+                          if (isCorrect) setTimeout(() => audio.speak(opt, langs[quizLang]?.bcp47 ?? "pt-BR", qkey), 400);
+                          setTimeout(() => next(isCorrect), 1200);
+                        } else if (isCorrect) {
+                          // Permite ouvir de novo clicando na correta
+                          isPlay ? audio.stopSpeaking() : audio.speak(opt, langs[quizLang]?.bcp47 ?? "pt-BR", qkey);
+                        }
+                      }}
+                      style={{ width:"100%", padding:"14px 16px", borderRadius:"12px", border:`1.5px solid ${borderColor}`, background:bg, color:textColor, fontSize:"14px", fontWeight:isCorrect&&answered?700:500, cursor:answered&&!isCorrect?"default":"pointer", fontFamily:"inherit", textAlign:"left" as const, transition:"all 0.2s", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px" }}>
+                      <div>
+                        <div>{opt}</div>
+                        {/* Mostra fonética da correta após responder */}
+                        {isCorrect && answered && langFon && (
+                          <div style={{ fontSize:"11px", fontStyle:"italic", color:"#34C759", marginTop:"3px", fontWeight:400 }}>{langFon}</div>
+                        )}
+                      </div>
+                      {/* Ícone de áudio na opção correta após responder */}
+                      {isCorrect && answered && (
+                        <div style={{ width:30, height:30, borderRadius:"50%", background:"rgba(52,199,89,0.15)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:"#34C759" }}>
+                          {isPlay ? <Icon.Wave/> : <Icon.Volume/>}
+                        </div>
+                      )}
+                    </button>
+                  );
                 })
             }
           </div>
