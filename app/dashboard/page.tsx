@@ -831,11 +831,7 @@ ${letra}`;
         onFocus={e=>(e.target.style.borderColor="#0071E3")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
 
       <textarea value={letra} onChange={e=>setLetra(e.target.value)}
-        placeholder={"Cole aqui os versos da música...
-
-Ex:
-La vie en rose
-Des yeux qui font baisser les miens"}
+        placeholder="Cole aqui os versos da música... Ex: La vie en rose / Des yeux qui font baisser les miens"
         rows={7}
         style={{ width:"100%", padding:"13px", borderRadius:"14px", border:"1.5px solid rgba(0,0,0,0.10)", fontSize:"14px", lineHeight:"1.7", color:"#1D1D1F", fontFamily:"inherit", background:"#fff", resize:"vertical" as const, outline:"none", boxSizing:"border-box" as const }}
         onFocus={e=>(e.target.style.borderColor="#0071E3")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
