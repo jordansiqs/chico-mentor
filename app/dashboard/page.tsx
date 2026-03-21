@@ -239,28 +239,43 @@ function ChatBubble({ message }: { message: ChatMessage }) {
 // ── Flashcards (Quiz Mode) ────────────────────────────────────────────────────
 
 function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnType<typeof useAudio> }) {
-  const [mode, setMode]       = useState<"flip" | "quiz">("flip");
-  const [index, setIndex]     = useState(0);
-  const [flipped, setFlipped] = useState(false);
-  const [score, setScore]     = useState({ acertos:0, erros:0 });
-  const [done, setDone]       = useState(false);
+  const [mode, setMode]             = useState<"flip" | "quiz">("flip");
+  const [index, setIndex]           = useState(0);
+  const [flipped, setFlipped]       = useState(false);
+  const [score, setScore]           = useState({ acertos:0, erros:0 });
+  const [done, setDone]             = useState(false);
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
-  const shuffled = useRef<MentoriaCard[]>([]);
+  const [quizOpts, setQuizOpts]     = useState<string[]>([]);
+  const shuffled                    = useRef<MentoriaCard[]>([]);
 
-  useEffect(()=>{ restart(); },[cards.length]);
+  // Todos os hooks ANTES de qualquer return condicional
+  useEffect(() => { doRestart(); }, [cards.length]);
 
-  function restart() {
-    shuffled.current=[...cards].sort(()=>Math.random()-0.5).slice(0,Math.min(10,cards.length));
-    setIndex(0); setFlipped(false); setScore({acertos:0,erros:0}); setDone(false); setQuizAnswer(null);
+  useEffect(() => {
+    if (mode !== "quiz" || quizAnswer !== null || shuffled.current.length === 0) return;
+    const c = shuffled.current[index];
+    if (!c) return;
+    const correct = c.lang_1_txt;
+    const others  = cards.filter(x => x.id !== c.id).map(x => x.lang_1_txt).filter(Boolean) as string[];
+    const wrongs  = [...others].sort(() => Math.random() - 0.5).slice(0, 3);
+    while (wrongs.length < 3) wrongs.push("—");
+    setQuizOpts([...wrongs, correct].sort(() => Math.random() - 0.5));
+  }, [index, mode, quizAnswer, cards.length]);
+
+  function doRestart() {
+    shuffled.current = [...cards].sort(() => Math.random() - 0.5).slice(0, Math.min(10, cards.length));
+    setIndex(0); setFlipped(false); setScore({ acertos:0, erros:0 });
+    setDone(false); setQuizAnswer(null); setQuizOpts([]);
   }
 
   function next(ok: boolean) {
-    setScore(s=>({acertos:s.acertos+(ok?1:0),erros:s.erros+(ok?0:1)}));
-    if(index+1>=shuffled.current.length){setDone(true);return;}
-    setIndex(i=>i+1); setFlipped(false); setQuizAnswer(null);
+    setScore(s => ({ acertos: s.acertos + (ok?1:0), erros: s.erros + (ok?0:1) }));
+    if (index + 1 >= shuffled.current.length) { setDone(true); return; }
+    setIndex(i => i + 1); setFlipped(false); setQuizAnswer(null); setQuizOpts([]);
   }
 
-  if (cards.length===0) return (
+  // Returns condicionais DEPOIS de todos os hooks
+  if (cards.length === 0) return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", gap:"12px", padding:"40px", textAlign:"center" }}>
       <Icon.Search size={32}/><p style={{ fontSize:"15px", fontWeight:600, color:"#1D1D1F", margin:0 }}>Nenhum nexo para revisar</p>
       <p style={{ fontSize:"13px", color:"#86868B", margin:0 }}>Converse com o Chico primeiro.</p>
@@ -268,29 +283,6 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
   );
 
   const card = shuffled.current[index];
-  if (!card) return null;
-
-  const langs = [
-    { nome:card.lang_1_nome, txt:card.lang_1_txt, fon:card.lang_1_fon, bcp47:card.lang_1_bcp47, exemplo:card.lang_1_exemplo },
-    { nome:card.lang_2_nome, txt:card.lang_2_txt, fon:card.lang_2_fon, bcp47:card.lang_2_bcp47, exemplo:card.lang_2_exemplo },
-    { nome:card.lang_3_nome, txt:card.lang_3_txt, fon:card.lang_3_fon, bcp47:card.lang_3_bcp47, exemplo:card.lang_3_exemplo },
-  ];
-
-  // Quiz: gera 4 opções (1 correta + 3 erradas)
-  function getQuizOptions() {
-    const correct = langs[0].txt;
-    const others  = cards.filter(c=>c.id!==card.id).map(c=>c.lang_1_txt).filter(Boolean);
-    const wrongs  = [...others].sort(()=>Math.random()-0.5).slice(0,3);
-    return [...wrongs, correct].sort(()=>Math.random()-0.5);
-  }
-
-  const quizOptions = useRef<string[]>([]);
-  // Gera opções do quiz quando necessário (usando useEffect para evitar side effects no render)
-  useEffect(() => {
-    if (mode === "quiz" && quizAnswer === null && card) {
-      quizOptions.current = getQuizOptions();
-    }
-  }, [index, mode, quizAnswer]);
 
   if (done) return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", gap:"20px", padding:"40px", textAlign:"center" }}>
@@ -303,16 +295,24 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
         <div style={{ width:1, background:"rgba(0,0,0,0.08)" }}/>
         <div style={{ textAlign:"center" }}><div style={{ fontSize:"32px", fontWeight:700, color:"#FF3B30" }}>{score.erros}</div><div style={{ fontSize:"12px", color:"#86868B" }}>Erros</div></div>
       </div>
-      <button onClick={restart} style={{ padding:"12px 28px", borderRadius:"12px", border:"none", background:"linear-gradient(135deg,#0071E3,#0077ED)", color:"#fff", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Revisar novamente</button>
+      <button onClick={doRestart} style={{ padding:"12px 28px", borderRadius:"12px", border:"none", background:"linear-gradient(135deg,#0071E3,#0077ED)", color:"#fff", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Revisar novamente</button>
     </div>
   );
+
+  if (!card) return null;
+
+  const langs = [
+    { nome:card.lang_1_nome, txt:card.lang_1_txt, fon:card.lang_1_fon, bcp47:card.lang_1_bcp47, exemplo:card.lang_1_exemplo },
+    { nome:card.lang_2_nome, txt:card.lang_2_txt, fon:card.lang_2_fon, bcp47:card.lang_2_bcp47, exemplo:card.lang_2_exemplo },
+    { nome:card.lang_3_nome, txt:card.lang_3_txt, fon:card.lang_3_fon, bcp47:card.lang_3_bcp47, exemplo:card.lang_3_exemplo },
+  ];
 
   return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"16px", gap:"14px", height:"100%", overflowY:"auto" }}>
       {/* Modo selector */}
       <div style={{ display:"flex", gap:"6px", padding:"3px", borderRadius:"10px", background:"rgba(0,0,0,0.06)", width:"100%", maxWidth:"500px" }}>
         {(["flip","quiz"] as const).map(m=>(
-          <button key={m} onClick={()=>{setMode(m);restart();}} style={{ flex:1, padding:"6px", borderRadius:"8px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:mode===m?600:500, background:mode===m?"#fff":"transparent", color:mode===m?"#1D1D1F":"#86868B", boxShadow:mode===m?"0 1px 4px rgba(0,0,0,0.10)":"none", fontFamily:"inherit", transition:"all 0.15s" }}>
+          <button key={m} onClick={()=>{setMode(m);doRestart();}} style={{ flex:1, padding:"6px", borderRadius:"8px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:mode===m?600:500, background:mode===m?"#fff":"transparent", color:mode===m?"#1D1D1F":"#86868B", boxShadow:mode===m?"0 1px 4px rgba(0,0,0,0.10)":"none", fontFamily:"inherit", transition:"all 0.15s" }}>
             {m==="flip"?"Virar Card":"Modo Quiz"}
           </button>
         ))}
@@ -332,7 +332,7 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
         </div>
       </div>
 
-      {/* Card virar */}
+      {/* Modo Virar Card */}
       {mode === "flip" && (
         <>
           <div onClick={()=>setFlipped(v=>!v)}
@@ -354,7 +354,8 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
                     </div>
                     {l.exemplo&&<div style={{ padding:"4px 12px 8px", borderTop:"1px solid rgba(0,0,0,0.05)", fontSize:"11px", color:"#3A3A3C", fontStyle:"italic" }}>{l.exemplo}</div>}
                   </div>
-                ))}</div></>
+                ))}
+              </div></>
             )}
           </div>
           {flipped ? (
@@ -366,7 +367,7 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
         </>
       )}
 
-      {/* Quiz */}
+      {/* Modo Quiz */}
       {mode === "quiz" && (
         <>
           <div style={{ width:"100%", maxWidth:"500px", borderRadius:"20px", background:"#fff", boxShadow:"0 4px 24px rgba(0,0,0,0.09)", padding:"24px", border:"1.5px solid rgba(0,0,0,0.06)" }}>
@@ -374,18 +375,20 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
             <p style={{ margin:0, fontSize:"20px", fontWeight:700, color:"#1D1D1F" }}>{card.titulo_card||card.tema_gerador}</p>
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:"10px", width:"100%", maxWidth:"500px" }}>
-            {quizOptions.current.map((opt, i) => {
-              const isCorrect = opt === langs[0].txt;
+            {quizOpts.length === 0 ? (
+              <p style={{ textAlign:"center", color:"#86868B", fontSize:"13px" }}>Carregando opções...</p>
+            ) : quizOpts.map((opt, i) => {
+              const isCorrect  = opt === langs[0].txt;
               const isSelected = quizAnswer === i;
-              let bg = "#fff", border = "rgba(0,0,0,0.10)", color = "#1D1D1F";
+              let bg = "#fff", borderColor = "rgba(0,0,0,0.10)", color = "#1D1D1F";
               if (quizAnswer !== null) {
-                if (isCorrect) { bg="rgba(52,199,89,0.08)"; border="#34C759"; color="#34C759"; }
-                else if (isSelected) { bg="rgba(255,59,48,0.08)"; border="#FF3B30"; color="#FF3B30"; }
+                if (isCorrect)       { bg="rgba(52,199,89,0.08)";  borderColor="#34C759"; color="#34C759"; }
+                else if (isSelected) { bg="rgba(255,59,48,0.08)";  borderColor="#FF3B30"; color="#FF3B30"; }
               }
               return (
                 <button key={i} disabled={quizAnswer !== null}
                   onClick={()=>{ setQuizAnswer(i); setTimeout(()=>next(isCorrect), 800); }}
-                  style={{ width:"100%", padding:"14px 16px", borderRadius:"12px", border:`1.5px solid ${border}`, background:bg, color, fontSize:"14px", fontWeight:500, cursor:quizAnswer!==null?"default":"pointer", fontFamily:"inherit", textAlign:"left", transition:"all 0.2s" }}>
+                  style={{ width:"100%", padding:"14px 16px", borderRadius:"12px", border:`1.5px solid ${borderColor}`, background:bg, color, fontSize:"14px", fontWeight:500, cursor:quizAnswer!==null?"default":"pointer", fontFamily:"inherit", textAlign:"left", transition:"all 0.2s" }}>
                   {opt}
                 </button>
               );
