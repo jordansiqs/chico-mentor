@@ -161,24 +161,24 @@ function InlineCard({ card, audio }: { card: MentoriaCard; audio: ReturnType<typ
 
       {/* Traduções */}
       <div style={{ padding:"10px 14px", display:"flex", flexDirection:"column", gap:"8px" }}>
-        {langs.map(l => {
-          const key = `${l.bcp47}-${l.txt}`;
+        {langs.filter(l => l.txt && l.txt !== "—").map(l => {
+          const key = `ic-${l.bcp47}-${l.txt.slice(0,8)}`;
           const isPlaying = audio.isSpeaking && audio.speakingKey === key;
           return (
-            <div key={l.bcp47} style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-              {/* Botão de áudio */}
-              <button onClick={() => isPlaying ? audio.stopSpeaking() : audio.speak(l.txt, l.bcp47, key)}
-                style={{ width:32, height:32, borderRadius:"50%", border:"none", background:isPlaying?"#0071E3":"rgba(0,113,227,0.10)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:isPlaying?"#fff":"#0071E3", transition:"all 0.2s" }}>
+            <button key={l.bcp47}
+              onClick={() => isPlaying ? audio.stopSpeaking() : audio.speak(l.txt, l.bcp47, key)}
+              style={{ display:"flex", alignItems:"center", gap:"10px", padding:"8px 10px", borderRadius:"10px", background:isPlaying?"rgba(0,113,227,0.06)":"#F0F0F5", border:isPlaying?"1px solid rgba(0,113,227,0.20)":"1px solid transparent", cursor:"pointer", textAlign:"left" as const, fontFamily:"inherit", transition:"all 0.2s", width:"100%" }}>
+              <div style={{ width:32, height:32, borderRadius:"50%", background:isPlaying?"#0071E3":"rgba(0,113,227,0.10)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:isPlaying?"#fff":"#0071E3", transition:"all 0.2s" }}>
                 {isPlaying ? <Icon.Wave/> : <Icon.Volume/>}
-              </button>
-              <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ display:"flex", alignItems:"baseline", gap:"6px" }}>
-                  <span style={{ fontSize:"14px", fontWeight:600, color:"#1D1D1F" }}>{l.txt}</span>
-                  <span style={{ fontSize:"11px", color:"#86868B", fontStyle:"italic" }}>{l.fon}</span>
-                </div>
-                <div style={{ fontSize:"11px", color:"#86868B", fontWeight:500 }}>{l.nome}</div>
               </div>
-            </div>
+              <div style={{ flex:1, minWidth:0 }}>
+                <div style={{ fontSize:"10px", fontWeight:600, color:isPlaying?"#0071E3":"#86868B", textTransform:"uppercase" as const, letterSpacing:"0.04em", marginBottom:"1px" }}>{l.nome}</div>
+                <div style={{ fontSize:"15px", fontWeight:700, color:isPlaying?"#0071E3":"#1D1D1F" }}>{l.txt}</div>
+                {l.fon && l.fon !== "—" && (
+                  <div style={{ fontSize:"11px", color:"#86868B", fontStyle:"italic", marginTop:"1px" }}>{l.fon}</div>
+                )}
+              </div>
+            </button>
           );
         })}
       </div>
@@ -802,19 +802,20 @@ function MusicaTab({ profile }: { profile: UserProfile | null }) {
   async function handleAnalisar() {
     if (!letra.trim() || !profile) return;
     setLoading(true); setResultado(null);
-    const tema = artista.trim()
-      ? `MODO MÚSICA — Analise estes versos de ${artista} linguisticamente. Para cada verso ou expressão importante: traduza para as línguas do tronco, destaque cognatos e raízes, explique o que a escolha de palavras revela sobre a língua e cultura. Trate como texto literário.
-
-Versos:
-${letra}`
-      : `MODO MÚSICA — Analise estes versos linguisticamente. Para cada verso ou expressão importante: traduza para as línguas do tronco, destaque cognatos e raízes, explique o que a escolha de palavras revela sobre a língua e cultura.
-
-Versos:
-${letra}`;
     try {
-      const res  = await fetch("/api/chico", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ tema_gerador:tema, tronco:profile.tronco, interesses:profile.interesses??[], modo_especial:"musica" }) });
+      const res = await fetch("/api/chico", {
+        method: "PATCH",
+        headers: {"Content-Type":"application/json"},
+        body: JSON.stringify({
+          acao:       "analisar_musica",
+          tronco:     profile.tronco,
+          interesses: profile.interesses ?? [],
+          artista:    artista.trim(),
+          letra:      letra.trim(),
+        })
+      });
       const data = await res.json();
-      setResultado(res.ok ? (data.card?.aula_chico ?? "") : "Erro ao analisar. Tente novamente.");
+      setResultado(res.ok ? (data.analise ?? "") : "Erro ao analisar. Tente novamente.");
     } catch { setResultado("Erro de conexão."); }
     setLoading(false);
   }
