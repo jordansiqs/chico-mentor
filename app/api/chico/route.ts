@@ -544,6 +544,43 @@ Responda APENAS com JSON:
       catch { return NextResponse.json({ error:"Erro ao gerar guia de viagem." },{ status:500 }); }
     }
 
+    // ── Analisar música (texto livre, sem JSON) ───────────────────────────────
+    if (acao === "analisar_musica") {
+      const { tronco, interesses, artista, letra } = body;
+      const troncoInfo = TRONCOS[tronco as "românico"|"germânico"];
+      if (!troncoInfo) return NextResponse.json({ error:"Tronco inválido." },{ status:400 });
+
+      const linguas = troncoInfo.linguas.map(l=>l.nome).join(", ");
+      const artistaStr = artista ? `de ${artista} ` : "";
+      const interessesStr = (interesses||[]).join(", ") || "cotidiano";
+
+      const prompt = `Você é o Chico — linguista que analisa músicas como textos literários.
+
+Analise estes versos ${artistaStr}para o ${troncoInfo.label} (${linguas}).
+
+Para cada verso ou expressão importante:
+1. Traduza para as línguas do tronco (${linguas})
+2. Destaque cognatos e raízes latinas/germânicas
+3. Explique o que a escolha de palavras revela sobre a língua e cultura
+
+Seja fascinante. Trate cada palavra como arqueologia viva. Responda em português.
+Não use JSON. Responda com texto corrido e bem estruturado.
+Máximo 4 parágrafos.
+
+Versos:
+${letra}`;
+
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        temperature: 0.7,
+        max_tokens: 800,
+        messages: [{ role:"user", content:prompt }],
+      });
+
+      const analise = completion.choices[0]?.message?.content ?? "";
+      return NextResponse.json({ analise });
+    }
+
     return NextResponse.json({ error:"Ação desconhecida." },{ status:400 });
   } catch (err) {
     console.error("Erro PATCH:", err);
