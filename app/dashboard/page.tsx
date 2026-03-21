@@ -1352,13 +1352,15 @@ export default function ChicoDashboard() {
                   {/* Barra de roteiro discreta */}
                   <div style={{ padding:"8px 16px", background:"rgba(255,255,255,0.80)", borderBottom:"1px solid rgba(0,0,0,0.05)", flexShrink:0, display:"flex", alignItems:"center", gap:"8px" }}>
                     {!showRoteiroInput ? (
-                      <button onClick={()=>setShowRoteiroInput(true)} style={{ display:"flex", alignItems:"center", gap:"5px", padding:"4px 10px", borderRadius:"20px", border:"1px solid rgba(255,149,0,0.35)", background:"transparent", color:"#FF9500", fontSize:"11px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
-                        <Icon.Route/>Roteiro
-                      </button>
-                    <button onClick={()=>setModoCultura(v=>!v)}
-                      style={{ display:"flex", alignItems:"center", gap:"5px", padding:"4px 10px", borderRadius:"20px", border:`1px solid ${modoCultura?"rgba(88,86,214,0.35)":"rgba(0,0,0,0.10)"}`, background:modoCultura?"rgba(88,86,214,0.10)":"transparent", color:modoCultura?"#5E5CE6":"#86868B", fontSize:"11px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
-                      🏛 {modoCultura?"Cultura ON":"Cultura"}
-                    </button>
+                      <>
+                        <button onClick={()=>setShowRoteiroInput(true)} style={{ display:"flex", alignItems:"center", gap:"5px", padding:"4px 10px", borderRadius:"20px", border:"1px solid rgba(255,149,0,0.35)", background:"transparent", color:"#FF9500", fontSize:"11px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                          <Icon.Route/>Roteiro
+                        </button>
+                        <button onClick={()=>setModoCultura(v=>!v)}
+                          style={{ display:"flex", alignItems:"center", gap:"5px", padding:"4px 10px", borderRadius:"20px", border:`1px solid ${modoCultura?"rgba(88,86,214,0.35)":"rgba(0,0,0,0.10)"}`, background:modoCultura?"rgba(88,86,214,0.10)":"transparent", color:modoCultura?"#5E5CE6":"#86868B", fontSize:"11px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                          🏛 {modoCultura?"Cultura ON":"Cultura"}
+                        </button>
+                      </>
                     ) : (
                       <>
                         <input value={temaRoteiro} onChange={e=>setTemaRoteiro(e.target.value)} placeholder="Tema do roteiro (ex: emoções, viagens...)"
