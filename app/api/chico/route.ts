@@ -125,7 +125,10 @@ Nunca dê tudo de uma vez.
 - Sem listas com bullets no aula_chico
 - Use o histórico da conversa para não repetir o que já foi ensinado
 
-## FORMATO DE SAÍDA — JSON puro, sem markdown
+## FORMATO DE SAÍDA — CRÍTICO
+Responda SOMENTE com o JSON abaixo. Nenhum texto antes ou depois.
+Não use markdown. Não use ```json. Não escreva explicações fora do JSON.
+A primeira linha deve ser { e a última linha deve ser }
 
 {
   "titulo_card": "Palavra central. Máx 3 palavras. Sem pontuação.",
@@ -200,8 +203,8 @@ export async function POST(request: NextRequest) {
 
     const completion = await groq.chat.completions.create({
       model:       "llama-3.3-70b-versatile",
-      temperature: 0.65,
-      max_tokens:  1200,
+      temperature: 0.55,
+      max_tokens:  1400,
       messages: [
         { role: "system", content: buildSystemPrompt(tronco, interesses || [], nexos_recentes) },
         ...historicoLimitado,
@@ -221,15 +224,41 @@ export async function POST(request: NextRequest) {
     };
 
     try {
-      const cleaned = rawContent
-        .replace(/^```json\s*/i, "")
-        .replace(/^```\s*/i, "")
-        .replace(/```\s*$/i, "")
-        .trim();
-      parsed = JSON.parse(cleaned);
-    } catch {
-      console.error("Parse error:", rawContent);
-      return NextResponse.json({ error: "Erro ao processar resposta. Tente novamente." }, { status: 500 });
+      // Estratégia robusta: tenta 3 abordagens em sequência
+      let jsonStr = "";
+
+      // 1. Extrai o primeiro bloco JSON completo entre { }
+      const jsonMatch = rawContent.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        jsonStr = jsonMatch[0];
+      } else {
+        // 2. Remove markdown fences e tenta diretamente
+        jsonStr = rawContent
+          .replace(/^```json\s*/i, "")
+          .replace(/^```\s*/i, "")
+          .replace(/```\s*$/i, "")
+          .trim();
+      }
+
+      parsed = JSON.parse(jsonStr);
+
+      // Valida campos obrigatórios
+      if (!parsed.aula_chico || !parsed.lang_1 || !parsed.lang_2 || !parsed.lang_3) {
+        throw new Error("Campos obrigatórios ausentes no JSON");
+      }
+    } catch (parseErr) {
+      console.error("Parse error:", parseErr, "\nRaw content:", rawContent);
+
+      // Fallback: cria uma resposta básica para não quebrar a UX
+      const troncoInfoFallback = TRONCOS[tronco];
+      parsed = {
+        titulo_card: tema_gerador.slice(0, 30),
+        aula_chico: rawContent.replace(/```json[\s\S]*?```/g, "").replace(/```[\s\S]*?```/g, "").trim() || "Não consegui processar a resposta. Tente reformular sua pergunta.",
+        pergunta_verificacao: undefined,
+        lang_1: { txt: "—", fon: "—", exemplo: "—" },
+        lang_2: { txt: "—", fon: "—", exemplo: "—" },
+        lang_3: { txt: "—", fon: "—", exemplo: "—" },
+      };
     }
 
     const troncoInfo = TRONCOS[tronco];
