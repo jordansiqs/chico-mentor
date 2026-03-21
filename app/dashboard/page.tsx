@@ -15,6 +15,7 @@ interface MentoriaCard extends ChicoCard {
   lang_1_exemplo?: string;
   lang_2_exemplo?: string;
   lang_3_exemplo?: string;
+  pergunta_verificacao?: string;
 }
 
 interface ChatMessage {
@@ -22,6 +23,8 @@ interface ChatMessage {
   role: "user" | "chico";
   content: string;
   isLoading?: boolean;
+  isVerificacao?: boolean;
+  isRoteiro?: boolean;
 }
 
 interface UserProfile {
@@ -32,8 +35,9 @@ interface UserProfile {
   interesses: string[];
 }
 
-type MainTab = "chat" | "flashcards" | "progresso" | "imersao" | "diario" | "perfil";
+type MainTab      = "chat" | "flashcards" | "progresso" | "imersao" | "diario" | "perfil";
 type SidebarFilter = "todos" | "românico" | "germânico";
+type ModoChat     = "explorar" | "praticar" | "conversar";
 
 function createSupabase() {
   return createBrowserClient(
@@ -59,7 +63,7 @@ const Icon = {
   Wave:      () => (<span style={{ display:"flex", gap:"2px", alignItems:"center" }}>{[10,14,8].map((h,i)=><span key={i} style={{ width:3, height:h, background:"currentColor", borderRadius:2, animation:`pulse 0.6s ${i*0.15}s ease-in-out infinite alternate` }}/>)}</span>),
   Mic:       ({ active }: { active: boolean }) => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke={active?"#fff":"#86868B"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>),
   Send:      ({ active }: { active: boolean }) => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={active?"#fff":"#86868B"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>),
-  Search:    ({ size = 32, color = "#AEAEB2" }: { size?: number; color?: string }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>),
+  Search:    ({ size=32, color="#AEAEB2" }: { size?: number; color?: string }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>),
   Avatar:    () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>),
   Check:     () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34C759" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>),
   X:         () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FF3B30" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>),
@@ -70,6 +74,7 @@ const Icon = {
   Close:     () => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1D1D1F" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>),
   CheckMark: () => (<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>),
   Fire:      () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#FF9500" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg>),
+  Route:     () => (<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>),
 };
 
 // ── Audio Hook ────────────────────────────────────────────────────────────────
@@ -136,18 +141,23 @@ function AudioButton({ label, bcp47, isActive, onPlay, onStop }: {
 function NexoCard({ card, audio, onDelete }: {
   card: MentoriaCard; audio: ReturnType<typeof useAudio>; onDelete: (id: string) => void;
 }) {
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded]     = useState(false);
   const [confirmDelete, setConfirm] = useState(false);
-  const [deleting, setDeleting] = useState(false);
+  const [deleting, setDeleting]     = useState(false);
 
   const langs = [
     { nome:card.lang_1_nome, txt:card.lang_1_txt, fon:card.lang_1_fon, bcp47:card.lang_1_bcp47, exemplo:card.lang_1_exemplo },
     { nome:card.lang_2_nome, txt:card.lang_2_txt, fon:card.lang_2_fon, bcp47:card.lang_2_bcp47, exemplo:card.lang_2_exemplo },
     { nome:card.lang_3_nome, txt:card.lang_3_txt, fon:card.lang_3_fon, bcp47:card.lang_3_bcp47, exemplo:card.lang_3_exemplo },
   ];
+
   const isRom = card.tronco === "românico";
   const tc = { dot:isRom?"#FF3B30":"#0071E3", bg:isRom?"rgba(255,59,48,0.07)":"rgba(0,113,227,0.07)", label:isRom?"Tear Românico":"Tear Germânico" };
   const titulo = card.titulo_card || card.tema_gerador;
+
+  // Spaced repetition: calcula urgência de revisão
+  const diasDesde = Math.floor((Date.now() - new Date(card.criado_em).getTime()) / 86400000);
+  const precisaRevisar = diasDesde >= 3;
 
   async function handleDelete() {
     setDeleting(true);
@@ -156,9 +166,18 @@ function NexoCard({ card, audio, onDelete }: {
   }
 
   return (
-    <article style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 1px 3px rgba(0,0,0,0.07),0 4px 16px rgba(0,0,0,0.04)", border:"1px solid rgba(0,0,0,0.05)", transition:"transform 0.2s,box-shadow 0.2s" }}
+    <article style={{ background:"#fff", borderRadius:"16px", padding:"16px", boxShadow:"0 1px 3px rgba(0,0,0,0.07),0 4px 16px rgba(0,0,0,0.04)", border:`1px solid ${precisaRevisar?"rgba(255,149,0,0.30)":"rgba(0,0,0,0.05)"}`, transition:"transform 0.2s,box-shadow 0.2s" }}
       onMouseEnter={e=>{ (e.currentTarget as HTMLElement).style.transform="translateY(-1px)"; (e.currentTarget as HTMLElement).style.boxShadow="0 4px 20px rgba(0,0,0,0.09)"; }}
       onMouseLeave={e=>{ (e.currentTarget as HTMLElement).style.transform="translateY(0)"; (e.currentTarget as HTMLElement).style.boxShadow="0 1px 3px rgba(0,0,0,0.07),0 4px 16px rgba(0,0,0,0.04)"; }}>
+
+      {/* Indicador de revisão */}
+      {precisaRevisar && (
+        <div style={{ display:"flex", alignItems:"center", gap:"5px", marginBottom:"8px", padding:"4px 8px", borderRadius:"6px", background:"rgba(255,149,0,0.08)", border:"1px solid rgba(255,149,0,0.20)" }}>
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FF9500" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+          <span style={{ fontSize:"10px", color:"#FF9500", fontWeight:600 }}>Revisar — {diasDesde} dias sem ver</span>
+        </div>
+      )}
+
       <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom:"10px" }}>
         <div style={{ flex:1, minWidth:0 }}>
           <span style={{ display:"inline-flex", alignItems:"center", gap:"4px", padding:"2px 7px", borderRadius:"6px", background:tc.bg, fontSize:"9px", fontWeight:600, color:tc.dot, textTransform:"uppercase" as const, letterSpacing:"0.04em", marginBottom:"5px" }}>
@@ -174,7 +193,7 @@ function NexoCard({ card, audio, onDelete }: {
               <button onClick={()=>setConfirm(false)} style={{ padding:"4px 10px", borderRadius:"8px", border:"1px solid rgba(0,0,0,0.12)", background:"transparent", color:"#86868B", fontSize:"11px", cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
             </>
           ) : (
-            <button onClick={()=>setConfirm(true)} title="Apagar card"
+            <button onClick={()=>setConfirm(true)} title="Apagar"
               style={{ width:28, height:28, borderRadius:"8px", border:"none", background:"transparent", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"#AEAEB2", transition:"all 0.2s" }}
               onMouseEnter={e=>{ (e.currentTarget as HTMLElement).style.background="rgba(255,59,48,0.08)"; (e.currentTarget as HTMLElement).style.color="#FF3B30"; }}
               onMouseLeave={e=>{ (e.currentTarget as HTMLElement).style.background="transparent"; (e.currentTarget as HTMLElement).style.color="#AEAEB2"; }}>
@@ -183,6 +202,7 @@ function NexoCard({ card, audio, onDelete }: {
           )}
         </div>
       </div>
+
       <div style={{ display:"flex", flexDirection:"column", gap:"8px", marginBottom:"10px" }}>
         {langs.map(l=>(
           <div key={l.bcp47} style={{ borderRadius:"10px", background:"#F5F5F7", overflow:"hidden" }}>
@@ -203,6 +223,7 @@ function NexoCard({ card, audio, onDelete }: {
           </div>
         ))}
       </div>
+
       <button onClick={()=>setExpanded(v=>!v)} style={{ width:"100%", background:"none", border:"none", cursor:"pointer", padding:0 }}>
         <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 10px", borderRadius:"10px", background:expanded?"rgba(0,113,227,0.06)":"#F5F5F7", transition:"background 0.2s" }}>
           <span style={{ fontSize:"11px", fontWeight:600, color:"#0071E3", display:"flex", alignItems:"center", gap:"5px" }}><Icon.Book/>Lição do Chico</span>
@@ -218,6 +239,7 @@ function NexoCard({ card, audio, onDelete }: {
 
 function ChatBubble({ message }: { message: ChatMessage }) {
   const isChico = message.role === "chico";
+
   if (message.isLoading) return (
     <div style={{ display:"flex", alignItems:"flex-end", gap:"8px" }}>
       <div style={{ width:32, height:32, borderRadius:"50%", background:"linear-gradient(135deg,#0071E3,#34AADC)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Icon.Logo/></div>
@@ -226,6 +248,31 @@ function ChatBubble({ message }: { message: ChatMessage }) {
       </div>
     </div>
   );
+
+  // Pergunta de verificação — estilo diferenciado
+  if (message.isVerificacao) return (
+    <div style={{ display:"flex", alignItems:"flex-end", gap:"8px" }}>
+      <div style={{ width:32, height:32, borderRadius:"50%", background:"linear-gradient(135deg,#0071E3,#34AADC)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Icon.Logo/></div>
+      <div style={{ maxWidth:"80%", padding:"12px 16px", borderRadius:"18px 18px 18px 4px", background:"linear-gradient(135deg,rgba(0,113,227,0.06),rgba(52,170,220,0.06))", border:"1.5px solid rgba(0,113,227,0.20)", fontSize:"14px", lineHeight:"1.55", color:"#0071E3" }}>
+        <div style={{ fontSize:"10px", fontWeight:700, color:"#0071E3", textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"5px" }}>Verificação</div>
+        {message.content}
+      </div>
+    </div>
+  );
+
+  // Roteiro — estilo diferenciado
+  if (message.isRoteiro) return (
+    <div style={{ display:"flex", alignItems:"flex-end", gap:"8px" }}>
+      <div style={{ width:32, height:32, borderRadius:"50%", background:"linear-gradient(135deg,#0071E3,#34AADC)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Icon.Logo/></div>
+      <div style={{ maxWidth:"85%", padding:"14px 16px", borderRadius:"18px 18px 18px 4px", background:"linear-gradient(135deg,rgba(255,149,0,0.06),rgba(255,107,0,0.06))", border:"1.5px solid rgba(255,149,0,0.25)", fontSize:"14px", lineHeight:"1.6", color:"#1D1D1F" }}>
+        <div style={{ fontSize:"10px", fontWeight:700, color:"#FF9500", textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"6px", display:"flex", alignItems:"center", gap:"5px" }}>
+          <Icon.Route/> Roteiro de Aprendizado
+        </div>
+        {message.content}
+      </div>
+    </div>
+  );
+
   return (
     <div style={{ display:"flex", alignItems:"flex-end", gap:"8px", flexDirection:isChico?"row":"row-reverse" }}>
       {isChico&&<div style={{ width:32, height:32, borderRadius:"50%", background:"linear-gradient(135deg,#0071E3,#34AADC)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}><Icon.Logo/></div>}
@@ -236,7 +283,7 @@ function ChatBubble({ message }: { message: ChatMessage }) {
   );
 }
 
-// ── Flashcards (Quiz Mode) ────────────────────────────────────────────────────
+// ── Flashcards ────────────────────────────────────────────────────────────────
 
 function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnType<typeof useAudio> }) {
   const [mode, setMode]             = useState<"flip" | "quiz">("flip");
@@ -248,7 +295,6 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
   const [quizOpts, setQuizOpts]     = useState<string[]>([]);
   const shuffled                    = useRef<MentoriaCard[]>([]);
 
-  // Todos os hooks ANTES de qualquer return condicional
   useEffect(() => { doRestart(); }, [cards.length]);
 
   useEffect(() => {
@@ -263,7 +309,15 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
   }, [index, mode, quizAnswer, cards.length]);
 
   function doRestart() {
-    shuffled.current = [...cards].sort(() => Math.random() - 0.5).slice(0, Math.min(10, cards.length));
+    // Prioriza cards que precisam de revisão (spaced repetition)
+    const urgentes = cards.filter(c => {
+      const dias = Math.floor((Date.now() - new Date(c.criado_em).getTime()) / 86400000);
+      return dias >= 3;
+    });
+    const pool = urgentes.length > 0
+      ? [...urgentes, ...cards.filter(c => !urgentes.includes(c))].slice(0, 10)
+      : [...cards].sort(() => Math.random() - 0.5).slice(0, 10);
+    shuffled.current = pool;
     setIndex(0); setFlipped(false); setScore({ acertos:0, erros:0 });
     setDone(false); setQuizAnswer(null); setQuizOpts([]);
   }
@@ -274,7 +328,6 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
     setIndex(i => i + 1); setFlipped(false); setQuizAnswer(null); setQuizOpts([]);
   }
 
-  // Returns condicionais DEPOIS de todos os hooks
   if (cards.length === 0) return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", gap:"12px", padding:"40px", textAlign:"center" }}>
       <Icon.Search size={32}/><p style={{ fontSize:"15px", fontWeight:600, color:"#1D1D1F", margin:0 }}>Nenhum nexo para revisar</p>
@@ -282,7 +335,7 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
     </div>
   );
 
-  const card = shuffled.current[index];
+  const urgentesCount = cards.filter(c => Math.floor((Date.now() - new Date(c.criado_em).getTime()) / 86400000) >= 3).length;
 
   if (done) return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", gap:"20px", padding:"40px", textAlign:"center" }}>
@@ -299,6 +352,7 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
     </div>
   );
 
+  const card = shuffled.current[index];
   if (!card) return null;
 
   const langs = [
@@ -309,7 +363,13 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
 
   return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"16px", gap:"14px", height:"100%", overflowY:"auto" }}>
-      {/* Modo selector */}
+      {urgentesCount > 0 && (
+        <div style={{ width:"100%", maxWidth:"500px", padding:"10px 14px", borderRadius:"10px", background:"rgba(255,149,0,0.08)", border:"1px solid rgba(255,149,0,0.25)", display:"flex", alignItems:"center", gap:"8px" }}>
+          <Icon.Fire/>
+          <span style={{ fontSize:"12px", color:"#FF9500", fontWeight:600 }}>{urgentesCount} card{urgentesCount>1?"s":""} aguardando revisão — priorizados nesta sessão</span>
+        </div>
+      )}
+
       <div style={{ display:"flex", gap:"6px", padding:"3px", borderRadius:"10px", background:"rgba(0,0,0,0.06)", width:"100%", maxWidth:"500px" }}>
         {(["flip","quiz"] as const).map(m=>(
           <button key={m} onClick={()=>{setMode(m);doRestart();}} style={{ flex:1, padding:"6px", borderRadius:"8px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:mode===m?600:500, background:mode===m?"#fff":"transparent", color:mode===m?"#1D1D1F":"#86868B", boxShadow:mode===m?"0 1px 4px rgba(0,0,0,0.10)":"none", fontFamily:"inherit", transition:"all 0.15s" }}>
@@ -318,7 +378,6 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
         ))}
       </div>
 
-      {/* Progresso */}
       <div style={{ width:"100%", maxWidth:"500px" }}>
         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"6px" }}>
           <span style={{ fontSize:"12px", color:"#86868B" }}>{index+1} de {shuffled.current.length}</span>
@@ -332,7 +391,6 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
         </div>
       </div>
 
-      {/* Modo Virar Card */}
       {mode === "flip" && (
         <>
           <div onClick={()=>setFlipped(v=>!v)}
@@ -367,7 +425,6 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
         </>
       )}
 
-      {/* Modo Quiz */}
       {mode === "quiz" && (
         <>
           <div style={{ width:"100%", maxWidth:"500px", borderRadius:"20px", background:"#fff", boxShadow:"0 4px 24px rgba(0,0,0,0.09)", padding:"24px", border:"1.5px solid rgba(0,0,0,0.06)" }}>
@@ -375,24 +432,25 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
             <p style={{ margin:0, fontSize:"20px", fontWeight:700, color:"#1D1D1F" }}>{card.titulo_card||card.tema_gerador}</p>
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:"10px", width:"100%", maxWidth:"500px" }}>
-            {quizOpts.length === 0 ? (
-              <p style={{ textAlign:"center", color:"#86868B", fontSize:"13px" }}>Carregando opções...</p>
-            ) : quizOpts.map((opt, i) => {
-              const isCorrect  = opt === langs[0].txt;
-              const isSelected = quizAnswer === i;
-              let bg = "#fff", borderColor = "rgba(0,0,0,0.10)", color = "#1D1D1F";
-              if (quizAnswer !== null) {
-                if (isCorrect)       { bg="rgba(52,199,89,0.08)";  borderColor="#34C759"; color="#34C759"; }
-                else if (isSelected) { bg="rgba(255,59,48,0.08)";  borderColor="#FF3B30"; color="#FF3B30"; }
-              }
-              return (
-                <button key={i} disabled={quizAnswer !== null}
-                  onClick={()=>{ setQuizAnswer(i); setTimeout(()=>next(isCorrect), 800); }}
-                  style={{ width:"100%", padding:"14px 16px", borderRadius:"12px", border:`1.5px solid ${borderColor}`, background:bg, color, fontSize:"14px", fontWeight:500, cursor:quizAnswer!==null?"default":"pointer", fontFamily:"inherit", textAlign:"left", transition:"all 0.2s" }}>
-                  {opt}
-                </button>
-              );
-            })}
+            {quizOpts.length === 0
+              ? <p style={{ textAlign:"center", color:"#86868B", fontSize:"13px" }}>Carregando opções...</p>
+              : quizOpts.map((opt, i) => {
+                  const isCorrect  = opt === langs[0].txt;
+                  const isSelected = quizAnswer === i;
+                  let bg = "#fff", borderColor = "rgba(0,0,0,0.10)", color = "#1D1D1F";
+                  if (quizAnswer !== null) {
+                    if (isCorrect)       { bg="rgba(52,199,89,0.08)"; borderColor="#34C759"; color="#34C759"; }
+                    else if (isSelected) { bg="rgba(255,59,48,0.08)"; borderColor="#FF3B30"; color="#FF3B30"; }
+                  }
+                  return (
+                    <button key={i} disabled={quizAnswer !== null}
+                      onClick={()=>{ setQuizAnswer(i); setTimeout(()=>next(isCorrect),800); }}
+                      style={{ width:"100%", padding:"14px 16px", borderRadius:"12px", border:`1.5px solid ${borderColor}`, background:bg, color, fontSize:"14px", fontWeight:500, cursor:quizAnswer!==null?"default":"pointer", fontFamily:"inherit", textAlign:"left", transition:"all 0.2s" }}>
+                      {opt}
+                    </button>
+                  );
+                })
+            }
           </div>
         </>
       )}
@@ -400,76 +458,67 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
   );
 }
 
-// ── Progresso com Streak ──────────────────────────────────────────────────────
+// ── Progresso ─────────────────────────────────────────────────────────────────
 
 function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
   const total      = cards.length;
   const romanicos  = cards.filter(c=>c.tronco==="românico").length;
   const germanicos = cards.filter(c=>c.tronco==="germânico").length;
 
-  // Calcular streak
-  const hoje = new Date();
-  hoje.setHours(0,0,0,0);
+  const hoje = new Date(); hoje.setHours(0,0,0,0);
   let streak = 0;
   let checkDay = new Date(hoje);
   while (true) {
-    const dayStr = checkDay.toDateString();
-    const hasCard = cards.some(c => new Date(c.criado_em).toDateString() === dayStr);
+    const dayStr  = checkDay.toDateString();
+    const hasCard = cards.some(c=>new Date(c.criado_em).toDateString()===dayStr);
     if (!hasCard) break;
-    streak++;
-    checkDay.setDate(checkDay.getDate() - 1);
+    streak++; checkDay.setDate(checkDay.getDate()-1);
   }
 
-  const diasUnicos = [...new Set(cards.map(c=>new Date(c.criado_em).toDateString()))].length;
-  const ultimos7   = Array.from({length:7},(_,i)=>{ const d=new Date(); d.setDate(d.getDate()-(6-i)); return { label:d.toLocaleDateString("pt-BR",{weekday:"short"}).replace(".",""), count:cards.filter(c=>new Date(c.criado_em).toDateString()===d.toDateString()).length, isToday: i===6 }; });
-  const maxCount   = Math.max(...ultimos7.map(d=>d.count),1);
+  const paraRevisar = cards.filter(c=>Math.floor((Date.now()-new Date(c.criado_em).getTime())/86400000)>=3).length;
+  const diasUnicos  = [...new Set(cards.map(c=>new Date(c.criado_em).toDateString()))].length;
+  const ultimos7    = Array.from({length:7},(_,i)=>{ const d=new Date(); d.setDate(d.getDate()-(6-i)); return { label:d.toLocaleDateString("pt-BR",{weekday:"short"}).replace(".",""), count:cards.filter(c=>new Date(c.criado_em).toDateString()===d.toDateString()).length, isToday:i===6 }; });
+  const maxCount    = Math.max(...ultimos7.map(d=>d.count),1);
   const langCount: Record<string,number> = {};
   cards.forEach(c=>{ [c.lang_1_nome,c.lang_2_nome,c.lang_3_nome].forEach(l=>{ langCount[l]=(langCount[l]||0)+1; }); });
   const topLangs = Object.entries(langCount).sort((a,b)=>b[1]-a[1]);
   const maxLang  = topLangs[0]?.[1]||1;
 
-  // Conquistas
   const badges = [
-    { label:"Primeiro Nexo",  unlocked: total >= 1,   desc:"Criou o 1º nexo" },
-    { label:"10 Nexos",       unlocked: total >= 10,  desc:"10 nexos criados" },
-    { label:"50 Nexos",       unlocked: total >= 50,  desc:"50 nexos criados" },
-    { label:"3 Dias Seguidos",unlocked: streak >= 3,  desc:"3 dias de estudo" },
-    { label:"7 Dias Seguidos",unlocked: streak >= 7,  desc:"7 dias de estudo" },
-    { label:"Bilíngue",       unlocked: romanicos > 0 && germanicos > 0, desc:"Estudou os 2 troncos" },
+    { label:"Primeiro Nexo",   unlocked:total>=1,   desc:"1º nexo criado" },
+    { label:"10 Nexos",        unlocked:total>=10,  desc:"10 nexos" },
+    { label:"50 Nexos",        unlocked:total>=50,  desc:"50 nexos" },
+    { label:"3 Dias Seguidos", unlocked:streak>=3,  desc:"3 dias consecutivos" },
+    { label:"7 Dias Seguidos", unlocked:streak>=7,  desc:"7 dias consecutivos" },
+    { label:"Bilíngue",        unlocked:romanicos>0&&germanicos>0, desc:"2 troncos" },
   ];
 
-  function exportPDF() {
-    const linhas = cards.map(c => `
-${c.titulo_card || c.tema_gerador}
-${c.lang_1_nome}: ${c.lang_1_txt} [${c.lang_1_fon}]${c.lang_1_exemplo ? ` — Ex: ${c.lang_1_exemplo}` : ""}
-${c.lang_2_nome}: ${c.lang_2_txt} [${c.lang_2_fon}]${c.lang_2_exemplo ? ` — Ex: ${c.lang_2_exemplo}` : ""}
-${c.lang_3_nome}: ${c.lang_3_txt} [${c.lang_3_fon}]${c.lang_3_exemplo ? ` — Ex: ${c.lang_3_exemplo}` : ""}
-Lição: ${c.aula_chico}
----`).join("\n");
-
-    const conteudo = `CHICO MENTOR — BIBLIOTECA DE NEXOS\nExportado em ${new Date().toLocaleDateString("pt-BR")}\n\n${linhas}`;
-    const blob = new Blob([conteudo], { type:"text/plain;charset=utf-8" });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href = url; a.download = "chico-mentor-nexos.txt"; a.click();
-    URL.revokeObjectURL(url);
+  function exportTxt() {
+    const linhas = cards.map(c=>`${c.titulo_card||c.tema_gerador}\n${c.lang_1_nome}: ${c.lang_1_txt} [${c.lang_1_fon}]${c.lang_1_exemplo?` — ${c.lang_1_exemplo}`:""}\n${c.lang_2_nome}: ${c.lang_2_txt} [${c.lang_2_fon}]${c.lang_2_exemplo?` — ${c.lang_2_exemplo}`:""}\n${c.lang_3_nome}: ${c.lang_3_txt} [${c.lang_3_fon}]${c.lang_3_exemplo?` — ${c.lang_3_exemplo}`:""}\nLição: ${c.aula_chico}\n---`).join("\n\n");
+    const blob = new Blob([`CHICO MENTOR — NEXOS\n${new Date().toLocaleDateString("pt-BR")}\n\n${linhas}`],{type:"text/plain;charset=utf-8"});
+    const a = document.createElement("a"); a.href=URL.createObjectURL(blob); a.download="chico-nexos.txt"; a.click();
   }
 
   return (
     <div style={{ padding:"20px 16px", overflowY:"auto", height:"100%", display:"flex", flexDirection:"column", gap:"14px" }}>
-
-      {/* Streak destaque */}
-      {streak > 0 && (
+      {streak>0&&(
         <div style={{ background:"linear-gradient(135deg,#FF9500,#FF6B00)", borderRadius:"16px", padding:"16px 20px", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
           <div>
-            <div style={{ fontSize:"13px", fontWeight:600, color:"rgba(255,255,255,0.8)", marginBottom:"2px" }}>Sequência atual</div>
+            <div style={{ fontSize:"12px", fontWeight:600, color:"rgba(255,255,255,0.8)", marginBottom:"2px" }}>Sequência atual</div>
             <div style={{ fontSize:"28px", fontWeight:700, color:"#fff" }}>{streak} {streak===1?"dia":"dias"} seguidos</div>
           </div>
           <Icon.Fire/>
         </div>
       )}
-
-      {/* Stats */}
+      {paraRevisar>0&&(
+        <div style={{ background:"rgba(255,149,0,0.08)", borderRadius:"14px", padding:"14px 16px", border:"1px solid rgba(255,149,0,0.25)", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+          <div>
+            <div style={{ fontSize:"12px", fontWeight:700, color:"#FF9500" }}>{paraRevisar} card{paraRevisar>1?"s":""} para revisar</div>
+            <div style={{ fontSize:"11px", color:"#86868B", marginTop:"2px" }}>Não vistos há 3+ dias — abra os Flashcards</div>
+          </div>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF9500" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+      )}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"10px" }}>
         {[{value:total,label:"Nexos",color:"#0071E3"},{value:diasUnicos,label:"Dias ativos",color:"#FF9500"},{value:total*3,label:"Traduções",color:"#34C759"}].map(s=>(
           <div key={s.label} style={{ background:"#fff", borderRadius:"14px", padding:"14px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)", textAlign:"center" }}>
@@ -478,8 +527,6 @@ Lição: ${c.aula_chico}
           </div>
         ))}
       </div>
-
-      {/* Gráfico */}
       <div style={{ background:"#fff", borderRadius:"16px", padding:"18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
         <h3 style={{ margin:"0 0 14px", fontSize:"13px", fontWeight:700, color:"#1D1D1F" }}>Últimos 7 dias</h3>
         <div style={{ display:"flex", alignItems:"flex-end", gap:"8px", height:"64px" }}>
@@ -491,60 +538,39 @@ Lição: ${c.aula_chico}
           ))}
         </div>
       </div>
-
-      {/* Troncos */}
       <div style={{ background:"#fff", borderRadius:"16px", padding:"18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
         <h3 style={{ margin:"0 0 12px", fontSize:"13px", fontWeight:700, color:"#1D1D1F" }}>Por tronco</h3>
         {[{label:"Tear Românico",count:romanicos,color:"#FF3B30"},{label:"Tear Germânico",count:germanicos,color:"#0071E3"}].map(t=>(
           <div key={t.label} style={{ marginBottom:"10px" }}>
-            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"5px" }}>
-              <span style={{ fontSize:"12px", fontWeight:500, color:"#3A3A3C" }}>{t.label}</span>
-              <span style={{ fontSize:"12px", fontWeight:600, color:t.color }}>{t.count}</span>
-            </div>
-            <div style={{ height:5, borderRadius:5, background:"rgba(0,0,0,0.06)", overflow:"hidden" }}>
-              <div style={{ height:"100%", borderRadius:5, background:t.color, width:`${total>0?(t.count/total)*100:0}%`, transition:"width 0.5s ease" }}/>
-            </div>
+            <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"5px" }}><span style={{ fontSize:"12px", fontWeight:500, color:"#3A3A3C" }}>{t.label}</span><span style={{ fontSize:"12px", fontWeight:600, color:t.color }}>{t.count}</span></div>
+            <div style={{ height:5, borderRadius:5, background:"rgba(0,0,0,0.06)", overflow:"hidden" }}><div style={{ height:"100%", borderRadius:5, background:t.color, width:`${total>0?(t.count/total)*100:0}%`, transition:"width 0.5s ease" }}/></div>
           </div>
         ))}
       </div>
-
-      {/* Conquistas */}
       <div style={{ background:"#fff", borderRadius:"16px", padding:"18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
         <h3 style={{ margin:"0 0 14px", fontSize:"13px", fontWeight:700, color:"#1D1D1F" }}>Conquistas</h3>
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"8px" }}>
           {badges.map(b=>(
-            <div key={b.label} style={{ padding:"12px 8px", borderRadius:"12px", background:b.unlocked?"linear-gradient(135deg,rgba(0,113,227,0.08),rgba(52,170,220,0.08))":"rgba(0,0,0,0.03)", border:`1px solid ${b.unlocked?"rgba(0,113,227,0.20)":"rgba(0,0,0,0.06)"}`, textAlign:"center", opacity:b.unlocked?1:0.5 }}>
-              <div style={{ fontSize:"20px", marginBottom:"5px" }}>{b.unlocked?"⭐":"🔒"}</div>
+            <div key={b.label} style={{ padding:"12px 8px", borderRadius:"12px", background:b.unlocked?"rgba(0,113,227,0.06)":"rgba(0,0,0,0.03)", border:`1px solid ${b.unlocked?"rgba(0,113,227,0.20)":"rgba(0,0,0,0.06)"}`, textAlign:"center", opacity:b.unlocked?1:0.5 }}>
+              <div style={{ fontSize:"18px", marginBottom:"5px" }}>{b.unlocked?"⭐":"🔒"}</div>
               <div style={{ fontSize:"11px", fontWeight:600, color:b.unlocked?"#0071E3":"#86868B", lineHeight:1.3 }}>{b.label}</div>
               <div style={{ fontSize:"10px", color:"#AEAEB2", marginTop:"2px" }}>{b.desc}</div>
             </div>
           ))}
         </div>
       </div>
-
-      {/* Línguas */}
       {topLangs.length>0&&(
         <div style={{ background:"#fff", borderRadius:"16px", padding:"18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
           <h3 style={{ margin:"0 0 12px", fontSize:"13px", fontWeight:700, color:"#1D1D1F" }}>Top línguas</h3>
           {topLangs.map(([lang,count])=>(
             <div key={lang} style={{ marginBottom:"10px" }}>
-              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"5px" }}>
-                <span style={{ fontSize:"12px", fontWeight:500, color:"#3A3A3C" }}>{lang}</span>
-                <span style={{ fontSize:"12px", fontWeight:600, color:"#0071E3" }}>{count}x</span>
-              </div>
-              <div style={{ height:5, borderRadius:5, background:"rgba(0,0,0,0.06)", overflow:"hidden" }}>
-                <div style={{ height:"100%", borderRadius:5, background:"linear-gradient(90deg,#0071E3,#34AADC)", width:`${(count/maxLang)*100}%`, transition:"width 0.5s ease" }}/>
-              </div>
+              <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"5px" }}><span style={{ fontSize:"12px", fontWeight:500, color:"#3A3A3C" }}>{lang}</span><span style={{ fontSize:"12px", fontWeight:600, color:"#0071E3" }}>{count}x</span></div>
+              <div style={{ height:5, borderRadius:5, background:"rgba(0,0,0,0.06)", overflow:"hidden" }}><div style={{ height:"100%", borderRadius:5, background:"linear-gradient(90deg,#0071E3,#34AADC)", width:`${(count/maxLang)*100}%`, transition:"width 0.5s ease" }}/></div>
             </div>
           ))}
         </div>
       )}
-
-      {/* Exportar */}
-      <button onClick={exportPDF}
-        style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"8px", padding:"13px", borderRadius:"12px", border:"1.5px solid rgba(0,113,227,0.25)", background:"rgba(0,113,227,0.05)", color:"#0071E3", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"inherit", transition:"all 0.2s" }}
-        onMouseEnter={e=>(e.currentTarget.style.background="rgba(0,113,227,0.10)")}
-        onMouseLeave={e=>(e.currentTarget.style.background="rgba(0,113,227,0.05)")}>
+      <button onClick={exportTxt} style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"8px", padding:"13px", borderRadius:"12px", border:"1.5px solid rgba(0,113,227,0.25)", background:"rgba(0,113,227,0.05)", color:"#0071E3", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
         <Icon.Download/>Exportar biblioteca ({total} nexos)
       </button>
     </div>
@@ -554,10 +580,10 @@ Lição: ${c.aula_chico}
 // ── Imersão ───────────────────────────────────────────────────────────────────
 
 function ImersaoTab({ profile }: { profile: UserProfile | null }) {
-  const [texto, setTexto]       = useState("");
+  const [texto, setTexto]         = useState("");
   const [resultado, setResultado] = useState<string | null>(null);
-  const [loading, setLoading]   = useState(false);
-  const [copied, setCopied]     = useState(false);
+  const [loading, setLoading]     = useState(false);
+  const [copied, setCopied]       = useState(false);
 
   async function handle() {
     if (!texto.trim()||!profile) return;
@@ -668,15 +694,13 @@ function DiarioTab({ profile }: { profile: UserProfile | null }) {
 
 function PerfilTab({ profile, onProfileUpdate }: { profile: UserProfile | null; onProfileUpdate: (p: UserProfile) => void }) {
   const supabase = createSupabase();
-  const [troncos, setTroncos] = useState<("românico"|"germânico")[]>(
-    profile?.troncos_selecionados ?? (profile?.tronco ? [profile.tronco] : [])
-  );
-  const [saving, setSaving]   = useState(false);
-  const [saved, setSaved]     = useState(false);
+  const [troncos, setTroncos]         = useState<("românico"|"germânico")[]>(profile?.troncos_selecionados??(profile?.tronco?[profile.tronco]:[]));
+  const [saving, setSaving]           = useState(false);
+  const [saved, setSaved]             = useState(false);
   const [confirmLogout, setConfirmLogout] = useState(false);
 
   function toggleTronco(id: "românico"|"germânico") {
-    setTroncos(prev => prev.includes(id) ? prev.filter(t=>t!==id) : [...prev, id]);
+    setTroncos(prev => prev.includes(id) ? prev.filter(t=>t!==id) : [...prev,id]);
   }
 
   async function handleSave() {
@@ -692,8 +716,8 @@ function PerfilTab({ profile, onProfileUpdate }: { profile: UserProfile | null; 
   async function handleLogout() { await supabase.auth.signOut(); window.location.href="/"; }
 
   const TRONCOS_CONFIG = [
-    { id:"românico" as const,  label:"Tear Românico",  desc:"Espanhol, Francês e Italiano", color:"#FF3B30", bg:"rgba(255,59,48,0.06)", border:"rgba(255,59,48,0.25)" },
-    { id:"germânico" as const, label:"Tear Germânico", desc:"Inglês, Alemão e Holandês",    color:"#0071E3", bg:"rgba(0,113,227,0.06)", border:"rgba(0,113,227,0.25)" },
+    { id:"românico" as const,  label:"Tear Românico",  desc:"Espanhol, Francês e Italiano", color:"#FF3B30", bg:"rgba(255,59,48,0.06)" },
+    { id:"germânico" as const, label:"Tear Germânico", desc:"Inglês, Alemão e Holandês",    color:"#0071E3", bg:"rgba(0,113,227,0.06)" },
   ];
 
   return (
@@ -710,16 +734,13 @@ function PerfilTab({ profile, onProfileUpdate }: { profile: UserProfile | null; 
       </div>
       <div style={{ background:"#fff", borderRadius:"18px", padding:"20px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
         <h3 style={{ margin:"0 0 6px", fontSize:"15px", fontWeight:700, color:"#1D1D1F" }}>Meus Troncos</h3>
-        <p style={{ margin:"0 0 14px", fontSize:"13px", color:"#86868B", lineHeight:1.5 }}>Adicione ou remova os troncos que deseja aprender.</p>
+        <p style={{ margin:"0 0 14px", fontSize:"13px", color:"#86868B", lineHeight:1.5 }}>Adicione ou remova troncos a qualquer momento.</p>
         <div style={{ display:"flex", flexDirection:"column", gap:"10px", marginBottom:"14px" }}>
-          {TRONCOS_CONFIG.map(t=>{ const selected=troncos.includes(t.id); return (
-            <button key={t.id} onClick={()=>toggleTronco(t.id)} style={{ width:"100%", padding:"14px 16px", borderRadius:"12px", border:`2px solid ${selected?t.color:"rgba(0,0,0,0.08)"}`, background:selected?t.bg:"#FAFAFA", cursor:"pointer", textAlign:"left", fontFamily:"inherit", transition:"all 0.2s", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-              <div>
-                <div style={{ fontSize:"14px", fontWeight:700, color:selected?t.color:"#1D1D1F" }}>{t.label}</div>
-                <div style={{ fontSize:"12px", color:"#86868B", marginTop:"2px" }}>{t.desc}</div>
-              </div>
-              <div style={{ width:22, height:22, borderRadius:"6px", border:`2px solid ${selected?t.color:"rgba(0,0,0,0.2)"}`, background:selected?t.color:"transparent", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.2s", flexShrink:0 }}>
-                {selected&&<Icon.CheckMark/>}
+          {TRONCOS_CONFIG.map(t=>{ const sel=troncos.includes(t.id); return (
+            <button key={t.id} onClick={()=>toggleTronco(t.id)} style={{ width:"100%", padding:"14px 16px", borderRadius:"12px", border:`2px solid ${sel?t.color:"rgba(0,0,0,0.08)"}`, background:sel?t.bg:"#FAFAFA", cursor:"pointer", textAlign:"left", fontFamily:"inherit", transition:"all 0.2s", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div><div style={{ fontSize:"14px", fontWeight:700, color:sel?t.color:"#1D1D1F" }}>{t.label}</div><div style={{ fontSize:"12px", color:"#86868B", marginTop:"2px" }}>{t.desc}</div></div>
+              <div style={{ width:22, height:22, borderRadius:"6px", border:`2px solid ${sel?t.color:"rgba(0,0,0,0.2)"}`, background:sel?t.color:"transparent", display:"flex", alignItems:"center", justifyContent:"center", transition:"all 0.2s", flexShrink:0 }}>
+                {sel&&<Icon.CheckMark/>}
               </div>
             </button>
           );})}
@@ -760,11 +781,14 @@ export default function ChicoDashboard() {
   const [activeTab, setActiveTab]           = useState<MainTab>("chat");
   const [sidebarOpen, setSidebarOpen]       = useState(false);
   const [isMobile, setIsMobile]             = useState(false);
+  const [modoChat, setModoChat]             = useState<ModoChat>("explorar");
+  const [nivelDetectado, setNivelDetectado] = useState<string>("iniciante");
+  const [gerandoRoteiro, setGerandoRoteiro] = useState(false);
+  const [temaRoteiro, setTemaRoteiro]       = useState("");
+  const [showRoteiroInput, setShowRoteiroInput] = useState(false);
 
-  const chatEndRef  = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
-
-  // Histórico para memória do Chico (últimas 6 mensagens)
+  const chatEndRef     = useRef<HTMLDivElement>(null);
+  const textareaRef    = useRef<HTMLTextAreaElement>(null);
   const chatHistoryRef = useRef<{role:"user"|"assistant";content:string}[]>([]);
 
   useEffect(()=>{ function check(){ setIsMobile(window.innerWidth<768); } check(); window.addEventListener("resize",check); return ()=>window.removeEventListener("resize",check); },[]);
@@ -788,6 +812,7 @@ export default function ChicoDashboard() {
     if (profile&&messages.length===0) {
       const troncoLabel    = profile.tronco==="românico"?"Tear Românico":"Tear Germânico";
       const hoje           = new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
+      const paraRevisar    = cards.filter(c=>Math.floor((Date.now()-new Date(c.criado_em).getTime())/86400000)>=3).length;
       const desafios = [
         `Como se diz "${profile.interesses?.[0]??"amigo"}" nas línguas do ${troncoLabel}?`,
         `Qual a origem da palavra "${profile.interesses?.[0]??"trabalho"}" no ${troncoLabel}?`,
@@ -795,69 +820,101 @@ export default function ChicoDashboard() {
         `Quais cognatos de "${profile.interesses?.[0]??"arte"}" existem no ${troncoLabel}?`,
       ];
       const desafio = desafios[new Date().getDate()%desafios.length];
-      const welcomeContent = `Bom dia, ${profile.display_name?.split(" ")[0]??""}. Hoje é ${hoje}.\n\nDesafio do dia: ${desafio}\n\nEstou pronto quando quiser começar.`;
+      let welcomeContent = `Bom dia, ${profile.display_name?.split(" ")[0]??""}. Hoje é ${hoje}.\n\nDesafio do dia: ${desafio}`;
+      if (paraRevisar>0) welcomeContent += `\n\nVocê tem ${paraRevisar} card${paraRevisar>1?"s":""} aguardando revisão — considere abrir os Flashcards antes.`;
+      welcomeContent += "\n\nEstou pronto quando quiser começar.";
       setMessages([{ id:"welcome", role:"chico", content:welcomeContent }]);
       chatHistoryRef.current = [{ role:"assistant", content:welcomeContent }];
     }
-  },[profile]);
+  },[profile, cards.length]);
 
   const sendMessage = useCallback(async(text:string)=>{
     if(!text.trim()||isLoading||!profile) return;
 
-    const userMsg = { id:`u-${Date.now()}`, role:"user" as const, content:text.trim() };
-    const loadMsg = { id:`l-${Date.now()}`, role:"chico" as const, content:"", isLoading:true };
-    setMessages(prev=>[...prev, userMsg, loadMsg]);
+    setMessages(prev=>[...prev,
+      { id:`u-${Date.now()}`, role:"user" as const, content:text.trim() },
+      { id:`l-${Date.now()}`, role:"chico" as const, content:"", isLoading:true },
+    ]);
     setInputText(""); setIsLoading(true);
+    chatHistoryRef.current = [...chatHistoryRef.current, { role:"user" as const, content:text.trim() }].slice(-8);
 
-    // Adiciona ao histórico
-    chatHistoryRef.current = [...chatHistoryRef.current, { role:"user" as const, content:text.trim() }].slice(-6);
+    // Nexos recentes para memória do Chico
+    const nexos_recentes = cards.slice(0,10).map(c=>c.titulo_card||c.tema_gerador).filter(Boolean);
 
     try {
       const res = await fetch("/api/chico",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
         body:JSON.stringify({
-          tema_gerador: text.trim(),
-          tronco: profile.tronco,
-          interesses: profile.interesses??[],
-          historico: chatHistoryRef.current,
+          tema_gerador:  text.trim(),
+          tronco:        profile.tronco,
+          interesses:    profile.interesses??[],
+          historico:     chatHistoryRef.current,
+          modo:          modoChat,
+          nexos_recentes,
         })
       });
       const data = await res.json();
       if(!res.ok) throw new Error(data.error??"Erro desconhecido");
 
+      if (data.nivel) setNivelDetectado(data.nivel);
+
+      // Modo conversar: resposta livre
+      if (modoChat === "conversar") {
+        const chicoContent = data.conversa || "";
+        setMessages(prev=>prev.map(m=>m.isLoading?{ id:`c-${Date.now()}`, role:"chico" as const, content:chicoContent }:m));
+        chatHistoryRef.current = [...chatHistoryRef.current, { role:"assistant" as const, content:chicoContent }].slice(-8);
+        return;
+      }
+
+      // Modos explorar/praticar: salva card
       const savedCard:MentoriaCard = data.card;
       setCards(prev=>[savedCard,...prev]);
 
       const chicoContent = savedCard.aula_chico;
-      setMessages(prev=>prev.map(m=>m.isLoading?{id:`c-${Date.now()}`,role:"chico" as const,content:chicoContent}:m));
+      setMessages(prev=>prev.map(m=>m.isLoading?{ id:`c-${Date.now()}`, role:"chico" as const, content:chicoContent }:m));
+      chatHistoryRef.current = [...chatHistoryRef.current, { role:"assistant" as const, content:chicoContent }].slice(-8);
 
-      // Adiciona resposta ao histórico
-      chatHistoryRef.current = [...chatHistoryRef.current, { role:"assistant" as const, content:chicoContent }].slice(-6);
+      // Adiciona pergunta de verificação como mensagem separada
+      if (savedCard.pergunta_verificacao && modoChat === "explorar") {
+        setTimeout(()=>{
+          setMessages(prev=>[...prev, {
+            id:`v-${Date.now()}`, role:"chico" as const,
+            content: savedCard.pergunta_verificacao!,
+            isVerificacao: true,
+          }]);
+        }, 600);
+      }
+
     } catch(err) {
       const errContent = `Perdoe-me — ${(err as Error).message}. Podemos tentar novamente?`;
-      setMessages(prev=>prev.map(m=>m.isLoading?{id:`e-${Date.now()}`,role:"chico" as const,content:errContent}:m));
+      setMessages(prev=>prev.map(m=>m.isLoading?{ id:`e-${Date.now()}`, role:"chico" as const, content:errContent }:m));
     } finally { setIsLoading(false); }
-  },[isLoading,profile]);
+  },[isLoading, profile, modoChat, cards]);
+
+  async function gerarRoteiro() {
+    if (!temaRoteiro.trim()||!profile) return;
+    setGerandoRoteiro(true); setShowRoteiroInput(false);
+    try {
+      const res  = await fetch("/api/chico",{ method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ tronco:profile.tronco, interesses:profile.interesses??[], tema:temaRoteiro }) });
+      const data = await res.json();
+      if (res.ok && data.roteiro) {
+        const r = data.roteiro;
+        const content = `${r.titulo}\n${r.descricao}\n\n${r.nexos.map((n:any,i:number)=>`${i+1}. ${n.palavra} — ${n.motivo}`).join("\n")}\n\nQuer começar pelo primeiro? Apenas pergunte sobre "${r.nexos[0]?.palavra}".`;
+        setMessages(prev=>[...prev, { id:`r-${Date.now()}`, role:"chico" as const, content, isRoteiro:true }]);
+      }
+    } catch {}
+    setGerandoRoteiro(false); setTemaRoteiro("");
+  }
 
   function handleDeleteCard(id:string) { setCards(prev=>prev.filter(c=>c.id!==id)); }
   function handleSubmit(e:FormEvent){e.preventDefault();sendMessage(inputText);}
   function handleKeyDown(e:React.KeyboardEvent<HTMLTextAreaElement>){if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();sendMessage(inputText);}}
   function handleMic(){if(audio.isListening){audio.stopListening();return;}audio.startListening(text=>setInputText(prev=>(prev?`${prev} ${text}`:text).trim()));}
 
-  // Filtro + busca
   const filteredCards = cards
-    .filter(c => sidebarFilter==="todos" || c.tronco===sidebarFilter)
-    .filter(c => {
-      if (!searchQuery.trim()) return true;
-      const q = searchQuery.toLowerCase();
-      return (
-        (c.titulo_card||c.tema_gerador).toLowerCase().includes(q) ||
-        c.lang_1_txt?.toLowerCase().includes(q) ||
-        c.lang_2_txt?.toLowerCase().includes(q) ||
-        c.lang_3_txt?.toLowerCase().includes(q)
-      );
-    });
+    .filter(c=>sidebarFilter==="todos"||c.tronco===sidebarFilter)
+    .filter(c=>{ if(!searchQuery.trim())return true; const q=searchQuery.toLowerCase(); return (c.titulo_card||c.tema_gerador).toLowerCase().includes(q)||c.lang_1_txt?.toLowerCase().includes(q)||c.lang_2_txt?.toLowerCase().includes(q)||c.lang_3_txt?.toLowerCase().includes(q); });
 
   const navTabs: {id:MainTab;label:string;icon:(c:string)=>React.ReactElement}[] = [
     {id:"chat",       label:"Conversar",  icon:c=><Icon.Chat c={c}/>},
@@ -867,6 +924,12 @@ export default function ChicoDashboard() {
     {id:"diario",     label:"Diário",     icon:c=><Icon.Diary c={c}/>},
     {id:"perfil",     label:"Perfil",     icon:c=><Icon.Settings c={c}/>},
   ];
+
+  const modoLabels: Record<ModoChat,{label:string;color:string;bg:string;desc:string}> = {
+    explorar:  { label:"Explorar",  color:"#0071E3", bg:"rgba(0,113,227,0.09)",  desc:"Aprenda algo novo" },
+    praticar:  { label:"Praticar",  color:"#34C759", bg:"rgba(52,199,89,0.09)",  desc:"O Chico te testa" },
+    conversar: { label:"Conversar", color:"#FF9500", bg:"rgba(255,149,0,0.09)",  desc:"Imersão gradual" },
+  };
 
   const TOPBAR_H     = 52;
   const MOBILE_NAV_H = 68;
@@ -896,6 +959,11 @@ export default function ChicoDashboard() {
                 {profile.tronco==="românico"?"Tear Românico":"Tear Germânico"}
               </span>
             )}
+            {!isMobile&&nivelDetectado&&(
+              <span style={{ padding:"3px 8px", borderRadius:"8px", fontSize:"11px", fontWeight:500, background:"rgba(0,0,0,0.05)", color:"#86868B" }}>
+                {nivelDetectado}
+              </span>
+            )}
           </div>
           {profile&&!isMobile&&(
             <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
@@ -915,18 +983,14 @@ export default function ChicoDashboard() {
             ...(isMobile?{ position:"fixed", top:TOPBAR_H, bottom:MOBILE_NAV_H, left:0, zIndex:160, transform:sidebarOpen?"translateX(0)":"translateX(-100%)", transition:"transform 0.3s ease", boxShadow:sidebarOpen?"4px 0 20px rgba(0,0,0,0.15)":"none" }:{}) }}>
             <div style={{ padding:"14px 14px 10px", flexShrink:0 }}>
               <h2 style={{ margin:"0 0 10px", fontSize:"16px", fontWeight:700, color:"#1D1D1F", letterSpacing:"-0.02em" }}>Biblioteca de Nexos</h2>
-
-              {/* Busca */}
               <div style={{ display:"flex", alignItems:"center", gap:"8px", padding:"8px 10px", background:"#fff", borderRadius:"10px", border:"1.5px solid rgba(0,0,0,0.09)", marginBottom:"10px" }}>
                 <Icon.Search size={14} color="#AEAEB2"/>
                 <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Buscar nexos..." style={{ flex:1, border:"none", background:"transparent", fontSize:"13px", color:"#1D1D1F", fontFamily:"inherit" }}/>
                 {searchQuery&&<button onClick={()=>setSearchQuery("")} style={{ border:"none", background:"none", cursor:"pointer", color:"#AEAEB2", fontSize:"16px", lineHeight:1, padding:0 }}>×</button>}
               </div>
-
               <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"8px" }}>
-                <span style={{ fontSize:"12px", color:"#86868B" }}>{filteredCards.length} {filteredCards.length===1?"nexo":"nexos"}</span>
+                <span style={{ fontSize:"12px", color:"#86868B" }}>{filteredCards.length} nexos</span>
               </div>
-
               <div style={{ display:"flex", gap:"4px", padding:"3px", borderRadius:"10px", background:"rgba(0,0,0,0.06)" }}>
                 {(["todos","românico","germânico"] as const).map(f=>(
                   <button key={f} onClick={()=>setSidebarFilter(f)} style={{ flex:1, padding:"5px 6px", borderRadius:"8px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:600, transition:"all 0.15s", background:sidebarFilter===f?"#fff":"transparent", color:sidebarFilter===f?"#1D1D1F":"#86868B", boxShadow:sidebarFilter===f?"0 1px 4px rgba(0,0,0,0.10)":"none", fontFamily:"inherit" }}>
@@ -935,7 +999,6 @@ export default function ChicoDashboard() {
                 ))}
               </div>
             </div>
-
             <div style={{ flex:1, overflowY:"auto", padding:"0 12px 16px", display:"flex", flexDirection:"column", gap:"10px" }}>
               {isFetchingCards
                 ?Array.from({length:3}).map((_,i)=><div key={i} style={{ height:120, borderRadius:"14px", background:"#e8e8e8" }}/>)
@@ -943,7 +1006,7 @@ export default function ChicoDashboard() {
                   ?<div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"36px 12px", textAlign:"center", gap:"10px" }}>
                     <Icon.Search size={32}/>
                     <p style={{ margin:0, fontSize:"13px", color:"#86868B", lineHeight:1.5 }}>
-                      {searchQuery ? `Nenhum resultado para "${searchQuery}"` : "Biblioteca vazia.\nPergunte algo ao Chico."}
+                      {searchQuery?`Nenhum resultado para "${searchQuery}"`:"Biblioteca vazia.\nPergunte algo ao Chico."}
                     </p>
                   </div>
                   :filteredCards.map(card=><div key={card.id} style={{ animation:"fadeIn 0.3s ease forwards" }}><NexoCard card={card} audio={audio} onDelete={handleDeleteCard}/></div>)
@@ -965,22 +1028,67 @@ export default function ChicoDashboard() {
             )}
 
             <div style={{ flex:1, overflow:"hidden", display:"flex", flexDirection:"column", paddingBottom:isMobile?`${MOBILE_NAV_H}px`:"0" }}>
+
+              {/* Chat */}
               {activeTab==="chat"&&(
                 <>
-                  <div style={{ flex:1, overflowY:"auto", padding:isMobile?"14px":"24px 28px", display:"flex", flexDirection:"column", gap:"14px" }}>
+                  {/* Seletor de modo */}
+                  <div style={{ padding:"10px 20px 0", background:"rgba(255,255,255,0.92)", borderBottom:"1px solid rgba(0,0,0,0.06)", flexShrink:0 }}>
+                    <div style={{ display:"flex", gap:"6px", marginBottom:"10px" }}>
+                      {(["explorar","praticar","conversar"] as const).map(m=>{
+                        const ml = modoLabels[m];
+                        const active = modoChat===m;
+                        return (
+                          <button key={m} onClick={()=>setModoChat(m)}
+                            style={{ flex:1, padding:"7px 10px", borderRadius:"10px", border:`1.5px solid ${active?ml.color:"rgba(0,0,0,0.08)"}`, background:active?ml.bg:"transparent", cursor:"pointer", fontFamily:"inherit", transition:"all 0.2s", textAlign:"center" as const }}>
+                            <div style={{ fontSize:"12px", fontWeight:active?700:500, color:active?ml.color:"#86868B" }}>{ml.label}</div>
+                            <div style={{ fontSize:"10px", color:active?ml.color:"#AEAEB2", marginTop:"1px" }}>{ml.desc}</div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                    {/* Botão roteiro */}
+                    <div style={{ display:"flex", gap:"8px", marginBottom:"10px", alignItems:"center" }}>
+                      {!showRoteiroInput ? (
+                        <button onClick={()=>setShowRoteiroInput(true)} style={{ display:"flex", alignItems:"center", gap:"6px", padding:"5px 12px", borderRadius:"8px", border:"1px solid rgba(255,149,0,0.30)", background:"rgba(255,149,0,0.06)", color:"#FF9500", fontSize:"12px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                          <Icon.Route/>Gerar roteiro de aprendizado
+                        </button>
+                      ) : (
+                        <>
+                          <input value={temaRoteiro} onChange={e=>setTemaRoteiro(e.target.value)} placeholder="Tema do roteiro (ex: emoções, viagens...)"
+                            style={{ flex:1, padding:"6px 10px", borderRadius:"8px", border:"1.5px solid rgba(255,149,0,0.40)", fontSize:"12px", color:"#1D1D1F", fontFamily:"inherit", background:"#fff" }}
+                            onKeyDown={e=>e.key==="Enter"&&gerarRoteiro()}/>
+                          <button onClick={gerarRoteiro} disabled={!temaRoteiro.trim()||gerandoRoteiro}
+                            style={{ padding:"6px 12px", borderRadius:"8px", border:"none", background:"#FF9500", color:"#fff", fontSize:"12px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                            {gerandoRoteiro?"...":"Gerar"}
+                          </button>
+                          <button onClick={()=>{setShowRoteiroInput(false);setTemaRoteiro("");}}
+                            style={{ padding:"6px 10px", borderRadius:"8px", border:"1px solid rgba(0,0,0,0.10)", background:"transparent", color:"#86868B", fontSize:"12px", cursor:"pointer", fontFamily:"inherit" }}>
+                            Cancelar
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  <div style={{ flex:1, overflowY:"auto", padding:isMobile?"14px":"20px 28px", display:"flex", flexDirection:"column", gap:"14px" }}>
                     {messages.map(msg=><div key={msg.id} style={{ animation:"fadeIn 0.3s ease forwards" }}><ChatBubble message={msg}/></div>)}
                     <div ref={chatEndRef}/>
                   </div>
+
                   {audio.isListening&&(
                     <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:"8px", padding:"7px", background:"rgba(255,59,48,0.07)", borderTop:"1px solid rgba(255,59,48,0.12)" }}>
                       <div style={{ width:6, height:6, borderRadius:"50%", background:"#FF3B30", animation:"pulse 0.8s ease-in-out infinite alternate" }}/>
                       <span style={{ fontSize:"12px", color:"#FF3B30", fontWeight:600 }}>A ouvir...</span>
                     </div>
                   )}
-                  <div style={{ padding:isMobile?"10px 12px 12px":"14px 20px 18px", background:"rgba(255,255,255,0.92)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(0,0,0,0.07)", flexShrink:0 }}>
+
+                  <div style={{ padding:isMobile?"10px 12px 12px":"12px 20px 16px", background:"rgba(255,255,255,0.92)", backdropFilter:"blur(20px)", borderTop:"1px solid rgba(0,0,0,0.07)", flexShrink:0 }}>
                     <form onSubmit={handleSubmit} style={{ display:"flex", gap:"8px", alignItems:"flex-end" }}>
                       <div style={{ flex:1, display:"flex", alignItems:"flex-end", gap:"8px", padding:"9px 12px", background:"#fff", borderRadius:"18px", border:"1.5px solid rgba(0,0,0,0.09)", boxShadow:"0 1px 4px rgba(0,0,0,0.05)" }}>
-                        <textarea ref={textareaRef} value={inputText} onChange={e=>setInputText(e.target.value)} onKeyDown={handleKeyDown} placeholder="Pergunte ao Chico..." rows={1} disabled={isLoading}
+                        <textarea ref={textareaRef} value={inputText} onChange={e=>setInputText(e.target.value)} onKeyDown={handleKeyDown}
+                          placeholder={modoChat==="explorar"?"Pergunte ao Chico...":modoChat==="praticar"?"Responda a pergunta do Chico...":"Escreva em português ou tente no idioma..."}
+                          rows={1} disabled={isLoading}
                           style={{ flex:1, border:"none", background:"transparent", fontSize:"14px", lineHeight:"1.5", color:"#1D1D1F", fontFamily:"inherit", maxHeight:"100px", overflowY:"auto", padding:0 }}/>
                         <button type="button" onClick={handleMic} style={{ width:30, height:30, borderRadius:"50%", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:audio.isListening?"#FF3B30":"rgba(0,0,0,0.06)", flexShrink:0, transition:"all 0.2s" }}>
                           <Icon.Mic active={audio.isListening}/>
@@ -995,6 +1103,7 @@ export default function ChicoDashboard() {
                   </div>
                 </>
               )}
+
               {activeTab==="flashcards"&&<div style={{ flex:1, overflow:"hidden" }}><FlashcardsTab cards={cards} audio={audio}/></div>}
               {activeTab==="progresso" &&<div style={{ flex:1, overflow:"hidden" }}><ProgressoTab cards={cards}/></div>}
               {activeTab==="imersao"   &&<div style={{ flex:1, overflow:"hidden" }}><ImersaoTab profile={profile}/></div>}
