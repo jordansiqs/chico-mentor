@@ -285,9 +285,12 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
   }
 
   const quizOptions = useRef<string[]>([]);
-  if (quizAnswer === null && mode === "quiz") {
-    quizOptions.current = getQuizOptions();
-  }
+  // Gera opções do quiz quando necessário (usando useEffect para evitar side effects no render)
+  useEffect(() => {
+    if (mode === "quiz" && quizAnswer === null && card) {
+      quizOptions.current = getQuizOptions();
+    }
+  }, [index, mode, quizAnswer]);
 
   if (done) return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", gap:"20px", padding:"40px", textAlign:"center" }}>
