@@ -372,6 +372,7 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
   const [done, setDone]             = useState(false);
   const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
   const [quizOpts, setQuizOpts]     = useState<string[]>([]);
+  const [quizLang, setQuizLang]     = useState<0|1|2>(0); // índice da língua aleatória do quiz
   const shuffled                    = useRef<MentoriaCard[]>([]);
 
   useEffect(() => { doRestart(); }, [cards.length]);
@@ -380,11 +381,31 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
     if (mode !== "quiz" || quizAnswer !== null || shuffled.current.length === 0) return;
     const c = shuffled.current[index];
     if (!c) return;
-    const correct = c.lang_1_txt;
-    const others  = cards.filter(x => x.id !== c.id).map(x => x.lang_1_txt).filter(Boolean) as string[];
-    const wrongs  = [...others].sort(() => Math.random() - 0.5).slice(0, 3);
-    while (wrongs.length < 3) wrongs.push("—");
-    setQuizOpts([...wrongs, correct].sort(() => Math.random() - 0.5));
+
+    // Escolhe língua aleatória para esta pergunta
+    const langIdx = Math.floor(Math.random() * 3) as 0|1|2;
+    setQuizLang(langIdx);
+
+    const langTxts: [string,string,string] = [c.lang_1_txt, c.lang_2_txt, c.lang_3_txt];
+    const correct = langTxts[langIdx];
+
+    // Coleta opções erradas de TODAS as línguas de outros cards para garantir 3 opções
+    const allOtherTxts: string[] = [];
+    cards.forEach(x => {
+      if (x.id !== c.id) {
+        allOtherTxts.push(x.lang_1_txt, x.lang_2_txt, x.lang_3_txt);
+      }
+    });
+    const filtered = [...new Set(allOtherTxts.filter(t => t && t !== correct && t !== "—"))];
+    const wrongs   = filtered.sort(() => Math.random() - 0.5).slice(0, 3);
+    // Se ainda faltar opções, usa traduções das outras línguas do mesmo card
+    if (wrongs.length < 3) {
+      langTxts.forEach((t, i) => { if (i !== langIdx && t && t !== correct && !wrongs.includes(t)) wrongs.push(t); });
+    }
+    // Fallback final
+    while (wrongs.length < 3) wrongs.push(`Opção ${wrongs.length + 1}`);
+
+    setQuizOpts([...wrongs.slice(0,3), correct].sort(() => Math.random() - 0.5));
   }, [index, mode, quizAnswer, cards.length]);
 
   function doRestart() {
@@ -394,13 +415,13 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
       : [...cards].sort(()=>Math.random()-0.5).slice(0,10);
     shuffled.current = pool;
     setIndex(0); setFlipped(false); setScore({acertos:0,erros:0});
-    setDone(false); setQuizAnswer(null); setQuizOpts([]);
+    setDone(false); setQuizAnswer(null); setQuizOpts([]); setQuizLang(0);
   }
 
   function next(ok: boolean) {
     setScore(s=>({acertos:s.acertos+(ok?1:0),erros:s.erros+(ok?0:1)}));
     if (index+1>=shuffled.current.length){setDone(true);return;}
-    setIndex(i=>i+1); setFlipped(false); setQuizAnswer(null); setQuizOpts([]);
+    setIndex(i=>i+1); setFlipped(false); setQuizAnswer(null); setQuizOpts([]); setQuizLang(0);
   }
 
   const urgentesCount = cards.filter(c=>Math.floor((Date.now()-new Date(c.criado_em).getTime())/86400000)>=3).length;
@@ -435,6 +456,8 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
     { nome:card.lang_2_nome, txt:card.lang_2_txt, fon:card.lang_2_fon, bcp47:card.lang_2_bcp47, exemplo:card.lang_2_exemplo },
     { nome:card.lang_3_nome, txt:card.lang_3_txt, fon:card.lang_3_fon, bcp47:card.lang_3_bcp47, exemplo:card.lang_3_exemplo },
   ];
+  const quizLangNome = langs[quizLang]?.nome ?? langs[0].nome;
+  const quizCorrect  = langs[quizLang]?.txt  ?? langs[0].txt;
 
   return (
     <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"16px", gap:"14px", height:"100%", overflowY:"auto" }}>
@@ -498,14 +521,14 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
       {mode==="quiz"&&(
         <>
           <div style={{ width:"100%", maxWidth:"500px", borderRadius:"20px", background:"#fff", boxShadow:"0 4px 24px rgba(0,0,0,0.09)", padding:"24px", border:"1.5px solid rgba(0,0,0,0.06)" }}>
-            <p style={{ margin:"0 0 6px", fontSize:"11px", color:"#86868B", fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.06em" }}>Como se diz em {langs[0].nome}?</p>
+            <p style={{ margin:"0 0 6px", fontSize:"11px", color:"#86868B", fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.06em" }}>Como se diz em {quizLangNome}?</p>
             <p style={{ margin:0, fontSize:"20px", fontWeight:700, color:"#1D1D1F" }}>{card.titulo_card||card.tema_gerador}</p>
           </div>
           <div style={{ display:"flex", flexDirection:"column", gap:"10px", width:"100%", maxWidth:"500px" }}>
             {quizOpts.length===0
               ? <p style={{ textAlign:"center", color:"#86868B", fontSize:"13px" }}>Carregando...</p>
               : quizOpts.map((opt,i)=>{
-                  const isCorrect=opt===langs[0].txt, isSelected=quizAnswer===i;
+                  const isCorrect=opt===quizCorrect, isSelected=quizAnswer===i;
                   let bg="#fff", borderColor="rgba(0,0,0,0.10)", color="#1D1D1F";
                   if(quizAnswer!==null){ if(isCorrect){bg="rgba(52,199,89,0.08)";borderColor="#34C759";color="#34C759";} else if(isSelected){bg="rgba(255,59,48,0.08)";borderColor="#FF3B30";color="#FF3B30";} }
                   return <button key={i} disabled={quizAnswer!==null} onClick={()=>{setQuizAnswer(i);setTimeout(()=>next(isCorrect),800);}} style={{ width:"100%", padding:"14px 16px", borderRadius:"12px", border:`1.5px solid ${borderColor}`, background:bg, color, fontSize:"14px", fontWeight:500, cursor:quizAnswer!==null?"default":"pointer", fontFamily:"inherit", textAlign:"left", transition:"all 0.2s" }}>{opt}</button>;
@@ -648,36 +671,237 @@ function DiarioTab({ profile }: { profile: UserProfile | null }) {
 
 // ── Perfil ────────────────────────────────────────────────────────────────────
 
-function PerfilTab({ profile, onProfileUpdate }: { profile: UserProfile | null; onProfileUpdate: (p: UserProfile) => void }) {
-  const supabase=createSupabase();
-  const [troncos,setTroncos]=useState<("românico"|"germânico")[]>(profile?.troncos_selecionados??(profile?.tronco?[profile.tronco]:[]));
-  const [saving,setSaving]=useState(false),[saved,setSaved]=useState(false),[confirmLogout,setConfirmLogout]=useState(false);
-  function toggleTronco(id:"românico"|"germânico"){setTroncos(prev=>prev.includes(id)?prev.filter(t=>t!==id):[...prev,id]);}
-  async function handleSave(){if(troncos.length===0||!profile)return;setSaving(true);const{data:{user}}=await supabase.auth.getUser();if(!user)return;await supabase.from("user_profiles").update({tronco:troncos[0],troncos_selecionados:troncos}).eq("id",user.id);onProfileUpdate({...profile,tronco:troncos[0],troncos_selecionados:troncos});setSaving(false);setSaved(true);setTimeout(()=>setSaved(false),2000);}
-  async function handleLogout(){await supabase.auth.signOut();window.location.href="/";}
-  const TC=[{id:"românico" as const,label:"Tear Românico",desc:"Espanhol, Francês e Italiano",color:"#FF3B30",bg:"rgba(255,59,48,0.06)"},{id:"germânico" as const,label:"Tear Germânico",desc:"Inglês, Alemão e Holandês",color:"#0071E3",bg:"rgba(0,113,227,0.06)"}];
-  return(<div style={{padding:"24px 20px",overflowY:"auto",height:"100%",display:"flex",flexDirection:"column",gap:"18px"}}>
-    <div style={{background:"#fff",borderRadius:"18px",padding:"20px",boxShadow:"0 1px 4px rgba(0,0,0,0.06)",display:"flex",alignItems:"center",gap:"16px"}}>
-      {profile?.avatar_url?<img src={profile.avatar_url} alt="" style={{width:52,height:52,borderRadius:"50%",objectFit:"cover"}}/>:<div style={{width:52,height:52,borderRadius:"50%",background:"linear-gradient(135deg,#5E5CE6,#BF5AF2)",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"20px",fontWeight:700,color:"#fff"}}>{profile?.display_name?.[0]?.toUpperCase()??"U"}</div>}
-      <div><div style={{fontSize:"16px",fontWeight:700,color:"#1D1D1F"}}>{profile?.display_name}</div><div style={{fontSize:"13px",color:"#86868B",marginTop:"2px"}}>{profile?.interesses?.slice(0,3).join(" · ")}</div></div>
-    </div>
-    <div style={{background:"#fff",borderRadius:"18px",padding:"20px",boxShadow:"0 1px 4px rgba(0,0,0,0.06)"}}>
-      <h3 style={{margin:"0 0 6px",fontSize:"15px",fontWeight:700,color:"#1D1D1F"}}>Meus Troncos</h3>
-      <p style={{margin:"0 0 14px",fontSize:"13px",color:"#86868B",lineHeight:1.5}}>Adicione ou remova troncos a qualquer momento.</p>
-      <div style={{display:"flex",flexDirection:"column",gap:"10px",marginBottom:"14px"}}>
-        {TC.map(t=>{const sel=troncos.includes(t.id);return(<button key={t.id} onClick={()=>toggleTronco(t.id)} style={{width:"100%",padding:"14px 16px",borderRadius:"12px",border:`2px solid ${sel?t.color:"rgba(0,0,0,0.08)"}`,background:sel?t.bg:"#FAFAFA",cursor:"pointer",textAlign:"left",fontFamily:"inherit",transition:"all 0.2s",display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-          <div><div style={{fontSize:"14px",fontWeight:700,color:sel?t.color:"#1D1D1F"}}>{t.label}</div><div style={{fontSize:"12px",color:"#86868B",marginTop:"2px"}}>{t.desc}</div></div>
-          <div style={{width:22,height:22,borderRadius:"6px",border:`2px solid ${sel?t.color:"rgba(0,0,0,0.2)"}`,background:sel?t.color:"transparent",display:"flex",alignItems:"center",justifyContent:"center",transition:"all 0.2s",flexShrink:0}}>{sel&&<Icon.CheckMark/>}</div>
-        </button>);})}
+function PerfilTab({ profile, onProfileUpdate, cards }: {
+  profile: UserProfile | null;
+  onProfileUpdate: (p: UserProfile) => void;
+  cards: MentoriaCard[];
+}) {
+  const supabase = createSupabase();
+
+  const [troncos, setTroncos]           = useState<("românico"|"germânico")[]>(
+    profile?.troncos_selecionados ?? (profile?.tronco ? [profile.tronco] : [])
+  );
+  const [nome, setNome]                 = useState(profile?.display_name ?? "");
+  const [interesses, setInteresses]     = useState<string[]>(profile?.interesses ?? []);
+  const [saving, setSaving]             = useState(false);
+  const [saved, setSaved]               = useState(false);
+  const [confirmLogout, setConfirmLogout]     = useState(false);
+  const [confirmDelete, setConfirmDelete]     = useState(false);
+  const [deletingAccount, setDeletingAccount] = useState(false);
+  const [resetSent, setResetSent]             = useState(false);
+  const [sendingReset, setSendingReset]       = useState(false);
+
+  // Estatísticas
+  const total       = cards.length;
+  const hoje        = new Date(); hoje.setHours(0,0,0,0);
+  let streak = 0;
+  let checkDay = new Date(hoje);
+  while (true) {
+    const dayStr  = checkDay.toDateString();
+    const hasCard = cards.some(c => new Date(c.criado_em).toDateString() === dayStr);
+    if (!hasCard) break;
+    streak++; checkDay.setDate(checkDay.getDate()-1);
+  }
+
+  const INTERESSES_ALL = [
+    "futebol","música","culinária","tecnologia","viagens","cinema",
+    "literatura","negócios","esportes","arte","jogos","natureza",
+    "história","ciência","moda","fotografia","política","saúde"
+  ];
+
+  function toggleTronco(id: "românico"|"germânico") {
+    setTroncos(prev => prev.includes(id) ? prev.filter(t=>t!==id) : [...prev,id]);
+  }
+  function toggleInteresse(id: string) {
+    setInteresses(prev => prev.includes(id) ? prev.filter(i=>i!==id) : [...prev,id]);
+  }
+
+  async function handleSave() {
+    if (troncos.length===0 || !profile) return;
+    setSaving(true);
+    const { data:{user} } = await supabase.auth.getUser();
+    if (!user) return;
+    await supabase.from("user_profiles").update({
+      display_name: nome.trim() || profile.display_name,
+      tronco: troncos[0],
+      troncos_selecionados: troncos,
+      interesses,
+    }).eq("id", user.id);
+    onProfileUpdate({ ...profile, display_name: nome.trim() || profile.display_name, tronco: troncos[0], troncos_selecionados: troncos, interesses });
+    setSaving(false); setSaved(true); setTimeout(()=>setSaved(false), 2000);
+  }
+
+  async function handleResetPassword() {
+    if (!profile) return;
+    setSendingReset(true);
+    const { data:{user} } = await supabase.auth.getUser();
+    if (user?.email) {
+      await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${window.location.origin}/auth/callback`,
+      });
+      setResetSent(true);
+    }
+    setSendingReset(false);
+  }
+
+  async function handleDeleteAccount() {
+    setDeletingAccount(true);
+    const { data:{user} } = await supabase.auth.getUser();
+    if (user) {
+      // Apaga todos os cards do usuário
+      await supabase.from("mentoria_cards").delete().eq("user_id", user.id);
+      await supabase.from("user_profiles").delete().eq("id", user.id);
+    }
+    await supabase.auth.signOut();
+    window.location.href = "/";
+  }
+
+  async function handleLogout() { await supabase.auth.signOut(); window.location.href="/"; }
+
+  const TC = [
+    { id:"românico" as const,  label:"Tear Românico",  desc:"Espanhol, Francês e Italiano", color:"#FF3B30", bg:"rgba(255,59,48,0.06)" },
+    { id:"germânico" as const, label:"Tear Germânico", desc:"Inglês, Alemão e Holandês",    color:"#0071E3", bg:"rgba(0,113,227,0.06)" },
+  ];
+
+  const inputStyle: React.CSSProperties = {
+    width:"100%", padding:"10px 12px", borderRadius:"10px",
+    border:"1.5px solid rgba(0,0,0,0.10)", fontSize:"14px",
+    color:"#1D1D1F", fontFamily:"inherit", background:"#FAFAFA",
+    boxSizing:"border-box",
+  };
+
+  return (
+    <div style={{ padding:"20px 16px", overflowY:"auto", height:"100%", display:"flex", flexDirection:"column", gap:"14px" }}>
+
+      {/* Avatar + Stats */}
+      <div style={{ background:"#fff", borderRadius:"18px", padding:"20px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+        <div style={{ display:"flex", alignItems:"center", gap:"16px", marginBottom:"18px" }}>
+          {profile?.avatar_url
+            ? <img src={profile.avatar_url} alt="" style={{ width:56, height:56, borderRadius:"50%", objectFit:"cover" }}/>
+            : <div style={{ width:56, height:56, borderRadius:"50%", background:"linear-gradient(135deg,#5E5CE6,#BF5AF2)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", fontWeight:700, color:"#fff", flexShrink:0 }}>
+                {(nome || profile?.display_name || "U")[0].toUpperCase()}
+              </div>
+          }
+          <div style={{ flex:1, minWidth:0 }}>
+            <div style={{ fontSize:"17px", fontWeight:700, color:"#1D1D1F", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>{nome || profile?.display_name}</div>
+            <div style={{ fontSize:"12px", color:"#86868B", marginTop:"3px" }}>{interesses.slice(0,3).join(" · ") || "Sem interesses definidos"}</div>
+          </div>
+        </div>
+        {/* Stats resumidas */}
+        <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"10px" }}>
+          {[
+            { value:total,  label:"Nexos",  color:"#0071E3" },
+            { value:streak, label:"Streak", color:"#FF9500" },
+            { value:total*3,label:"Traduções", color:"#34C759" },
+          ].map(s=>(
+            <div key={s.label} style={{ padding:"12px 10px", borderRadius:"12px", background:"#F5F5F7", textAlign:"center" }}>
+              <div style={{ fontSize:"22px", fontWeight:700, color:s.color, lineHeight:1 }}>{s.value}</div>
+              <div style={{ fontSize:"11px", color:"#86868B", marginTop:"4px", fontWeight:500 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
       </div>
-      <button onClick={handleSave} disabled={troncos.length===0||saving} style={{width:"100%",padding:"12px",borderRadius:"12px",border:"none",background:troncos.length===0||saving?"rgba(0,0,0,0.08)":saved?"rgba(52,199,89,0.15)":"linear-gradient(135deg,#0071E3,#0077ED)",color:troncos.length===0||saving?"#86868B":saved?"#34C759":"#fff",fontSize:"14px",fontWeight:600,cursor:troncos.length===0||saving?"not-allowed":"pointer",fontFamily:"inherit",transition:"all 0.3s"}}>{saving?"Salvando...":saved?"Salvo!":"Salvar alterações"}</button>
+
+      {/* Editar nome */}
+      <div style={{ background:"#fff", borderRadius:"16px", padding:"18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+        <h3 style={{ margin:"0 0 12px", fontSize:"14px", fontWeight:700, color:"#1D1D1F" }}>Nome</h3>
+        <input value={nome} onChange={e=>setNome(e.target.value)} placeholder="Seu nome" style={inputStyle}
+          onFocus={e=>(e.target.style.borderColor="#0071E3")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
+      </div>
+
+      {/* Troncos */}
+      <div style={{ background:"#fff", borderRadius:"16px", padding:"18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+        <h3 style={{ margin:"0 0 12px", fontSize:"14px", fontWeight:700, color:"#1D1D1F" }}>Troncos linguísticos</h3>
+        <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+          {TC.map(t=>{ const sel=troncos.includes(t.id); return (
+            <button key={t.id} onClick={()=>toggleTronco(t.id)}
+              style={{ width:"100%", padding:"12px 14px", borderRadius:"12px", border:`2px solid ${sel?t.color:"rgba(0,0,0,0.08)"}`, background:sel?t.bg:"#FAFAFA", cursor:"pointer", textAlign:"left", fontFamily:"inherit", transition:"all 0.2s", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <div>
+                <div style={{ fontSize:"13px", fontWeight:700, color:sel?t.color:"#1D1D1F" }}>{t.label}</div>
+                <div style={{ fontSize:"11px", color:"#86868B", marginTop:"1px" }}>{t.desc}</div>
+              </div>
+              <div style={{ width:20, height:20, borderRadius:"6px", border:`2px solid ${sel?t.color:"rgba(0,0,0,0.2)"}`, background:sel?t.color:"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                {sel&&<Icon.CheckMark/>}
+              </div>
+            </button>
+          );})}
+        </div>
+      </div>
+
+      {/* Interesses */}
+      <div style={{ background:"#fff", borderRadius:"16px", padding:"18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+        <h3 style={{ margin:"0 0 4px", fontSize:"14px", fontWeight:700, color:"#1D1D1F" }}>Meus interesses</h3>
+        <p style={{ margin:"0 0 12px", fontSize:"12px", color:"#86868B" }}>O Chico usa esses temas para criar exemplos personalizados.</p>
+        <div style={{ display:"flex", flexWrap:"wrap" as const, gap:"7px" }}>
+          {INTERESSES_ALL.map(item => {
+            const sel = interesses.includes(item);
+            return (
+              <button key={item} onClick={()=>toggleInteresse(item)}
+                style={{ padding:"6px 12px", borderRadius:"20px", border:`1.5px solid ${sel?"#0071E3":"rgba(0,0,0,0.10)"}`, background:sel?"rgba(0,113,227,0.08)":"transparent", color:sel?"#0071E3":"#3A3A3C", fontSize:"13px", fontWeight:sel?600:400, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}>
+                {item}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Botão salvar */}
+      <button onClick={handleSave} disabled={troncos.length===0||saving}
+        style={{ padding:"13px", borderRadius:"12px", border:"none", background:troncos.length===0||saving?"rgba(0,0,0,0.08)":saved?"rgba(52,199,89,0.12)":"linear-gradient(135deg,#0071E3,#0077ED)", color:troncos.length===0||saving?"#86868B":saved?"#34C759":"#fff", fontSize:"14px", fontWeight:600, cursor:troncos.length===0||saving?"not-allowed":"pointer", fontFamily:"inherit", transition:"all 0.3s", boxShadow:saved||troncos.length===0||saving?"none":"0 2px 10px rgba(0,113,227,0.25)" }}>
+        {saving?"Salvando...":saved?"Salvo!":"Salvar alterações"}
+      </button>
+
+      {/* Conta */}
+      <div style={{ background:"#fff", borderRadius:"16px", padding:"18px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
+        <h3 style={{ margin:"0 0 14px", fontSize:"14px", fontWeight:700, color:"#1D1D1F" }}>Conta</h3>
+        <div style={{ display:"flex", flexDirection:"column", gap:"10px" }}>
+
+          {/* Redefinir senha */}
+          {!resetSent ? (
+            <button onClick={handleResetPassword} disabled={sendingReset}
+              style={{ width:"100%", padding:"12px", borderRadius:"12px", border:"1px solid rgba(0,0,0,0.10)", background:"transparent", color:"#1D1D1F", fontSize:"14px", fontWeight:500, cursor:"pointer", fontFamily:"inherit" }}>
+              {sendingReset?"Enviando...":"Redefinir senha por email"}
+            </button>
+          ) : (
+            <div style={{ padding:"11px 14px", borderRadius:"12px", background:"rgba(52,199,89,0.08)", border:"1px solid rgba(52,199,89,0.20)", fontSize:"13px", color:"#34C759", fontWeight:500 }}>
+              Email de redefinição enviado! Verifique sua caixa de entrada.
+            </div>
+          )}
+
+          {/* Sair */}
+          {!confirmLogout ? (
+            <button onClick={()=>setConfirmLogout(true)}
+              style={{ width:"100%", padding:"12px", borderRadius:"12px", border:"1.5px solid rgba(255,59,48,0.25)", background:"rgba(255,59,48,0.05)", color:"#FF3B30", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+              Sair da conta
+            </button>
+          ) : (
+            <div style={{ display:"flex", gap:"10px" }}>
+              <button onClick={()=>setConfirmLogout(false)} style={{ flex:1, padding:"12px", borderRadius:"12px", border:"1.5px solid rgba(0,0,0,0.12)", background:"transparent", color:"#86868B", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
+              <button onClick={handleLogout} style={{ flex:1, padding:"12px", borderRadius:"12px", border:"none", background:"#FF3B30", color:"#fff", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Confirmar saída</button>
+            </div>
+          )}
+
+          {/* Apagar conta */}
+          {!confirmDelete ? (
+            <button onClick={()=>setConfirmDelete(true)}
+              style={{ width:"100%", padding:"10px", borderRadius:"12px", border:"none", background:"transparent", color:"#AEAEB2", fontSize:"13px", cursor:"pointer", fontFamily:"inherit" }}>
+              Apagar minha conta
+            </button>
+          ) : (
+            <div style={{ padding:"14px", borderRadius:"12px", background:"rgba(255,59,48,0.05)", border:"1px solid rgba(255,59,48,0.20)" }}>
+              <p style={{ margin:"0 0 10px", fontSize:"13px", color:"#FF3B30", fontWeight:600 }}>Isso apagará todos os seus nexos e dados. Não tem volta.</p>
+              <div style={{ display:"flex", gap:"8px" }}>
+                <button onClick={()=>setConfirmDelete(false)} style={{ flex:1, padding:"10px", borderRadius:"10px", border:"1px solid rgba(0,0,0,0.12)", background:"transparent", color:"#86868B", fontSize:"13px", cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
+                <button onClick={handleDeleteAccount} disabled={deletingAccount} style={{ flex:1, padding:"10px", borderRadius:"10px", border:"none", background:"#FF3B30", color:"#fff", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                  {deletingAccount?"Apagando...":"Sim, apagar tudo"}
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
-    <div style={{background:"#fff",borderRadius:"18px",padding:"20px",boxShadow:"0 1px 4px rgba(0,0,0,0.06)"}}>
-      <h3 style={{margin:"0 0 12px",fontSize:"15px",fontWeight:700,color:"#1D1D1F"}}>Conta</h3>
-      {!confirmLogout?<button onClick={()=>setConfirmLogout(true)} style={{width:"100%",padding:"12px",borderRadius:"12px",border:"1.5px solid rgba(255,59,48,0.25)",background:"rgba(255,59,48,0.05)",color:"#FF3B30",fontSize:"14px",fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Sair da conta</button>
-        :<div style={{display:"flex",gap:"10px"}}><button onClick={()=>setConfirmLogout(false)} style={{flex:1,padding:"12px",borderRadius:"12px",border:"1.5px solid rgba(0,0,0,0.12)",background:"transparent",color:"#86868B",fontSize:"14px",fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Cancelar</button><button onClick={handleLogout} style={{flex:1,padding:"12px",borderRadius:"12px",border:"none",background:"#FF3B30",color:"#fff",fontSize:"14px",fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>Confirmar saída</button></div>}
-    </div>
-  </div>);
+  );
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
@@ -977,7 +1201,7 @@ export default function ChicoDashboard() {
               {activeTab==="progresso" &&<div style={{ flex:1, overflow:"hidden" }}><ProgressoTab cards={cards}/></div>}
               {activeTab==="imersao"   &&<div style={{ flex:1, overflow:"hidden" }}><ImersaoTab profile={profile}/></div>}
               {activeTab==="diario"    &&<div style={{ flex:1, overflow:"hidden" }}><DiarioTab profile={profile}/></div>}
-              {activeTab==="perfil"    &&<div style={{ flex:1, overflow:"hidden" }}><PerfilTab profile={profile} onProfileUpdate={setProfile}/></div>}
+              {activeTab==="perfil"    &&<div style={{ flex:1, overflow:"hidden" }}><PerfilTab profile={profile} onProfileUpdate={setProfile} cards={cards}/></div>}
             </div>
           </main>
         </div>
