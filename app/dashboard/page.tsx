@@ -487,28 +487,56 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
       </div>
       {mode==="flip"&&(
         <>
-          <div onClick={()=>setFlipped(v=>!v)}
-            style={{ width:"100%", maxWidth:"500px", minHeight:"190px", borderRadius:"20px", background:"#fff", boxShadow:"0 4px 24px rgba(0,0,0,0.09)", padding:"24px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"12px", border:"1.5px solid rgba(0,0,0,0.06)" }}
-            onMouseEnter={e=>(e.currentTarget as HTMLElement).style.transform="scale(1.01)"}
-            onMouseLeave={e=>(e.currentTarget as HTMLElement).style.transform="scale(1)"}>
-            {!flipped
-              ? (<><span style={{ fontSize:"10px", color:"#86868B", fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.06em" }}>Em Português</span>
-                 <p style={{ fontSize:"22px", fontWeight:700, color:"#1D1D1F", textAlign:"center", margin:0 }}>{card.titulo_card||card.tema_gerador}</p>
-                 <span style={{ fontSize:"11px", color:"#AEAEB2" }}>Toque para ver as traduções</span></>)
-              : (<><span style={{ fontSize:"10px", color:"#0071E3", fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.06em" }}>Traduções</span>
-                 <div style={{ display:"flex", flexDirection:"column", gap:"8px", width:"100%" }}>
-                   {langs.map(l=>(
-                     <div key={l.bcp47} style={{ borderRadius:"12px", background:"#F5F5F7", overflow:"hidden" }}>
-                       <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"8px 12px" }}>
-                         <div><div style={{ fontSize:"14px", fontWeight:600, color:"#1D1D1F" }}>{l.txt}</div><div style={{ fontSize:"10px", color:"#86868B", fontStyle:"italic" }}>{l.fon}</div></div>
-                         <span style={{ fontSize:"11px", color:"#AEAEB2" }}>{l.nome}</span>
-                       </div>
-                       {l.exemplo&&<div style={{ padding:"4px 12px 8px", borderTop:"1px solid rgba(0,0,0,0.05)", fontSize:"11px", color:"#3A3A3C", fontStyle:"italic" }}>{l.exemplo}</div>}
-                     </div>
-                   ))}
-                 </div></>)
-            }
-          </div>
+          {/* Frente — clique vira o card */}
+          {!flipped ? (
+            <div onClick={()=>setFlipped(true)}
+              style={{ width:"100%", maxWidth:"500px", minHeight:"190px", borderRadius:"20px", background:"#fff", boxShadow:"0 4px 24px rgba(0,0,0,0.09)", padding:"24px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"12px", border:"1.5px solid rgba(0,0,0,0.06)", transition:"transform 0.15s" }}
+              onMouseEnter={e=>(e.currentTarget as HTMLElement).style.transform="scale(1.01)"}
+              onMouseLeave={e=>(e.currentTarget as HTMLElement).style.transform="scale(1)"}>
+              <span style={{ fontSize:"10px", color:"#86868B", fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.06em" }}>Em Português</span>
+              <p style={{ fontSize:"22px", fontWeight:700, color:"#1D1D1F", textAlign:"center", margin:0 }}>{card.titulo_card||card.tema_gerador}</p>
+              <span style={{ fontSize:"11px", color:"#AEAEB2" }}>Toque para ver as traduções</span>
+            </div>
+          ) : (
+            /* Verso — cada língua é clicável para ouvir */
+            <div style={{ width:"100%", maxWidth:"500px", borderRadius:"20px", background:"#fff", boxShadow:"0 4px 24px rgba(0,0,0,0.09)", padding:"20px", border:"1.5px solid rgba(0,0,0,0.06)" }}>
+              <span style={{ fontSize:"10px", color:"#0071E3", fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.06em", display:"block", marginBottom:"12px", textAlign:"center" as const }}>
+                Toque numa língua para ouvir
+              </span>
+              <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
+                {langs.map(l => {
+                  const fkey = "fl-" + l.bcp47 + l.txt.slice(0,8);
+                  const isPlay = audio.isSpeaking && audio.speakingKey === fkey;
+                  return (
+                    <button key={l.bcp47}
+                      onClick={e => { e.stopPropagation(); isPlay ? audio.stopSpeaking() : audio.speak(l.txt, l.bcp47, fkey); }}
+                      style={{ width:"100%", borderRadius:"12px", background:isPlay?"rgba(0,113,227,0.06)":"#F5F5F7", border:isPlay?"1.5px solid rgba(0,113,227,0.25)":"1.5px solid transparent", cursor:"pointer", padding:0, overflow:"hidden", fontFamily:"inherit", transition:"all 0.2s", textAlign:"left" as const }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:"10px", padding:"10px 14px" }}>
+                        <div style={{ width:34, height:34, borderRadius:"50%", background:isPlay?"#0071E3":"rgba(0,113,227,0.12)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:isPlay?"#fff":"#0071E3", transition:"all 0.2s" }}>
+                          {isPlay ? <Icon.Wave/> : <Icon.Volume/>}
+                        </div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:"10px", fontWeight:600, color:isPlay?"#0071E3":"#86868B", textTransform:"uppercase" as const, letterSpacing:"0.05em", marginBottom:"2px" }}>{l.nome}</div>
+                          <div style={{ fontSize:"16px", fontWeight:700, color:isPlay?"#0071E3":"#1D1D1F" }}>{l.txt}</div>
+                          <div style={{ fontSize:"12px", color:"#86868B", fontStyle:"italic", marginTop:"2px" }}>{l.fon}</div>
+                        </div>
+                      </div>
+                      {l.exemplo&&(
+                        <div style={{ padding:"5px 14px 9px 58px", borderTop:"1px solid rgba(0,0,0,0.05)", fontSize:"11px", color:"#3A3A3C", fontStyle:"italic", lineHeight:1.5 }}>
+                          {l.exemplo}
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <button onClick={()=>setFlipped(false)}
+                style={{ width:"100%", marginTop:"10px", padding:"6px", background:"none", border:"none", cursor:"pointer", fontSize:"11px", color:"#AEAEB2", fontFamily:"inherit" }}>
+                Virar de volta
+              </button>
+            </div>
+          )}
+          {/* Botões Acertei/Errei só aparecem quando virado */}
           {flipped
             ? <div style={{ display:"flex", gap:"12px", width:"100%", maxWidth:"500px" }}>
                 <button onClick={()=>next(false)} style={{ flex:1, padding:"12px", borderRadius:"12px", border:"1.5px solid rgba(255,59,48,0.25)", background:"rgba(255,59,48,0.05)", color:"#FF3B30", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:"6px" }}><Icon.X/>Errei</button>
