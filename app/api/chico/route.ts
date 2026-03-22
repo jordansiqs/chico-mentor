@@ -730,9 +730,7 @@ Responda APENAS com JSON:
     // ── Traduzir história completa (modo paralelo) ────────────────────────────
     if (acao === "traduzir_historia") {
       const { texto, lingua_origem } = body;
-      const paragrafos = (texto as string).split(/
-
-+/).filter((p:string) => p.trim());
+      const paragrafos = (texto as string).split("\n\n").filter((p:string) => p.trim().length > 0);
       const listaParas = paragrafos.map((p:string, i:number) => "[" + i + "] " + p).join("\n\n");
       const prompt = "Traduza os seguintes parágrafos do " + (lingua_origem as string) + " para o português brasileiro. Mantenha o mesmo número de parágrafos. Tradução natural e fluente, não literal. Parágrafos: \n\n" + listaParas + "\n\nResponda APENAS com JSON: { \"paragrafos\": [\"tradução do parágrafo 0\", \"tradução do parágrafo 1\"] }";
 
