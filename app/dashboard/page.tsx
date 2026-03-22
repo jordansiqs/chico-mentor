@@ -982,9 +982,7 @@ function HistoriasTab({ profile, cards, onAddCard }: {
 
   // Render texto com palavras clicáveis
   function renderTexto(texto:string, h:Historia) {
-    const parafs = texto.split(/
-
-+/);
+    const parafs = texto.split(/\n\n+/);
     const ptParafs = paragrafosPt;
     return parafs.map((para, pi) => (
       <div key={pi} style={{ display:paralelo&&ptParafs[pi]?"grid":"block", gridTemplateColumns:"1fr 1fr", gap:"16px", marginBottom:"18px" }}>
