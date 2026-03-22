@@ -1,5 +1,5 @@
 "use client";
-// app/page.tsx — Página inicial com login
+// app/page.tsx
 
 import { useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
@@ -8,14 +8,6 @@ function createSupabase() {
   return createBrowserClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
-}
-
-function IconLogo() {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
-    </svg>
   );
 }
 
@@ -47,7 +39,7 @@ export default function LoginPage() {
   async function handleEmailLogin(e: React.FormEvent) {
     e.preventDefault(); setLoading(true); reset();
     const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) { setError("Email ou senha incorretos. Tente novamente."); }
+    if (error) { setError("Email ou senha incorretos."); }
     else { window.location.href = "/dashboard"; }
     setLoading(false);
   }
@@ -59,7 +51,7 @@ export default function LoginPage() {
       options: { data: { full_name: name }, emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
     if (error) { setError(error.message); }
-    else { setSuccess("Conta criada! Verifique seu email para confirmar o cadastro."); }
+    else { setSuccess("Conta criada! Verifique seu email para confirmar."); }
     setLoading(false);
   }
 
@@ -69,7 +61,7 @@ export default function LoginPage() {
       redirectTo: `${window.location.origin}/auth/callback`,
     });
     if (error) { setError(error.message); }
-    else { setSuccess("Email de recuperação enviado! Verifique sua caixa de entrada."); }
+    else { setSuccess("Link de recuperação enviado! Verifique seu email."); }
     setLoading(false);
   }
 
@@ -77,89 +69,110 @@ export default function LoginPage() {
     width: "100%", padding: "12px 14px", borderRadius: "12px",
     border: "1.5px solid rgba(0,0,0,0.12)", fontSize: "16px",
     color: "#1D1D1F", fontFamily: "inherit", background: "#FAFAFA",
-    boxSizing: "border-box", transition: "border-color 0.2s",
+    boxSizing: "border-box", transition: "border-color 0.2s", outline: "none",
   };
 
   const pillars = [
-    { title: "Temas Geradores", desc: "O ensino parte do que você já vive e conhece" },
-    { title: "Arqueologia das Línguas", desc: "Raízes que conectam Português, Espanhol, Francês e mais" },
-    { title: "Voz Nativa", desc: "Ouça cada tradução com pronúncia autêntica" },
+    { icon: "◆", title: "Temas do seu mundo", desc: "O Chico usa seus interesses para criar exemplos que fazem sentido para você" },
+    { icon: "◇", title: "Arqueologia das línguas", desc: "Descubra as raízes que conectam português, espanhol, francês e mais" },
+    { icon: "○", title: "Voz nativa", desc: "Ouça cada tradução com pronúncia autêntica via Web Speech API" },
   ];
 
   return (
     <>
       <style>{`
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { margin: 0; }
+        body { margin: 0; background: #F5F5F7; }
         input { -webkit-appearance: none; appearance: none; }
-        input:focus { outline: none; border-color: #0071E3 !important; }
-        @keyframes fadeIn { from { opacity:0; transform:translateY(12px); } to { opacity:1; transform:translateY(0); } }
+        input:focus { border-color: #0071E3 !important; }
+        @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
+        .fade-up { animation: fadeUp 0.5s ease forwards; }
+        .fade-up-2 { animation: fadeUp 0.5s 0.1s ease both; }
+        .fade-up-3 { animation: fadeUp 0.5s 0.2s ease both; }
         @media (max-width: 767px) {
-          .desktop-panel { display: none !important; }
-          .form-panel { width: 100% !important; min-height: 100vh !important; padding: 40px 24px 48px !important; justify-content: flex-start !important; padding-top: 60px !important; }
-          .logo-mobile { display: flex !important; }
-        }
-        @media (min-width: 768px) {
-          .logo-mobile { display: none !important; }
+          .left-panel { display: none !important; }
+          .right-panel { width: 100% !important; padding: 48px 24px 56px !important; }
         }
       `}</style>
 
-      <div style={{ minHeight: "100vh", background: "#F5F5F7", display: "flex", fontFamily: "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
+      <div style={{ minHeight: "100vh", display: "flex", fontFamily: "-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif", background: "#F5F5F7" }}>
 
-        {/* Painel esquerdo — desktop only */}
-        <div className="desktop-panel" style={{ flex: 1, background: "linear-gradient(145deg,#0071E3 0%,#0055B3 60%,#003D8F 100%)", display: "flex", flexDirection: "column", justifyContent: "center", padding: "60px", position: "relative", overflow: "hidden" }}>
-          <div style={{ position: "absolute", width: 400, height: 400, borderRadius: "50%", background: "rgba(255,255,255,0.04)", top: -100, right: -100 }} />
-          <div style={{ position: "absolute", width: 300, height: 300, borderRadius: "50%", background: "rgba(255,255,255,0.04)", bottom: -80, left: -80 }} />
-          <div style={{ position: "relative", animation: "fadeIn 0.6s ease forwards" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "14px", marginBottom: "52px" }}>
-              <div style={{ width: 44, height: 44, borderRadius: "12px", background: "rgba(255,255,255,0.15)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <IconLogo />
+        {/* ── Painel esquerdo ── */}
+        <div className="left-panel" style={{ flex: 1, background: "linear-gradient(150deg,#004FA3 0%,#0071E3 50%,#0096FF 100%)", display: "flex", flexDirection: "column", justifyContent: "center", padding: "60px 56px", position: "relative", overflow: "hidden" }}>
+
+          {/* Círculos decorativos */}
+          <div style={{ position: "absolute", width: 480, height: 480, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.08)", top: -120, right: -120 }}/>
+          <div style={{ position: "absolute", width: 320, height: 320, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.06)", bottom: -60, left: -80 }}/>
+          <div style={{ position: "absolute", width: 180, height: 180, borderRadius: "50%", background: "rgba(255,255,255,0.04)", top: "40%", right: 40 }}/>
+
+          <div style={{ position: "relative" }}>
+            {/* Logo */}
+            <div className="fade-up" style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "52px" }}>
+              <div style={{ width: 40, height: 40, borderRadius: "12px", background: "rgba(255,255,255,0.18)", backdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.25)" }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+                </svg>
               </div>
-              <span style={{ fontSize: "22px", fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>Chico Mentor</span>
+              <span style={{ fontSize: "20px", fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>Chico Mentor</span>
             </div>
-            <h1 style={{ fontSize: "38px", fontWeight: 700, color: "#fff", lineHeight: 1.2, letterSpacing: "-0.03em", marginBottom: "18px" }}>
-              Aprenda idiomas<br />como um arqueólogo.
-            </h1>
-            <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.72)", lineHeight: 1.65, marginBottom: "48px", maxWidth: "380px" }}>
-              O Chico revela as raízes e engrenagens que conectam as línguas, ancorando cada lição nos seus interesses.
-            </p>
-            {pillars.map((item, i) => (
-              <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "14px", marginBottom: "20px" }}>
-                <div style={{ width: 6, height: 6, borderRadius: "50%", background: "rgba(255,255,255,0.6)", marginTop: "7px", flexShrink: 0 }} />
-                <div>
-                  <div style={{ fontSize: "14px", fontWeight: 600, color: "#fff", marginBottom: "2px" }}>{item.title}</div>
-                  <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.60)", lineHeight: 1.5 }}>{item.desc}</div>
+
+            {/* Headline */}
+            <div className="fade-up-2">
+              <h1 style={{ fontSize: "40px", fontWeight: 700, color: "#fff", lineHeight: 1.18, letterSpacing: "-0.03em", marginBottom: "16px" }}>
+                Aprenda idiomas<br/>como arqueólogo.
+              </h1>
+              <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.72)", lineHeight: 1.65, marginBottom: "52px", maxWidth: "360px" }}>
+                O Chico revela as raízes e conexões entre as línguas, ancorando cada lição nos seus interesses pessoais.
+              </p>
+            </div>
+
+            {/* Pilares */}
+            <div className="fade-up-3" style={{ display: "flex", flexDirection: "column", gap: "22px" }}>
+              {pillars.map((item, i) => (
+                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "14px" }}>
+                  <div style={{ width: 32, height: 32, borderRadius: "8px", background: "rgba(255,255,255,0.12)", display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: "14px", color: "rgba(255,255,255,0.8)" }}>
+                    {item.icon}
+                  </div>
+                  <div>
+                    <div style={{ fontSize: "14px", fontWeight: 600, color: "#fff", marginBottom: "3px" }}>{item.title}</div>
+                    <div style={{ fontSize: "13px", color: "rgba(255,255,255,0.58)", lineHeight: 1.5 }}>{item.desc}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
 
-        {/* Painel direito — formulário */}
-        <div className="form-panel" style={{ width: "460px", flexShrink: 0, display: "flex", flexDirection: "column", justifyContent: "center", padding: "60px 48px", background: "#FFFFFF", animation: "fadeIn 0.5s ease forwards" }}>
+        {/* ── Painel direito — formulário ── */}
+        <div className="right-panel" style={{ width: "460px", flexShrink: 0, display: "flex", flexDirection: "column", justifyContent: "center", padding: "56px 48px", background: "#FFFFFF", animation: "fadeUp 0.4s ease forwards" }}>
 
           {/* Logo mobile */}
-          <div className="logo-mobile" style={{ alignItems: "center", gap: "10px", marginBottom: "36px" }}>
-            <div style={{ width: 36, height: 36, borderRadius: "10px", background: "linear-gradient(135deg,#0071E3,#34AADC)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-              <IconLogo />
+          <div style={{ display: "none", alignItems: "center", gap: "10px", marginBottom: "36px" }} className="mobile-logo">
+            <div style={{ width: 34, height: 34, borderRadius: "10px", background: "linear-gradient(135deg,#0071E3,#34AADC)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+              </svg>
             </div>
-            <span style={{ fontSize: "20px", fontWeight: 700, color: "#1D1D1F", letterSpacing: "-0.02em" }}>Chico Mentor</span>
+            <span style={{ fontSize: "18px", fontWeight: 700, color: "#1D1D1F" }}>Chico Mentor</span>
           </div>
 
-          <h2 style={{ fontSize: "24px", fontWeight: 700, color: "#1D1D1F", letterSpacing: "-0.02em", marginBottom: "6px" }}>
-            {mode === "login" ? "Bem-vindo de volta" : mode === "signup" ? "Criar conta" : "Recuperar senha"}
-          </h2>
-          <p style={{ fontSize: "14px", color: "#86868B", marginBottom: "28px" }}>
-            {mode === "login" ? "Entre para continuar sua jornada linguística"
-              : mode === "signup" ? "Comece sua aventura com o Chico"
-              : "Informe seu email para receber o link de recuperação"}
-          </p>
+          {/* Cabeçalho */}
+          <div style={{ marginBottom: "28px" }}>
+            <h2 style={{ fontSize: "26px", fontWeight: 700, color: "#1D1D1F", letterSpacing: "-0.025em", marginBottom: "6px" }}>
+              {mode === "login" ? "Bem-vindo de volta" : mode === "signup" ? "Criar conta" : "Recuperar senha"}
+            </h2>
+            <p style={{ fontSize: "14px", color: "#86868B", lineHeight: 1.5 }}>
+              {mode === "login" ? "Entre para continuar sua jornada linguística"
+                : mode === "signup" ? "Comece sua aventura com o Chico"
+                : "Informe seu email para receber o link"}
+            </p>
+          </div>
 
-          {/* Botão Google — só no login e signup */}
+          {/* Google */}
           {mode !== "forgot" && (
             <>
               <button onClick={handleGoogle} disabled={loading}
-                style={{ width: "100%", padding: "13px", borderRadius: "12px", border: "1.5px solid rgba(0,0,0,0.12)", background: "#FFFFFF", cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", fontSize: "15px", fontWeight: 600, color: "#1D1D1F", marginBottom: "18px", fontFamily: "inherit", transition: "background 0.2s" }}
+                style={{ width: "100%", padding: "13px", borderRadius: "12px", border: "1.5px solid rgba(0,0,0,0.12)", background: "#FFFFFF", cursor: loading ? "not-allowed" : "pointer", display: "flex", alignItems: "center", justifyContent: "center", gap: "10px", fontSize: "15px", fontWeight: 500, color: "#1D1D1F", marginBottom: "18px", fontFamily: "inherit", transition: "background 0.2s" }}
                 onMouseEnter={e => (e.currentTarget.style.background = "#F5F5F7")}
                 onMouseLeave={e => (e.currentTarget.style.background = "#FFFFFF")}
               >
@@ -172,9 +185,9 @@ export default function LoginPage() {
                 Continuar com Google
               </button>
               <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "18px" }}>
-                <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
+                <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }}/>
                 <span style={{ fontSize: "12px", color: "#AEAEB2", fontWeight: 500 }}>ou</span>
-                <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }} />
+                <div style={{ flex: 1, height: 1, background: "rgba(0,0,0,0.08)" }}/>
               </div>
             </>
           )}
@@ -185,23 +198,26 @@ export default function LoginPage() {
               <div style={{ marginBottom: "12px" }}>
                 <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#1D1D1F", marginBottom: "6px" }}>Nome completo</label>
                 <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome" required style={inputStyle}
-                  onFocus={e => (e.target.style.borderColor = "#0071E3")} onBlur={e => (e.target.style.borderColor = "rgba(0,0,0,0.12)")} />
-              </div>
-            )}
-            <div style={{ marginBottom: "12px" }}>
-              <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#1D1D1F", marginBottom: "6px" }}>Email</label>
-              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" required style={inputStyle}
-                onFocus={e => (e.target.style.borderColor = "#0071E3")} onBlur={e => (e.target.style.borderColor = "rgba(0,0,0,0.12)")} />
-            </div>
-            {mode !== "forgot" && (
-              <div style={{ marginBottom: "8px" }}>
-                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#1D1D1F", marginBottom: "6px" }}>Senha</label>
-                <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder={mode === "signup" ? "Mínimo 6 caracteres" : "••••••••"} required minLength={6} style={inputStyle}
-                  onFocus={e => (e.target.style.borderColor = "#0071E3")} onBlur={e => (e.target.style.borderColor = "rgba(0,0,0,0.12)")} />
+                  onFocus={e => (e.target.style.borderColor = "#0071E3")} onBlur={e => (e.target.style.borderColor = "rgba(0,0,0,0.12)")}/>
               </div>
             )}
 
-            {/* Link esqueci a senha */}
+            <div style={{ marginBottom: "12px" }}>
+              <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#1D1D1F", marginBottom: "6px" }}>Email</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" required style={inputStyle}
+                onFocus={e => (e.target.style.borderColor = "#0071E3")} onBlur={e => (e.target.style.borderColor = "rgba(0,0,0,0.12)")}/>
+            </div>
+
+            {mode !== "forgot" && (
+              <div style={{ marginBottom: "8px" }}>
+                <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#1D1D1F", marginBottom: "6px" }}>Senha</label>
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                  placeholder={mode === "signup" ? "Mínimo 6 caracteres" : "••••••••"}
+                  required minLength={6} style={inputStyle}
+                  onFocus={e => (e.target.style.borderColor = "#0071E3")} onBlur={e => (e.target.style.borderColor = "rgba(0,0,0,0.12)")}/>
+              </div>
+            )}
+
             {mode === "login" && (
               <div style={{ textAlign: "right", marginBottom: "20px" }}>
                 <button type="button" onClick={() => { setMode("forgot"); reset(); }}
@@ -211,34 +227,34 @@ export default function LoginPage() {
               </div>
             )}
 
-            {mode !== "login" && <div style={{ marginBottom: "20px" }} />}
+            {mode !== "login" && <div style={{ marginBottom: "20px" }}/>}
 
             {error && (
-              <div style={{ padding: "11px 14px", borderRadius: "10px", background: "rgba(255,59,48,0.07)", border: "1px solid rgba(255,59,48,0.2)", fontSize: "13px", color: "#FF3B30", marginBottom: "14px" }}>
+              <div style={{ padding: "11px 14px", borderRadius: "10px", background: "rgba(255,59,48,0.06)", border: "1px solid rgba(255,59,48,0.18)", fontSize: "13px", color: "#FF3B30", marginBottom: "14px", lineHeight: 1.5 }}>
                 {error}
               </div>
             )}
             {success && (
-              <div style={{ padding: "11px 14px", borderRadius: "10px", background: "rgba(52,199,89,0.07)", border: "1px solid rgba(52,199,89,0.2)", fontSize: "13px", color: "#34C759", marginBottom: "14px" }}>
+              <div style={{ padding: "11px 14px", borderRadius: "10px", background: "rgba(52,199,89,0.06)", border: "1px solid rgba(52,199,89,0.18)", fontSize: "13px", color: "#34C759", marginBottom: "14px", lineHeight: 1.5 }}>
                 {success}
               </div>
             )}
 
             <button type="submit" disabled={loading}
-              style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "none", background: loading ? "rgba(0,0,0,0.08)" : "linear-gradient(135deg,#0071E3,#0077ED)", color: loading ? "#86868B" : "#fff", fontSize: "15px", fontWeight: 600, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit", boxShadow: loading ? "none" : "0 2px 12px rgba(0,113,227,0.28)", transition: "all 0.2s" }}>
+              style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "none", background: loading ? "rgba(0,0,0,0.08)" : "linear-gradient(135deg,#0071E3,#0077ED)", color: loading ? "#86868B" : "#fff", fontSize: "15px", fontWeight: 600, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit", boxShadow: loading ? "none" : "0 2px 12px rgba(0,113,227,0.28)", transition: "all 0.2s", letterSpacing: "-0.01em" }}>
               {loading ? "Aguarde..."
                 : mode === "login" ? "Entrar"
                 : mode === "signup" ? "Criar conta"
-                : "Enviar link de recuperação"}
+                : "Enviar link"}
             </button>
           </form>
 
-          {/* Links de alternância */}
+          {/* Links */}
           <div style={{ textAlign: "center", marginTop: "24px" }}>
             {mode === "forgot" ? (
               <button onClick={() => { setMode("login"); reset(); }}
                 style={{ background: "none", border: "none", color: "#0071E3", fontWeight: 600, cursor: "pointer", fontSize: "14px", fontFamily: "inherit" }}>
-                Voltar para o login
+                ← Voltar para o login
               </button>
             ) : (
               <p style={{ fontSize: "13px", color: "#86868B", margin: 0 }}>
@@ -250,6 +266,11 @@ export default function LoginPage() {
               </p>
             )}
           </div>
+
+          {/* Rodapé */}
+          <p style={{ marginTop: "auto", paddingTop: "32px", fontSize: "11px", color: "#AEAEB2", textAlign: "center", lineHeight: 1.6 }}>
+            Ao continuar, você concorda com nossos termos de uso.<br/>Seus dados são protegidos pela política de privacidade.
+          </p>
         </div>
       </div>
     </>
