@@ -589,66 +589,134 @@ ${letra}`;
 
     // ── Gerar história ────────────────────────────────────────────────────────
     if (acao === "gerar_historia") {
-      const { tronco, interesses, lingua_alvo } = body;
+      const { tronco, interesses, lingua, nivel } = body;
       const troncoInfo = TRONCOS[tronco as "românico"|"germânico"];
       if (!troncoInfo) return NextResponse.json({ error:"Tronco inválido." },{ status:400 });
 
-      const interessesStr = (interesses||[]).slice(0,3).join(", ") || "cotidiano";
-      const lingua = lingua_alvo || troncoInfo.linguas[0].nome;
-      const bcp47  = troncoInfo.linguas.find((l:any) => l.nome === lingua)?.bcp47 || troncoInfo.linguas[0].bcp47;
+      const interessesStr = (interesses||[]).join(", ") || "cotidiano";
+      const linguaInfo    = troncoInfo.linguas.find((l:any) => l.nome === lingua) || troncoInfo.linguas[0];
+      const linguaNome    = linguaInfo.nome;
+      const bcp47         = linguaInfo.bcp47;
 
-      const prompt = `Você é um escritor que cria histórias curtas para aprendizes de idiomas.
+      const nivelConfig: Record<string,{palavras:string; gramatica:string; vocabulario:string}> = {
+        iniciante: {
+          palavras:    "entre 200 e 260 palavras",
+          gramatica:   "SOMENTE presente do indicativo e pretérito perfeito simples. Frases curtas de 6 a 12 palavras. Parágrafos de 2 a 3 frases.",
+          vocabulario: "cotidiano e concreto: família, comida, casa, rotina. SEM subjuntivo, SEM condicional, SEM vocabulário abstrato.",
+        },
+        intermediário: {
+          palavras:    "entre 320 e 400 palavras",
+          gramatica:   "presente, pretérito imperfeito e perfeito, futuro próximo. Conectores como: porque, aunque, mientras, cependant, mentre. Parágrafos de 3 a 4 frases.",
+          vocabulario: "emoções, opiniões, relações. Inclua ao menos 2 expressões típicas da língua.",
+        },
+        avançado: {
+          palavras:    "entre 460 e 560 palavras",
+          gramatica:   "todos os tempos verbais incluindo subjuntivo e condicional. Estruturas subordinadas. Voz passiva quando natural.",
+          vocabulario: "expressões idiomáticas, gírias autênticas, registros formais e informais alternados.",
+        },
+      };
 
-Crie uma história curta em ${lingua} (não em português) com as seguintes características:
-- Tema ligado aos interesses: ${interessesStr}
-- Entre 120 e 180 palavras
-- Nível intermediário — frases completas, vocabulário rico mas acessível
-- Narrativa envolvente com começo, meio e fim
-- Tom leve e positivo
+      const cfg = nivelConfig[nivel as string] || nivelConfig["iniciante"];
 
-Depois crie 3 perguntas de compreensão em português sobre a história. Cada pergunta com 3 opções (a, b, c) sendo apenas uma correta.
+      const systemPrompt = "Você é um escritor especialista em textos pedagógicos para aprendizes de idiomas. Você SEMPRE escreve na língua solicitada, com rigor absoluto no nível e nas regras gramaticais definidas.";
 
-Responda APENAS com JSON:
-{
-  "titulo": "Título da história em ${lingua}",
-  "titulo_pt": "Título traduzido em português",
-  "lingua": "${lingua}",
-  "bcp47": "${bcp47}",
-  "texto": "O texto completo da história em ${lingua}",
-  "resumo_pt": "Resumo em 1 frase em português do que acontece na história",
-  "palavras_chave": [
-    {"palavra": "palavra em ${lingua}", "traducao": "tradução em português", "fon": "fonética [sílabas]"}
-  ],
-  "perguntas": [
-    {
-      "pergunta": "Pergunta em português sobre a história",
-      "opcoes": ["a) opção 1", "b) opção 2", "c) opção 3"],
-      "correta": 0
-    }
-  ]
-}
+      const userPrompt = "INSTRUÇÕES CRÍTICAS — LEIA ANTES DE ESCREVER:
 
-palavras_chave: inclua exatamente 5 palavras importantes da história que o aluno deveria aprender.
-perguntas: exatamente 3 perguntas, campo correta é o índice (0, 1 ou 2) da opção correta.`;
+"
+        + "1. LÍNGUA: Escreva O TEXTO INTEIRO da história em " + linguaNome + ". NÃO use português no texto da história. Zero exceções.
+"
+        + "2. NÍVEL: " + (nivel as string).toUpperCase() + " — siga rigorosamente:
+"
+        + "   - Tamanho: " + cfg.palavras + "
+"
+        + "   - Gramática: " + cfg.gramatica + "
+"
+        + "   - Vocabulário: " + cfg.vocabulario + "
+"
+        + "3. TEMA: Baseado nos interesses do aluno: " + interessesStr + "
 
-      const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+"
+        + "ESTRUTURA DA HISTÓRIA (5 parágrafos, separados por linha em branco):
+"
+        + "§1 ABERTURA: Apresente o personagem e o cenário com detalhes sensoriais. Nome típico do país da língua.
+"
+        + "§2 SITUAÇÃO: A situação se desenvolve. Inclua um detalhe cultural autêntico do país.
+"
+        + "§3 DIÁLOGO: 3 a 5 trocas naturais entre personagens (travessão ou aspas).
+"
+        + "§4 COMPLICAÇÃO: Problema, surpresa ou decisão com reação emocional.
+"
+        + "§5 DESFECHO: Resolução satisfatória com frase final memorável.
+
+"
+        + "REGRAS FINAIS:
+"
+        + "- Texto corrido, sem títulos de seção, sem markdown, sem numeração
+"
+        + "- Personagens com nomes típicos do país (espanhol: Carlos/María; francês: Lucie/Antoine; italiano: Marco/Giulia; inglês: James/Emma; alemão: Klaus/Anna; holandês: Lars/Sophie)
+"
+        + "- PALAVRAS-CHAVE: selecione 8 a 10 palavras ou expressões DO TEXTO que sejam úteis — verbos expressivos, substantivos culturais, expressões idiomáticas
+
+"
+        + "Responda SOMENTE com JSON válido:
+"
+        + "{
+"
+        + "  "titulo": "Título criativo em " + linguaNome + "",
+"
+        + "  "titulo_pt": "Tradução do título em português",
+"
+        + "  "lingua": "" + linguaNome + "",
+"
+        + "  "nivel": "" + (nivel as string) + "",
+"
+        + "  "bcp47": "" + bcp47 + "",
+"
+        + "  "texto": "A história completa em " + linguaNome + ". Parágrafos separados por \n\n.",
+"
+        + "  "resumo_pt": "Resumo de 2 frases em português.",
+"
+        + "  "palavras_chave": [
+"
+        + "    { "palavra": "palavra exata do texto", "traducao_pt": "tradução", "fonetica": "[fo-NÉ-ti-ca]" }
+"
+        + "  ],
+"
+        + "  "perguntas": [
+"
+        + "    { "pergunta": "Pergunta factual sobre a história em português", "opcoes": ["A...", "B...", "C..."], "correta": 0 },
+"
+        + "    { "pergunta": "Pergunta sobre motivação/sentimento", "opcoes": ["A...", "B...", "C..."], "correta": 1 },
+"
+        + "    { "pergunta": "Pergunta sobre detalhe cultural ou vocabulário", "opcoes": ["A...", "B...", "C..."], "correta": 2 }
+"
+        + "  ]
+"
+        + "}";
+
       const completion = await groq.chat.completions.create({
         model: "llama-3.3-70b-versatile",
-        temperature: 0.8,
-        max_tokens: 1200,
-        messages: [{ role:"user", content:prompt }],
+        temperature: 0.70,
+        max_tokens: 2800,
+        messages: [
+          { role:"system", content:systemPrompt },
+          { role:"user",   content:userPrompt   },
+        ],
       });
 
       const raw = completion.choices[0]?.message?.content ?? "";
       try {
         const historia = parseJSON(raw);
+        // Validate language — if texto contains too much Portuguese, flag it
+        if (!historia.texto || historia.texto.length < 100) {
+          return NextResponse.json({ error:"Erro ao gerar história." },{ status:500 });
+        }
         return NextResponse.json({ historia });
       } catch {
         return NextResponse.json({ error:"Erro ao gerar história." },{ status:500 });
       }
     }
 
-    // ── Salvar palavra da história como nexo ──────────────────────────────────
     if (acao === "salvar_palavra_historia") {
       const { palavra, traducao, fon, tronco, lingua_origem } = body;
       const troncoInfo = TRONCOS[tronco as "românico"|"germânico"];
