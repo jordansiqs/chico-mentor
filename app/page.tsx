@@ -81,7 +81,8 @@ export default function LoginPage() {
   return (
     <>
       <style>{`
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
         body { margin: 0; background: #F5F5F7; }
         input { -webkit-appearance: none; appearance: none; }
         input:focus { border-color: #0071E3 !important; }
@@ -95,10 +96,10 @@ export default function LoginPage() {
         }
       `}</style>
 
-      <div style={{ minHeight: "100vh", display: "flex", fontFamily: "-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif", background: "#F5F5F7" }}>
+      <div style={{ minHeight: "100vh", display: "flex", fontFamily: "'Nunito', -apple-system, sans-serif", background: "#F5F5F7" }}>
 
         {/* ── Painel esquerdo ── */}
-        <div className="left-panel" style={{ flex: 1, background: "linear-gradient(150deg,#004FA3 0%,#0071E3 50%,#0096FF 100%)", display: "flex", flexDirection: "column", justifyContent: "center", padding: "60px 56px", position: "relative", overflow: "hidden" }}>
+        <div className="left-panel" style={{ flex: 1, background: "linear-gradient(160deg,#0D2E6B 0%,#1A4A8A 55%,#2A6ACC 100%)", display: "flex", flexDirection: "column", justifyContent: "center", padding: "60px 56px", position: "relative", overflow: "hidden" }}>
 
           {/* Círculos decorativos */}
           <div style={{ position: "absolute", width: 480, height: 480, borderRadius: "50%", border: "1px solid rgba(255,255,255,0.08)", top: -120, right: -120 }}/>
@@ -108,18 +109,36 @@ export default function LoginPage() {
           <div style={{ position: "relative" }}>
             {/* Logo */}
             <div className="fade-up" style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "52px" }}>
-              <div style={{ width: 40, height: 40, borderRadius: "12px", background: "rgba(255,255,255,0.18)", backdropFilter: "blur(10px)", display: "flex", alignItems: "center", justifyContent: "center", border: "1px solid rgba(255,255,255,0.25)" }}>
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/>
+              <div style={{ width: 48, height: 48, borderRadius: "14px", background: "#FFF6E8", border: "2px solid rgba(255,255,255,0.30)", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="48" height="48" viewBox="0 0 160 160">
+                  <rect x="8" y="32" width="34" height="68" rx="17" fill="#B8721A"/>
+                  <rect x="118" y="32" width="34" height="68" rx="17" fill="#B8721A"/>
+                  <circle cx="80" cy="80" r="56" fill="#E29830"/>
+                  <circle cx="46" cy="92" r="17" fill="#D08828"/><circle cx="114" cy="92" r="17" fill="#D08828"/>
+                  <ellipse cx="80" cy="100" rx="26" ry="20" fill="#F2DFA0"/>
+                  <ellipse cx="80" cy="88" rx="12" ry="8" fill="#1A0800"/>
+                  <circle cx="60" cy="72" r="13" fill="white"/><circle cx="100" cy="72" r="13" fill="white"/>
+                  <circle cx="60" cy="72" r="9" fill="#5A3208"/><circle cx="100" cy="72" r="9" fill="#5A3208"/>
+                  <circle cx="60" cy="72" r="5" fill="#0E0400"/><circle cx="100" cy="72" r="5" fill="#0E0400"/>
+                  <circle cx="64" cy="68" r="3" fill="white"/><circle cx="104" cy="68" r="3" fill="white"/>
+                  <path d="M48 60 Q60 54 72 59" stroke="#7A4008" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                  <path d="M88 59 Q100 54 112 60" stroke="#7A4008" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                  <path d="M66 108 Q80 118 94 108" stroke="#7A4008" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                  <ellipse cx="80" cy="114" rx="10" ry="8" fill="#E04870"/>
+                  <ellipse cx="44" cy="96" rx="10" ry="6" fill="#E07070" opacity="0.22"/>
+                  <ellipse cx="116" cy="96" rx="10" ry="6" fill="#E07070" opacity="0.22"/>
                 </svg>
               </div>
-              <span style={{ fontSize: "20px", fontWeight: 700, color: "#fff", letterSpacing: "-0.02em" }}>Chico Mentor</span>
+              <div>
+                <div style={{ fontSize: "22px", fontWeight: 800, color: "#fff", letterSpacing: "-0.01em", fontFamily: "'Nunito', sans-serif", lineHeight: 1 }}>chico</div>
+                <div style={{ fontSize: "11px", fontWeight: 700, color: "rgba(255,255,255,0.75)", letterSpacing: "0.08em", textTransform: "uppercase" as const }}>mentor de línguas</div>
+              </div>
             </div>
 
             {/* Headline */}
             <div className="fade-up-2">
               <h1 style={{ fontSize: "40px", fontWeight: 700, color: "#fff", lineHeight: 1.18, letterSpacing: "-0.03em", marginBottom: "16px" }}>
-                Aprenda idiomas<br/>como arqueólogo.
+                Aprenda idiomas<br/>com o Chico.
               </h1>
               <p style={{ fontSize: "16px", color: "rgba(255,255,255,0.72)", lineHeight: 1.65, marginBottom: "52px", maxWidth: "360px" }}>
                 O Chico revela as raízes e conexões entre as línguas, ancorando cada lição nos seus interesses pessoais.
@@ -158,7 +177,7 @@ export default function LoginPage() {
 
           {/* Cabeçalho */}
           <div style={{ marginBottom: "28px" }}>
-            <h2 style={{ fontSize: "26px", fontWeight: 700, color: "#1D1D1F", letterSpacing: "-0.025em", marginBottom: "6px" }}>
+            <h2 style={{ fontSize: "26px", fontWeight: 800, color: "#1A4A8A", letterSpacing: "-0.02em", fontFamily: "'Nunito', sans-serif", marginBottom: "6px" }}>
               {mode === "login" ? "Bem-vindo de volta" : mode === "signup" ? "Criar conta" : "Recuperar senha"}
             </h2>
             <p style={{ fontSize: "14px", color: "#86868B", lineHeight: 1.5 }}>
@@ -198,14 +217,14 @@ export default function LoginPage() {
               <div style={{ marginBottom: "12px" }}>
                 <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#1D1D1F", marginBottom: "6px" }}>Nome completo</label>
                 <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Seu nome" required style={inputStyle}
-                  onFocus={e => (e.target.style.borderColor = "#0071E3")} onBlur={e => (e.target.style.borderColor = "rgba(0,0,0,0.12)")}/>
+                  onFocus={e => (e.target.style.borderColor = "#1A4A8A")} onBlur={e => (e.target.style.borderColor = "rgba(0,0,0,0.12)")}/>
               </div>
             )}
 
             <div style={{ marginBottom: "12px" }}>
               <label style={{ display: "block", fontSize: "12px", fontWeight: 600, color: "#1D1D1F", marginBottom: "6px" }}>Email</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="seu@email.com" required style={inputStyle}
-                onFocus={e => (e.target.style.borderColor = "#0071E3")} onBlur={e => (e.target.style.borderColor = "rgba(0,0,0,0.12)")}/>
+                onFocus={e => (e.target.style.borderColor = "#1A4A8A")} onBlur={e => (e.target.style.borderColor = "rgba(0,0,0,0.12)")}/>
             </div>
 
             {mode !== "forgot" && (
@@ -214,14 +233,14 @@ export default function LoginPage() {
                 <input type="password" value={password} onChange={e => setPassword(e.target.value)}
                   placeholder={mode === "signup" ? "Mínimo 6 caracteres" : "••••••••"}
                   required minLength={6} style={inputStyle}
-                  onFocus={e => (e.target.style.borderColor = "#0071E3")} onBlur={e => (e.target.style.borderColor = "rgba(0,0,0,0.12)")}/>
+                  onFocus={e => (e.target.style.borderColor = "#1A4A8A")} onBlur={e => (e.target.style.borderColor = "rgba(0,0,0,0.12)")}/>
               </div>
             )}
 
             {mode === "login" && (
               <div style={{ textAlign: "right", marginBottom: "20px" }}>
                 <button type="button" onClick={() => { setMode("forgot"); reset(); }}
-                  style={{ background: "none", border: "none", color: "#0071E3", fontSize: "13px", cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}>
+                  style={{ background: "none", border: "none", color: "#1A4A8A", fontSize: "13px", cursor: "pointer", fontFamily: "inherit", fontWeight: 500 }}>
                   Esqueci minha senha
                 </button>
               </div>
@@ -241,7 +260,7 @@ export default function LoginPage() {
             )}
 
             <button type="submit" disabled={loading}
-              style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "none", background: loading ? "rgba(0,0,0,0.08)" : "linear-gradient(135deg,#0071E3,#0077ED)", color: loading ? "#86868B" : "#fff", fontSize: "15px", fontWeight: 600, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit", boxShadow: loading ? "none" : "0 2px 12px rgba(0,113,227,0.28)", transition: "all 0.2s", letterSpacing: "-0.01em" }}>
+              style={{ width: "100%", padding: "14px", borderRadius: "12px", border: "none", background: loading ? "rgba(0,0,0,0.08)" : "linear-gradient(135deg,#1A4A8A,#2A6ACC)", color: loading ? "#86868B" : "#fff", fontSize: "15px", fontWeight: 600, cursor: loading ? "not-allowed" : "pointer", fontFamily: "inherit", boxShadow: loading ? "none" : "0 2px 12px rgba(26,74,138,0.30)", transition: "all 0.2s", letterSpacing: "-0.01em" }}>
               {loading ? "Aguarde..."
                 : mode === "login" ? "Entrar"
                 : mode === "signup" ? "Criar conta"
@@ -253,14 +272,14 @@ export default function LoginPage() {
           <div style={{ textAlign: "center", marginTop: "24px" }}>
             {mode === "forgot" ? (
               <button onClick={() => { setMode("login"); reset(); }}
-                style={{ background: "none", border: "none", color: "#0071E3", fontWeight: 600, cursor: "pointer", fontSize: "14px", fontFamily: "inherit" }}>
+                style={{ background: "none", border: "none", color: "#1A4A8A", fontWeight: 600, cursor: "pointer", fontSize: "14px", fontFamily: "inherit" }}>
                 ← Voltar para o login
               </button>
             ) : (
               <p style={{ fontSize: "13px", color: "#86868B", margin: 0 }}>
                 {mode === "login" ? "Não tem conta? " : "Já tem conta? "}
                 <button onClick={() => { setMode(mode === "login" ? "signup" : "login"); reset(); }}
-                  style={{ background: "none", border: "none", color: "#0071E3", fontWeight: 600, cursor: "pointer", fontSize: "13px", fontFamily: "inherit" }}>
+                  style={{ background: "none", border: "none", color: "#1A4A8A", fontWeight: 600, cursor: "pointer", fontSize: "13px", fontFamily: "inherit" }}>
                   {mode === "login" ? "Criar conta" : "Entrar"}
                 </button>
               </p>
