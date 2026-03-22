@@ -982,31 +982,33 @@ function HistoriasTab({ profile, cards, onAddCard }: {
 
   // Render texto com palavras clicáveis
   function renderTexto(texto:string, h:Historia) {
-    const parafs = texto.split(/\n\n+/);
+    const parafs = texto.split("\n\n").filter((p:string) => p.trim().length > 0);
     const ptParafs = paragrafosPt;
     return parafs.map((para, pi) => (
-      <div key={pi} style={{ display:paralelo&&ptParafs[pi]?"grid":"block", gridTemplateColumns:"1fr 1fr", gap:"16px", marginBottom:"18px" }}>
+      <div key={pi} style={{ display:"grid", gridTemplateColumns:paralelo&&ptParafs[pi]?"1fr 1fr":"1fr", gap:"16px", marginBottom:"18px" }}>
         <p style={{ margin:0, fontSize:"16px", lineHeight:"1.85", color:"#1A2A40", fontFamily:"'Nunito',sans-serif", fontWeight:500 }}>
-          {para.split(/(\s+)/).map((token, ti) => {
-            const clean = token.trim().replace(/[^a-záéíóúüñàâêîôûäëïöùçœæ'']/gi,"").toLowerCase();
-            if (!clean || clean.length < 2) return <span key={ti}>{token}</span>;
-            const kw = h.palavras_chave.find(k=>k.palavra.toLowerCase()===clean);
-            const isSelected = selWord === token.trim();
-            const isSaved = kw && savedWords.has(kw.palavra);
+          {para.split(" ").map((word, wi) => {
+            const clean = word.replace(/[^a-záéíóúüñàâêîôûäëïöùçœæ'’]/gi,"").toLowerCase();
+            const kw = clean.length > 1 ? h.palavras_chave.find(k=>k.palavra.toLowerCase()===clean) : null;
+            const isSelected = selWord === word;
+            const isSaved = !!(kw && savedWords.has(kw.palavra));
             return (
-              <span key={ti}
-                onClick={()=>{ if(token.trim().length>1){ setWordTranslation(null); if(selWord===token.trim()){setSelWord(null);}else{traduzirPalavra(token.trim());} } }}
-                style={{
-                  cursor:"pointer",
-                  background: isSelected ? "rgba(26,74,138,0.18)" : kw ? (isSaved?"rgba(42,154,96,0.12)":"rgba(224,120,32,0.13)") : "transparent",
-                  borderRadius:"3px", padding:"0 2px",
-                  color: isSelected ? "#1A4A8A" : kw ? (isSaved?"#2A9A60":"#B05A10") : "inherit",
-                  fontWeight: kw ? 700 : "inherit",
-                  textDecoration: kw ? "underline" : "none",
-                  textDecorationStyle: kw ? "dotted" as const : "solid" as const,
-                  transition:"background 0.15s",
-                }}>
-                {token}
+              <span key={wi}>
+                <span
+                  onClick={()=>{ if(clean.length>1){ setWordTranslation(null); if(selWord===word){setSelWord(null);}else{traduzirPalavra(word);} } }}
+                  style={{
+                    cursor: clean.length>1 ? "pointer" : "default",
+                    background: isSelected?"rgba(26,74,138,0.15)":kw?(isSaved?"rgba(42,154,96,0.10)":"rgba(224,120,32,0.12)"):"transparent",
+                    borderRadius:"3px", padding:"0 2px",
+                    color: isSelected?"#1A4A8A":kw?(isSaved?"#2A9A60":"#B05A10"):"inherit",
+                    fontWeight: kw?700:500,
+                    textDecoration: kw?"underline":"none",
+                    textDecorationStyle: "dotted" as const,
+                    transition:"background 0.15s",
+                  }}>
+                  {word}
+                </span>
+                {wi < para.split(" ").length-1 ? " " : ""}
               </span>
             );
           })}
