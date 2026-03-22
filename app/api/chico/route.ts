@@ -595,108 +595,64 @@ ${letra}`;
 
       const interessesStr = (interesses||[]).join(", ") || "cotidiano";
       const linguaInfo    = troncoInfo.linguas.find((l:any) => l.nome === lingua) || troncoInfo.linguas[0];
-      const linguaNome    = linguaInfo.nome;
-      const bcp47         = linguaInfo.bcp47;
+      const linguaNome    = linguaInfo.nome as string;
+      const bcp47         = linguaInfo.bcp47 as string;
+      const nivelStr      = (nivel as string) || "iniciante";
 
-      const nivelConfig: Record<string,{palavras:string; gramatica:string; vocabulario:string}> = {
-        iniciante: {
-          palavras:    "entre 200 e 260 palavras",
-          gramatica:   "SOMENTE presente do indicativo e pretérito perfeito simples. Frases curtas de 6 a 12 palavras. Parágrafos de 2 a 3 frases.",
-          vocabulario: "cotidiano e concreto: família, comida, casa, rotina. SEM subjuntivo, SEM condicional, SEM vocabulário abstrato.",
-        },
-        intermediário: {
-          palavras:    "entre 320 e 400 palavras",
-          gramatica:   "presente, pretérito imperfeito e perfeito, futuro próximo. Conectores como: porque, aunque, mientras, cependant, mentre. Parágrafos de 3 a 4 frases.",
-          vocabulario: "emoções, opiniões, relações. Inclua ao menos 2 expressões típicas da língua.",
-        },
-        avançado: {
-          palavras:    "entre 460 e 560 palavras",
-          gramatica:   "todos os tempos verbais incluindo subjuntivo e condicional. Estruturas subordinadas. Voz passiva quando natural.",
-          vocabulario: "expressões idiomáticas, gírias autênticas, registros formais e informais alternados.",
-        },
+      const nivelMap: Record<string,{palavras:string;gramatica:string;vocabulario:string}> = {
+        "iniciante":     { palavras:"200 a 260 palavras", gramatica:"SOMENTE presente do indicativo e preterito perfeito simples. Frases curtas de 6 a 12 palavras. Paragrafos de 2 a 3 frases. SEM subjuntivo, SEM condicional.", vocabulario:"cotidiano: familia, comida, casa, rotina." },
+        "intermediario": { palavras:"320 a 400 palavras", gramatica:"presente, preterito imperfeito e perfeito, futuro proximo. Use conectores tipicos da lingua.", vocabulario:"emocoes, opinioes, relacoes interpessoais. Inclua 2 expressoes tipicas." },
+        "avancado":      { palavras:"460 a 560 palavras", gramatica:"todos os tempos verbais incluindo subjuntivo e condicional. Estruturas subordinadas.", vocabulario:"expressoes idiomaticas, girias autenticas, registros formais e informais." },
       };
 
-      const cfg = nivelConfig[nivel as string] || nivelConfig["iniciante"];
+      const nivelKey = nivelStr.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+      const cfg = nivelMap[nivelKey] || nivelMap["iniciante"];
 
-      const systemPrompt = "Você é um escritor especialista em textos pedagógicos para aprendizes de idiomas. Você SEMPRE escreve na língua solicitada, com rigor absoluto no nível e nas regras gramaticais definidas.";
+      const lines = [
+        "INSTRUCOES CRITICAS:",
+        "1. LINGUA: Escreva O TEXTO INTEIRO da historia em " + linguaNome + ". NAO use portugues no texto. Zero excecoes.",
+        "2. NIVEL: " + nivelStr.toUpperCase(),
+        "   - Tamanho: " + cfg.palavras,
+        "   - Gramatica: " + cfg.gramatica,
+        "   - Vocabulario: " + cfg.vocabulario,
+        "3. TEMA: Interesses do aluno: " + interessesStr,
+        "",
+        "ESTRUTURA (5 paragrafos separados por linha em branco):",
+        "P1 ABERTURA: Personagem com nome tipico do pais, cenario com detalhes sensoriais.",
+        "P2 SITUACAO: Desenvolva a situacao. Inclua um detalhe cultural autentico do pais.",
+        "P3 DIALOGO: 3 a 5 trocas naturais entre personagens usando travessao ou aspas.",
+        "P4 COMPLICACAO: Problema ou surpresa com reacao emocional do personagem.",
+        "P5 DESFECHO: Resolucao com frase final memoravel.",
+        "",
+        "REGRAS:",
+        "- Texto corrido, sem titulos, sem markdown, sem numeracao",
+        "- Nomes tipicos: espanhol=Carlos/Maria, frances=Lucie/Antoine, italiano=Marco/Giulia, ingles=James/Emma, alemao=Klaus/Anna, holandes=Lars/Sophie",
+        "- Palavras-chave: 8 a 10 palavras ou expressoes do texto que o aluno deveria aprender",
+        "",
+        'Responda SOMENTE com JSON valido (sem texto antes ou depois):',
+        '{',
+        '  "titulo": "titulo criativo em ' + linguaNome + '",',
+        '  "titulo_pt": "traducao do titulo em portugues",',
+        '  "lingua": "' + linguaNome + '",',
+        '  "nivel": "' + nivelStr + '",',
+        '  "bcp47": "' + bcp47 + '",',
+        '  "texto": "historia completa em ' + linguaNome + '. Paragrafos separados por dois enters.",',
+        '  "resumo_pt": "resumo de 2 frases em portugues",',
+        '  "palavras_chave": [{"palavra":"palavra do texto","traducao_pt":"traducao","fonetica":"[fo-NE-ti-ca]"}],',
+        '  "perguntas": [',
+        '    {"pergunta":"pergunta factual em portugues","opcoes":["A...","B...","C..."],"correta":0},',
+        '    {"pergunta":"pergunta sobre motivacao/sentimento","opcoes":["A...","B...","C..."],"correta":1},',
+        '    {"pergunta":"pergunta sobre detalhe cultural","opcoes":["A...","B...","C..."],"correta":2}',
+        '  ]',
+        '}',
+      ];
 
-      const userPrompt = "INSTRUÇÕES CRÍTICAS — LEIA ANTES DE ESCREVER:
-
-"
-        + "1. LÍNGUA: Escreva O TEXTO INTEIRO da história em " + linguaNome + ". NÃO use português no texto da história. Zero exceções.
-"
-        + "2. NÍVEL: " + (nivel as string).toUpperCase() + " — siga rigorosamente:
-"
-        + "   - Tamanho: " + cfg.palavras + "
-"
-        + "   - Gramática: " + cfg.gramatica + "
-"
-        + "   - Vocabulário: " + cfg.vocabulario + "
-"
-        + "3. TEMA: Baseado nos interesses do aluno: " + interessesStr + "
-
-"
-        + "ESTRUTURA DA HISTÓRIA (5 parágrafos, separados por linha em branco):
-"
-        + "§1 ABERTURA: Apresente o personagem e o cenário com detalhes sensoriais. Nome típico do país da língua.
-"
-        + "§2 SITUAÇÃO: A situação se desenvolve. Inclua um detalhe cultural autêntico do país.
-"
-        + "§3 DIÁLOGO: 3 a 5 trocas naturais entre personagens (travessão ou aspas).
-"
-        + "§4 COMPLICAÇÃO: Problema, surpresa ou decisão com reação emocional.
-"
-        + "§5 DESFECHO: Resolução satisfatória com frase final memorável.
-
-"
-        + "REGRAS FINAIS:
-"
-        + "- Texto corrido, sem títulos de seção, sem markdown, sem numeração
-"
-        + "- Personagens com nomes típicos do país (espanhol: Carlos/María; francês: Lucie/Antoine; italiano: Marco/Giulia; inglês: James/Emma; alemão: Klaus/Anna; holandês: Lars/Sophie)
-"
-        + "- PALAVRAS-CHAVE: selecione 8 a 10 palavras ou expressões DO TEXTO que sejam úteis — verbos expressivos, substantivos culturais, expressões idiomáticas
-
-"
-        + "Responda SOMENTE com JSON válido:
-"
-        + "{
-"
-        + "  "titulo": "Título criativo em " + linguaNome + "",
-"
-        + "  "titulo_pt": "Tradução do título em português",
-"
-        + "  "lingua": "" + linguaNome + "",
-"
-        + "  "nivel": "" + (nivel as string) + "",
-"
-        + "  "bcp47": "" + bcp47 + "",
-"
-        + "  "texto": "A história completa em " + linguaNome + ". Parágrafos separados por \n\n.",
-"
-        + "  "resumo_pt": "Resumo de 2 frases em português.",
-"
-        + "  "palavras_chave": [
-"
-        + "    { "palavra": "palavra exata do texto", "traducao_pt": "tradução", "fonetica": "[fo-NÉ-ti-ca]" }
-"
-        + "  ],
-"
-        + "  "perguntas": [
-"
-        + "    { "pergunta": "Pergunta factual sobre a história em português", "opcoes": ["A...", "B...", "C..."], "correta": 0 },
-"
-        + "    { "pergunta": "Pergunta sobre motivação/sentimento", "opcoes": ["A...", "B...", "C..."], "correta": 1 },
-"
-        + "    { "pergunta": "Pergunta sobre detalhe cultural ou vocabulário", "opcoes": ["A...", "B...", "C..."], "correta": 2 }
-"
-        + "  ]
-"
-        + "}";
+      const userPrompt   = lines.join("\n");
+      const systemPrompt = "Voce e um escritor especialista em textos pedagogicos para aprendizes de idiomas. Voce SEMPRE escreve na lingua solicitada com rigor absoluto de nivel e gramatica.";
 
       const completion = await groq.chat.completions.create({
         model: "llama-3.3-70b-versatile",
-        temperature: 0.70,
+        temperature: 0.68,
         max_tokens: 2800,
         messages: [
           { role:"system", content:systemPrompt },
@@ -707,13 +663,12 @@ ${letra}`;
       const raw = completion.choices[0]?.message?.content ?? "";
       try {
         const historia = parseJSON(raw);
-        // Validate language — if texto contains too much Portuguese, flag it
-        if (!historia.texto || historia.texto.length < 100) {
-          return NextResponse.json({ error:"Erro ao gerar história." },{ status:500 });
+        if (!historia.texto || historia.texto.length < 80) {
+          return NextResponse.json({ error:"Erro ao gerar historia." },{ status:500 });
         }
         return NextResponse.json({ historia });
       } catch {
-        return NextResponse.json({ error:"Erro ao gerar história." },{ status:500 });
+        return NextResponse.json({ error:"Erro ao gerar historia." },{ status:500 });
       }
     }
 
