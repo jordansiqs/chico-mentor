@@ -815,7 +815,7 @@ interface Historia {
   nivel: string;
   texto: string;
   resumo_pt: string;
-  palavras_chave: { palavra:string; traducao:string; fonetica?:string; fon?:string }[];
+  palavras_chave: { palavra:string; traducao_pt:string; fonetica:string }[];
   perguntas: { pergunta:string; opcoes:string[]; correta:number }[];
 }
 
@@ -982,7 +982,7 @@ function HistoriasTab({ profile, cards, onAddCard }: {
                   <div>
                     <div style={{ fontSize:"18px", fontWeight:800, color:"#1A4A8A", fontFamily:"'Nunito',sans-serif" }}>{selectedWord.palavra}</div>
                     <div style={{ fontSize:"12px", color:"#8A9AB8", fontStyle:"italic", margin:"2px 0" }}>{selectedWord.fonetica}</div>
-                    <div style={{ fontSize:"15px", color:"#1A2A40", fontWeight:600 }}>{selectedWord.traducao}</div>
+                    <div style={{ fontSize:"15px", color:"#1A2A40", fontWeight:600 }}>{selectedWord.traducao_pt}</div>
                   </div>
                   <button
                     onClick={()=>salvarPalavra(selectedWord)}
