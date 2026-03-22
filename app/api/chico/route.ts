@@ -733,15 +733,8 @@ Responda APENAS com JSON:
       const paragrafos = (texto as string).split(/
 
 +/).filter((p:string) => p.trim());
-      const prompt = `Traduza os seguintes parágrafos do ${lingua_origem} para o português brasileiro.
-Mantenha o mesmo número de parágrafos. Tradução natural e fluente, não literal.
-Parágrafos:
-${paragrafos.map((p:string, i:number) => `[${i}] ${p}`).join("
-
-")}
-
-Responda APENAS com JSON:
-{ "paragrafos": ["tradução do parágrafo 0", "tradução do parágrafo 1", ...] }`;
+      const listaParas = paragrafos.map((p:string, i:number) => "[" + i + "] " + p).join("\n\n");
+      const prompt = "Traduza os seguintes parágrafos do " + (lingua_origem as string) + " para o português brasileiro. Mantenha o mesmo número de parágrafos. Tradução natural e fluente, não literal. Parágrafos: \n\n" + listaParas + "\n\nResponda APENAS com JSON: { \"paragrafos\": [\"tradução do parágrafo 0\", \"tradução do parágrafo 1\"] }";
 
       const completion = await groq.chat.completions.create({
         model: "llama-3.3-70b-versatile", temperature:0.3, max_tokens:2000,
