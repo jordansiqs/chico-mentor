@@ -1502,8 +1502,7 @@ export default function ChicoDashboard() {
                   ? <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"36px 12px", textAlign:"center", gap:"10px" }}>
                       <Icon.Search size={28} color={C.textMuted}/>
                       <p style={{ margin:0, fontSize:"13px", color:C.textMuted, lineHeight:1.5 }}>
-                        {searchQuery ? `Nenhum resultado para "${searchQuery}"` : "Pergunte algo ao Chico
-para criar nexos."}
+                        {searchQuery ? `Nenhum resultado para "${searchQuery}"` : "Pergunte algo ao Chico para criar nexos."}
                       </p>
                     </div>
                   : filteredCards.map(card=><div key={card.id} style={{ animation:"fadeIn 0.3s ease forwards" }}><NexoCard card={card} audio={audio} onDelete={handleDeleteCard}/></div>)
