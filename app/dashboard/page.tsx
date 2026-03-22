@@ -407,9 +407,9 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
 
     // Escolhe língua aleatória (só dentre as que têm tradução real)
     const allLangs: {txt:string; fon:string; bcp47:string; idx:0|1|2}[] = [
-      {txt:c.lang_1_txt, fon:c.lang_1_fon, bcp47:c.lang_1_bcp47, idx:0},
-      {txt:c.lang_2_txt, fon:c.lang_2_fon, bcp47:c.lang_2_bcp47, idx:1},
-      {txt:c.lang_3_txt, fon:c.lang_3_fon, bcp47:c.lang_3_bcp47, idx:2},
+      {txt:c.lang_1_txt, fon:c.lang_1_fon, bcp47:c.lang_1_bcp47, idx:0 as const},
+      {txt:c.lang_2_txt, fon:c.lang_2_fon, bcp47:c.lang_2_bcp47, idx:1 as const},
+      {txt:c.lang_3_txt, fon:c.lang_3_fon, bcp47:c.lang_3_bcp47, idx:2 as const},
     ].filter(l => l.txt && l.txt !== "—" && l.txt.length > 1);
 
     if (allLangs.length === 0) { setQuizOpts([]); return; }
