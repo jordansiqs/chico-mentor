@@ -1471,8 +1471,7 @@ export default function ChicoDashboard() {
                     ? <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"32px 12px", textAlign:"center", gap:"12px" }}>
                         <img src={CHICO_PENSATIVO} alt="" style={{ width:80, height:80, objectFit:"contain", opacity:0.6 }}/>
                         <p style={{ margin:0, fontSize:"14px", color:C.textSub, fontWeight:600, lineHeight:1.4 }}>
-                          {searchQuery ? `Nenhum resultado para "${searchQuery}"` : "Converse com o Chico
-para criar nexos!"}
+                          {searchQuery ? `Nenhum resultado para "${searchQuery}"` : "Converse com o Chico para criar nexos!"}
                         </p>
                       </div>
                     : filteredCards.map(card=><div key={card.id} style={{ animation:"fadeIn 0.3s ease forwards" }}><NexoCard card={card} audio={audio} onDelete={handleDeleteCard}/></div>)
