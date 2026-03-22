@@ -323,17 +323,19 @@ function ChatBubble({ message, audio }: { message: ChatMessage; audio: ReturnTyp
   const isChico = message.role === "chico";
 
   if (message.isLoading) return (
-    <div style={{ display:"flex", justifyContent:"flex-start", marginBottom:"4px" }}>
-      <div style={{ padding:"10px 14px", borderRadius:"18px 18px 18px 4px", background:"#F5F7FF", boxShadow:"0 1px 4px rgba(0,0,0,0.20)", display:"flex", gap:"4px", alignItems:"center" }}>
-        {[0,1,2].map(i=><span key={i} style={{ width:6, height:6, borderRadius:"50%", background:"#C7C7CC", animation:`typingDot 1.2s ${i*0.2}s ease-in-out infinite` }}/>)}
+    <div style={{ display:"flex", justifyContent:"flex-start", marginBottom:"4px", gap:"8px", alignItems:"flex-end" }}>
+      <img src={CHICO_PENSATIVO} alt="" style={{ width:56, height:56, objectFit:"contain", flexShrink:0 }}/>
+      <div style={{ padding:"12px 16px", borderRadius:"4px 18px 18px 18px", background:"#FFFFFF", boxShadow:"0 1px 4px rgba(0,0,0,0.08)", display:"flex", gap:"5px", alignItems:"center" }}>
+        {[0,1,2].map(i=><span key={i} style={{ width:7, height:7, borderRadius:"50%", background:"#C0CADC", animation:`typingDot 1.2s ${i*0.2}s ease-in-out infinite` }}/>)}
       </div>
     </div>
   );
 
   // Verificação — bolha azul sutil
   if (message.isVerificacao) return (
-    <div style={{ display:"flex", justifyContent:"flex-start", marginBottom:"4px" }}>
-      <div style={{ maxWidth:"82%", padding:"10px 14px", borderRadius:"4px 18px 18px 18px", background:"rgba(26,74,138,0.06)", border:"1px solid rgba(212,175,55,0.20)", fontSize:"14px", lineHeight:"1.55", color:"#1A4A8A" }}>
+    <div style={{ display:"flex", justifyContent:"flex-start", marginBottom:"4px", gap:"8px", alignItems:"flex-end" }}>
+      <img src={CHICO_PENSATIVO} alt="" style={{ width:56, height:56, objectFit:"contain", flexShrink:0 }}/>
+      <div style={{ maxWidth:"78%", padding:"12px 16px", borderRadius:"4px 18px 18px 18px", background:"rgba(26,74,138,0.07)", border:"1px solid rgba(26,74,138,0.15)", fontSize:"14px", lineHeight:"1.55", color:"#1A4A8A", fontWeight:600 }}>
         {message.content}
       </div>
     </div>
@@ -354,10 +356,10 @@ function ChatBubble({ message, audio }: { message: ChatMessage; audio: ReturnTyp
   // Mensagem normal do Chico — com card inline se houver
   if (isChico) return (
     <div style={{ display:"flex", justifyContent:"flex-start", marginBottom:"4px", gap:"8px", alignItems:"flex-end" }}>
-      <img src={CHICO_FELIZ} alt="chico" style={{ width:38, height:38, objectFit:"contain", flexShrink:0 }}/>
+      <img src={CHICO_FELIZ} alt="" style={{ width:60, height:60, objectFit:"contain", flexShrink:0 }}/>
       <div style={{ maxWidth:"78%" }}>
         {/* Texto da resposta */}
-        <div style={{ padding:"10px 14px", borderRadius:"4px 18px 18px 18px", background:"#F5F7FF", boxShadow:"0 1px 4px rgba(0,0,0,0.20)", fontSize:"14px", lineHeight:"1.6", color:"#1D1D1F", whiteSpace:"pre-wrap" }}>
+        <div style={{ padding:"10px 14px", borderRadius:"4px 18px 18px 18px", background:"#FFFFFF", boxShadow:"0 2px 8px rgba(26,74,138,0.07)", fontSize:"15px", lineHeight:"1.65", color:"#1A2A40", whiteSpace:"pre-wrap", border:"1px solid rgba(26,74,138,0.08)" }}>
           {message.content}
         </div>
         {/* Card de traduções inline */}
@@ -1300,7 +1302,7 @@ export default function ChicoDashboard() {
           <nav style={{ width:NAV_W, flexShrink:0, background:C.panel, borderRight:`1px solid ${C.border}`, display:"flex", flexDirection:"column", padding:"24px 16px 20px", zIndex:100 }}>
             {/* Logo */}
             <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"32px", paddingLeft:"8px" }}>
-              <img src={CHICO_FELIZ} alt="chico" style={{ width:42, height:42, objectFit:"contain" }}/>
+              <img src={CHICO_FELIZ} alt="" style={{ width:48, height:48, objectFit:"contain" }}/>
               <span style={{ fontSize:"24px", fontWeight:800, color:C.blue, fontFamily:"'Nunito', sans-serif", letterSpacing:"-0.02em" }}>chico</span>
             </div>
 
@@ -1377,7 +1379,7 @@ export default function ChicoDashboard() {
                 {/* Banner sugestão */}
                 {sugestao && (
                   <div style={{ padding:"10px 20px", background:"linear-gradient(135deg,rgba(94,92,230,0.07),rgba(191,90,242,0.04))", borderBottom:`1px solid rgba(94,92,230,0.12)`, display:"flex", alignItems:"center", gap:"12px", flexShrink:0 }}>
-                    <img src={CHICO_FELIZ} alt="" style={{ width:36, height:36, objectFit:"contain", flexShrink:0 }}/>
+                    <img src={CHICO_FELIZ} alt="" style={{ width:60, height:60, objectFit:"contain", flexShrink:0 }}/>
                     <div style={{ flex:1 }}>
                       <div style={{ fontSize:"11px", fontWeight:800, color:"#5E5CE6", marginBottom:"1px", letterSpacing:"0.02em" }}>{sugestao.titulo}</div>
                       <div style={{ fontSize:"13px", color:C.textSub }}>{sugestao.mensagem}</div>
@@ -1469,7 +1471,7 @@ export default function ChicoDashboard() {
                   ? Array.from({length:3}).map((_,i)=><div key={i} style={{ height:110, borderRadius:"14px", background:"#EEF2F8" }}/>)
                   : filteredCards.length===0
                     ? <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"32px 12px", textAlign:"center", gap:"12px" }}>
-                        <img src={CHICO_PENSATIVO} alt="" style={{ width:80, height:80, objectFit:"contain", opacity:0.6 }}/>
+                        <img src={CHICO_PENSATIVO} alt="" style={{ width:100, height:100, objectFit:"contain", opacity:0.7 }}/>
                         <p style={{ margin:0, fontSize:"14px", color:C.textSub, fontWeight:600, lineHeight:1.4 }}>
                           {searchQuery ? `Nenhum resultado para "${searchQuery}"` : "Converse com o Chico para criar nexos!"}
                         </p>
