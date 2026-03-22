@@ -843,7 +843,7 @@ function MusicaTab({ profile }: { profile: UserProfile | null }) {
       </button>
 
       {resultado && (
-        <div style={{ background:"#111827", borderRadius:"16px", padding:"18px", border:"1px solid rgba(255,255,255,0.06)", border:"1px solid rgba(0,0,0,0.05)" }}>
+        <div style={{ background:"#111827", borderRadius:"16px", padding:"18px", border:"1px solid rgba(255,255,255,0.06)" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"12px" }}>
             <div>
               <div style={{ fontSize:"12px", fontWeight:700, color:"#D4AF37" }}>Análise do Chico</div>
