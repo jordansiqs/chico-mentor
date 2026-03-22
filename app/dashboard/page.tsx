@@ -819,33 +819,69 @@ interface Historia {
   perguntas: { pergunta:string; opcoes:string[]; correta:number }[];
 }
 
+interface HistoriaSalva extends Historia {
+  id: string;
+  salva_em: string;
+  lida: boolean;
+}
+
 function HistoriasTab({ profile, cards, onAddCard }: {
   profile: UserProfile | null;
   cards: MentoriaCard[];
   onAddCard: (card: MentoriaCard) => void;
 }) {
-  const LINGUAS_TRONCO = {
+  const LINGUAS_TRONCO: Record<string,string[]> = {
     românico:  ["Espanhol","Francês","Italiano"],
     germânico: ["Inglês","Alemão","Holandês"],
   };
+  const linguas = profile?.tronco ? (LINGUAS_TRONCO[profile.tronco] ?? ["Espanhol"]) : ["Espanhol"];
 
-  const linguas = profile?.tronco ? LINGUAS_TRONCO[profile.tronco] : ["Espanhol"];
-
-  const [lingua, setLingua]         = useState(linguas[0]);
-  const [nivel, setNivel]           = useState<"iniciante"|"intermediário"|"avançado">("iniciante");
-  const [loading, setLoading]       = useState(false);
-  const [historia, setHistoria]     = useState<Historia | null>(null);
-  const [selectedWord, setSelectedWord] = useState<{palavra:string;traducao_pt:string;fonetica:string} | null>(null);
-  const [savedWords, setSavedWords] = useState<Set<string>>(new Set());
-  const [savingWord, setSavingWord] = useState<string | null>(null);
+  // ── estado ────────────────────────────────────────────────────────────────
+  const [view, setView]               = useState<"gerar"|"salvas">("gerar");
+  const [lingua, setLingua]           = useState(linguas[0]);
+  const [nivel, setNivel]             = useState<"iniciante"|"intermediário"|"avançado">("iniciante");
+  const [loading, setLoading]         = useState(false);
+  const [historia, setHistoria]       = useState<Historia | null>(null);
+  const [savedWords, setSavedWords]   = useState<Set<string>>(new Set());
+  const [savingWord, setSavingWord]   = useState<string | null>(null);
   const [quizStarted, setQuizStarted] = useState(false);
   const [quizAnswers, setQuizAnswers] = useState<(number|null)[]>([null,null,null]);
-  const [quizDone, setQuizDone]     = useState(false);
+  const [quizDone, setQuizDone]       = useState(false);
+  const [historiasSalvas, setHistoriasSalvas] = useState<HistoriaSalva[]>([]);
+  const [historiaSelecionada, setHistoriaSelecionada] = useState<HistoriaSalva | null>(null);
+
+  // Tradução de qualquer palavra
+  const [selWord, setSelWord]         = useState<string | null>(null);
+  const [translating, setTranslating] = useState(false);
+  const [wordTranslation, setWordTranslation] = useState<{traducao_pt:string;fonetica:string;classe:string;exemplo_pt:string} | null>(null);
+
+  // Modo paralelo
+  const [paralelo, setParalelo]       = useState(false);
+  const [loadingParalelo, setLoadingParalelo] = useState(false);
+  const [paragrafosPt, setParagrafosPt] = useState<string[]>([]);
+
+  // Áudio
+  const [playing, setPlaying]         = useState(false);
+  const synth = typeof window !== "undefined" ? window.speechSynthesis : null;
+
+  // Load histórias salvas do localStorage
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("chico_historias_salvas");
+      if (raw) setHistoriasSalvas(JSON.parse(raw));
+    } catch {}
+  }, []);
+
+  function saveToLocalStorage(list: HistoriaSalva[]) {
+    try { localStorage.setItem("chico_historias_salvas", JSON.stringify(list)); } catch {}
+  }
 
   async function gerarHistoria() {
     if (!profile) return;
-    setLoading(true); setHistoria(null); setSelectedWord(null);
-    setSavedWords(new Set()); setQuizStarted(false); setQuizAnswers([null,null,null]); setQuizDone(false);
+    setLoading(true); setHistoria(null); setSelWord(null); setWordTranslation(null);
+    setSavedWords(new Set()); setQuizStarted(false); setQuizAnswers([null,null,null]);
+    setQuizDone(false); setParalelo(false); setParagrafosPt([]); setPlaying(false);
+    synth?.cancel();
     try {
       const res = await fetch("/api/chico", {
         method:"PATCH", headers:{"Content-Type":"application/json"},
@@ -857,232 +893,446 @@ function HistoriasTab({ profile, cards, onAddCard }: {
     setLoading(false);
   }
 
-  async function salvarPalavra(p: {palavra:string;traducao_pt:string;fonetica:string}) {
+  function salvarHistoria() {
+    if (!historia) return;
+    const nova: HistoriaSalva = { ...historia, id: Date.now().toString(), salva_em: new Date().toLocaleDateString("pt-BR"), lida: false };
+    const list = [nova, ...historiasSalvas].slice(0, 20);
+    setHistoriasSalvas(list);
+    saveToLocalStorage(list);
+  }
+
+  function excluirHistoria(id: string) {
+    const list = historiasSalvas.filter(h => h.id !== id);
+    setHistoriasSalvas(list);
+    saveToLocalStorage(list);
+    if (historiaSelecionada?.id === id) setHistoriaSelecionada(null);
+  }
+
+  function marcarLida(id: string) {
+    const list = historiasSalvas.map(h => h.id === id ? {...h, lida:true} : h);
+    setHistoriasSalvas(list);
+    saveToLocalStorage(list);
+  }
+
+  // Tradução de palavra avulsa
+  async function traduzirPalavra(palavra: string) {
+    if (!historia || !profile) return;
+    setSelWord(palavra); setWordTranslation(null); setTranslating(true);
+    try {
+      const res = await fetch("/api/chico", {
+        method:"PATCH", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ acao:"traduzir_palavra", palavra, lingua_origem:lingua, tronco:profile.tronco }),
+      });
+      const data = await res.json();
+      if (res.ok && data.result) setWordTranslation(data.result);
+    } catch {}
+    setTranslating(false);
+  }
+
+  // Modo paralelo
+  async function ativarParalelo() {
+    if (!historia || !profile) return;
+    if (paragrafosPt.length > 0) { setParalelo(v=>!v); return; }
+    setLoadingParalelo(true);
+    try {
+      const res = await fetch("/api/chico", {
+        method:"PATCH", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ acao:"traduzir_historia", texto:historia.texto, lingua_origem:historia.lingua }),
+      });
+      const data = await res.json();
+      if (res.ok && data.paragrafos) { setParagrafosPt(data.paragrafos); setParalelo(true); }
+    } catch {}
+    setLoadingParalelo(false);
+  }
+
+  // Áudio
+  function toggleAudio() {
+    if (!historia || !synth) return;
+    if (playing) { synth.cancel(); setPlaying(false); return; }
+    const utter = new SpeechSynthesisUtterance(historia.texto);
+    const bcp47: Record<string,string> = { Espanhol:"es-ES", Francês:"fr-FR", Italiano:"it-IT", Inglês:"en-GB", Alemão:"de-DE", Holandês:"nl-NL" };
+    utter.lang = bcp47[historia.lingua] ?? "es-ES";
+    utter.rate = nivel === "iniciante" ? 0.82 : nivel === "intermediário" ? 0.92 : 1.0;
+    utter.onend = () => setPlaying(false);
+    synth.speak(utter); setPlaying(true);
+  }
+
+  // Salvar palavra como nexo
+  async function salvarPalavraComNexo(p:{palavra:string;traducao_pt:string;fonetica:string}) {
     if (!profile || savedWords.has(p.palavra)) return;
     setSavingWord(p.palavra);
     try {
       const res = await fetch("/api/chico", {
         method:"PATCH", headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ acao:"salvar_palavra_historia", palavra:p.palavra, traducao:(p as any).traducao, fon:(p as any).fon||"", tronco:profile.tronco, lingua_origem:lingua }),
+        body:JSON.stringify({ acao:"salvar_palavra_historia", palavra:p.palavra, traducao_pt:p.traducao_pt, fonetica:p.fonetica, tronco:profile.tronco, lingua_origem:lingua }),
       });
       const data = await res.json();
-      if (res.ok && data.card) {
-        onAddCard(data.card);
-        setSavedWords(prev => new Set([...prev, p.palavra]));
-      }
+      if (res.ok && data.card) { onAddCard(data.card); setSavedWords(prev=>new Set([...prev,p.palavra])); }
     } catch {}
     setSavingWord(null);
   }
 
-  function handleQuizAnswer(qIdx:number, aIdx:number) {
-    if (quizAnswers[qIdx] !== null) return;
-    const next = [...quizAnswers];
-    next[qIdx] = aIdx;
-    setQuizAnswers(next);
-    if (next.every(a => a !== null)) setTimeout(() => setQuizDone(true), 600);
+  function handleQuizAnswer(qi:number, ai:number) {
+    if (quizAnswers[qi]!==null) return;
+    const next=[...quizAnswers]; next[qi]=ai; setQuizAnswers(next);
+    if (next.every(a=>a!==null)) setTimeout(()=>setQuizDone(true),600);
   }
 
-  const acertos = historia ? quizAnswers.filter((a,i) => a === historia.perguntas[i]?.correta).length : 0;
+  const acertos = historia ? quizAnswers.filter((a,i)=>a===historia.perguntas[i]?.correta).length : 0;
 
-  // Render story text with tappable words
-  function renderTexto(texto:string) {
-    if (!historia) return null;
-    const palavrasDestaque = new Set(historia.palavras_chave.map((p:any) => p.palavra.toLowerCase()));
-    return texto.split(/(\s+|[.,;:!?¡¿"()—\-])/).map((token, i) => {
-      const clean = token.replace(/[^a-záéíóúüñàâêîôûäëïöùçœæ']/gi,"").toLowerCase();
-      const match = historia.palavras_chave.find(p => p.palavra.toLowerCase() === clean);
-      if (match) {
-        const saved = savedWords.has(match.palavra);
-        return (
-          <span key={i}
-            onClick={() => setSelectedWord(selectedWord?.palavra === match.palavra ? null : match)}
-            style={{ cursor:"pointer", background:selectedWord?.palavra===match.palavra?"rgba(26,74,138,0.15)":saved?"rgba(42,154,96,0.10)":"rgba(224,120,32,0.12)", borderRadius:"4px", padding:"1px 3px", color:selectedWord?.palavra===match.palavra?"#1A4A8A":saved?"#2A9A60":"#C06010", fontWeight:700, transition:"all 0.15s", textDecoration:"underline", textDecorationStyle:"dotted" as const }}>
-            {token}
-          </span>
-        );
-      }
-      return <span key={i}>{token}</span>;
-    });
+  // Render texto com palavras clicáveis
+  function renderTexto(texto:string, h:Historia) {
+    const parafs = texto.split(/
+
++/);
+    const ptParafs = paragrafosPt;
+    return parafs.map((para, pi) => (
+      <div key={pi} style={{ display:paralelo&&ptParafs[pi]?"grid":"block", gridTemplateColumns:"1fr 1fr", gap:"16px", marginBottom:"18px" }}>
+        <p style={{ margin:0, fontSize:"16px", lineHeight:"1.85", color:"#1A2A40", fontFamily:"'Nunito',sans-serif", fontWeight:500 }}>
+          {para.split(/(\s+)/).map((token, ti) => {
+            const clean = token.trim().replace(/[^a-záéíóúüñàâêîôûäëïöùçœæ'']/gi,"").toLowerCase();
+            if (!clean || clean.length < 2) return <span key={ti}>{token}</span>;
+            const kw = h.palavras_chave.find(k=>k.palavra.toLowerCase()===clean);
+            const isSelected = selWord === token.trim();
+            const isSaved = kw && savedWords.has(kw.palavra);
+            return (
+              <span key={ti}
+                onClick={()=>{ if(token.trim().length>1){ setWordTranslation(null); if(selWord===token.trim()){setSelWord(null);}else{traduzirPalavra(token.trim());} } }}
+                style={{
+                  cursor:"pointer",
+                  background: isSelected ? "rgba(26,74,138,0.18)" : kw ? (isSaved?"rgba(42,154,96,0.12)":"rgba(224,120,32,0.13)") : "transparent",
+                  borderRadius:"3px", padding:"0 2px",
+                  color: isSelected ? "#1A4A8A" : kw ? (isSaved?"#2A9A60":"#B05A10") : "inherit",
+                  fontWeight: kw ? 700 : "inherit",
+                  textDecoration: kw ? "underline" : "none",
+                  textDecorationStyle: kw ? "dotted" as const : "solid" as const,
+                  transition:"background 0.15s",
+                }}>
+                {token}
+              </span>
+            );
+          })}
+        </p>
+        {paralelo && ptParafs[pi] && (
+          <p style={{ margin:0, fontSize:"14px", lineHeight:"1.75", color:"#6A7A9A", fontFamily:"'Nunito',sans-serif", borderLeft:"2px solid #E0EAF8", paddingLeft:"14px" }}>
+            {ptParafs[pi]}
+          </p>
+        )}
+      </div>
+    ));
   }
 
   const nivelCores: Record<string,{bg:string;color:string;border:string}> = {
-    iniciante:     { bg:"rgba(42,154,96,0.08)",   color:"#2A9A60", border:"rgba(42,154,96,0.25)"   },
-    intermediário: { bg:"rgba(224,120,32,0.08)",  color:"#C06010", border:"rgba(224,120,32,0.25)"  },
-    avançado:      { bg:"rgba(26,74,138,0.08)",   color:"#1A4A8A", border:"rgba(26,74,138,0.25)"   },
+    iniciante:     {bg:"rgba(42,154,96,0.08)",  color:"#2A9A60", border:"rgba(42,154,96,0.25)"},
+    intermediário: {bg:"rgba(224,120,32,0.08)", color:"#C06010", border:"rgba(224,120,32,0.25)"},
+    avançado:      {bg:"rgba(26,74,138,0.08)",  color:"#1A4A8A", border:"rgba(26,74,138,0.25)"},
   };
 
+  const textoAtual: Historia | null = historiaSelecionada ?? historia;
+
   return (
-    <div style={{ height:"100%", overflowY:"auto", background:"#F7F8FC" }}>
-      <div style={{ maxWidth:"680px", margin:"0 auto", padding:"24px 20px 48px" }}>
+    <div style={{height:"100%", overflowY:"auto", background:"#F7F8FC"}}>
+      <div style={{maxWidth:"720px", margin:"0 auto", padding:"24px 20px 48px"}}>
 
-        {/* Controles */}
-        <div style={{ background:"#fff", borderRadius:"18px", padding:"20px", marginBottom:"16px", boxShadow:"0 2px 12px rgba(26,74,138,0.07)" }}>
-          <div style={{ fontSize:"20px", fontWeight:800, color:"#1A4A8A", fontFamily:"'Nunito',sans-serif", marginBottom:"4px" }}>Histórias</div>
-          <div style={{ fontSize:"14px", color:"#6A7A9A", marginBottom:"18px" }}>Leia histórias nas línguas que você aprende. Toque nas palavras destacadas para ver a tradução.</div>
-
-          <div style={{ display:"flex", gap:"12px", flexWrap:"wrap" as const }}>
-            {/* Língua */}
-            <div style={{ flex:1, minWidth:"130px" }}>
-              <div style={{ fontSize:"11px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"6px" }}>Língua</div>
-              <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" as const }}>
-                {linguas.map(l => (
-                  <button key={l} onClick={()=>setLingua(l)}
-                    style={{ padding:"7px 14px", borderRadius:"20px", border:`2px solid ${lingua===l?"#1A4A8A":"rgba(0,0,0,0.09)"}`, background:lingua===l?"rgba(26,74,138,0.08)":"transparent", color:lingua===l?"#1A4A8A":"#5A6A80", fontSize:"13px", fontWeight:lingua===l?800:500, cursor:"pointer", fontFamily:"'Nunito',sans-serif", transition:"all 0.15s" }}>
-                    {l}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Nível */}
-            <div style={{ flex:1, minWidth:"200px" }}>
-              <div style={{ fontSize:"11px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"6px" }}>Nível</div>
-              <div style={{ display:"flex", gap:"6px" }}>
-                {(["iniciante","intermediário","avançado"] as const).map(n => {
-                  const nc = nivelCores[n];
-                  return (
-                    <button key={n} onClick={()=>setNivel(n)}
-                      style={{ padding:"7px 14px", borderRadius:"20px", border:`2px solid ${nivel===n?nc.border:"rgba(0,0,0,0.09)"}`, background:nivel===n?nc.bg:"transparent", color:nivel===n?nc.color:"#5A6A80", fontSize:"13px", fontWeight:nivel===n?800:500, cursor:"pointer", fontFamily:"'Nunito',sans-serif", transition:"all 0.15s", textTransform:"capitalize" as const }}>
-                      {n}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          </div>
-
-          <button onClick={gerarHistoria} disabled={loading}
-            style={{ width:"100%", marginTop:"16px", padding:"14px", borderRadius:"14px", border:"none", background:loading?"rgba(0,0,0,0.07)":"linear-gradient(135deg,#1A4A8A,#2A6ACC)", color:loading?"#AEAEB2":"#fff", fontSize:"15px", fontWeight:800, cursor:loading?"not-allowed":"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:loading?"none":"0 3px 14px rgba(26,74,138,0.28)", letterSpacing:"-0.01em" }}>
-            {loading ? "Gerando história..." : historia ? "Nova história →" : "Gerar história →"}
-          </button>
+        {/* Tabs gerar / salvas */}
+        <div style={{display:"flex", gap:"8px", marginBottom:"16px", padding:"4px", background:"rgba(0,0,0,0.05)", borderRadius:"14px", width:"fit-content"}}>
+          {(["gerar","salvas"] as const).map(v=>(
+            <button key={v} onClick={()=>{setView(v); setHistoriaSelecionada(null);}}
+              style={{padding:"8px 20px", borderRadius:"10px", border:"none", background:view===v?"#fff":"transparent", color:view===v?"#1A4A8A":"#6A7A9A", fontSize:"14px", fontWeight:view===v?800:600, cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:view===v?"0 1px 4px rgba(0,0,0,0.10)":"none", transition:"all 0.15s"}}>
+              {v==="gerar"?"📖 Gerar história":`🔖 Salvas (${historiasSalvas.length})`}
+            </button>
+          ))}
         </div>
 
-        {/* História */}
-        {historia && (
+        {/* ── VIEW: GERAR ── */}
+        {view==="gerar" && (
           <>
-            {/* Header */}
-            <div style={{ background:"linear-gradient(135deg,#1A4A8A,#2A6ACC)", borderRadius:"18px", padding:"22px 24px", marginBottom:"12px", boxShadow:"0 4px 20px rgba(26,74,138,0.25)" }}>
-              <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"10px" }}>
-                <span style={{ padding:"4px 12px", borderRadius:"20px", background:"rgba(255,255,255,0.15)", fontSize:"12px", fontWeight:700, color:"#fff", letterSpacing:"0.03em" }}>{historia.lingua}</span>
-                <span style={{ padding:"4px 12px", borderRadius:"20px", background:"rgba(255,255,255,0.12)", fontSize:"12px", fontWeight:700, color:"rgba(255,255,255,0.85)", textTransform:"capitalize" as const }}>{historia.nivel}</span>
-              </div>
-              <div style={{ fontSize:"22px", fontWeight:800, color:"#fff", fontFamily:"'Nunito',sans-serif", lineHeight:1.2, marginBottom:"4px" }}>{historia.titulo}</div>
-              <div style={{ fontSize:"14px", color:"rgba(255,255,255,0.70)", fontStyle:"italic" }}>{historia.titulo_pt}</div>
-            </div>
-
-            {/* Texto */}
-            <div style={{ background:"#fff", borderRadius:"18px", padding:"24px", marginBottom:"12px", boxShadow:"0 2px 12px rgba(26,74,138,0.07)" }}>
-              <p style={{ fontSize:"17px", lineHeight:"1.85", color:"#1A2A40", margin:0, fontFamily:"'Nunito',sans-serif", fontWeight:500 }}>
-                {renderTexto(historia.texto)}
-              </p>
-
-              {/* Popup palavra selecionada */}
-              {selectedWord && (
-                <div style={{ marginTop:"16px", padding:"14px 16px", borderRadius:"14px", background:"rgba(26,74,138,0.06)", border:"1.5px solid rgba(26,74,138,0.15)", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"12px", animation:"fadeIn 0.2s ease forwards" }}>
-                  <div>
-                    <div style={{ fontSize:"18px", fontWeight:800, color:"#1A4A8A", fontFamily:"'Nunito',sans-serif" }}>{selectedWord.palavra}</div>
-                    <div style={{ fontSize:"12px", color:"#8A9AB8", fontStyle:"italic", margin:"2px 0" }}>{selectedWord.fonetica}</div>
-                    <div style={{ fontSize:"15px", color:"#1A2A40", fontWeight:600 }}>{selectedWord.traducao_pt}</div>
+            {/* Controles */}
+            <div style={{background:"#fff", borderRadius:"18px", padding:"20px", marginBottom:"16px", boxShadow:"0 2px 12px rgba(26,74,138,0.07)"}}>
+              <div style={{fontSize:"20px", fontWeight:800, color:"#1A4A8A", fontFamily:"'Nunito',sans-serif", marginBottom:"4px"}}>Histórias</div>
+              <div style={{fontSize:"14px", color:"#6A7A9A", marginBottom:"18px"}}>Toque em qualquer palavra para traduzir. Palavras destacadas em laranja são do glossário da história.</div>
+              <div style={{display:"flex", gap:"16px", flexWrap:"wrap" as const, marginBottom:"16px"}}>
+                <div style={{flex:1, minWidth:"130px"}}>
+                  <div style={{fontSize:"11px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"6px"}}>Língua</div>
+                  <div style={{display:"flex", gap:"6px", flexWrap:"wrap" as const}}>
+                    {linguas.map(l=>(
+                      <button key={l} onClick={()=>setLingua(l)}
+                        style={{padding:"7px 14px", borderRadius:"20px", border:`2px solid ${lingua===l?"#1A4A8A":"rgba(0,0,0,0.09)"}`, background:lingua===l?"rgba(26,74,138,0.08)":"transparent", color:lingua===l?"#1A4A8A":"#5A6A80", fontSize:"13px", fontWeight:lingua===l?800:500, cursor:"pointer", fontFamily:"'Nunito',sans-serif", transition:"all 0.15s"}}>
+                        {l}
+                      </button>
+                    ))}
                   </div>
-                  <button
-                    onClick={()=>salvarPalavra(selectedWord)}
-                    disabled={savedWords.has(selectedWord.palavra) || savingWord===selectedWord.palavra}
-                    style={{ padding:"8px 16px", borderRadius:"10px", border:"none", background:savedWords.has(selectedWord.palavra)?"rgba(42,154,96,0.12)":"linear-gradient(135deg,#E07820,#F09030)", color:savedWords.has(selectedWord.palavra)?"#2A9A60":"#fff", fontSize:"13px", fontWeight:800, cursor:savedWords.has(selectedWord.palavra)?"default":"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" as const, flexShrink:0 }}>
-                    {savingWord===selectedWord.palavra?"Salvando...":savedWords.has(selectedWord.palavra)?"✓ Salvo":"+ Nexo"}
-                  </button>
                 </div>
-              )}
-            </div>
-
-            {/* Palavras-chave */}
-            {historia.palavras_chave.length > 0 && (
-              <div style={{ background:"#fff", borderRadius:"18px", padding:"20px", marginBottom:"12px", boxShadow:"0 2px 12px rgba(26,74,138,0.07)" }}>
-                <div style={{ fontSize:"13px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"14px" }}>Palavras da história</div>
-                <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
-                  {historia.palavras_chave.map((p, i) => {
-                    const saved = savedWords.has(p.palavra);
-                    return (
-                      <div key={i} style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", borderRadius:"12px", background:saved?"rgba(42,154,96,0.06)":"#F7F8FC", border:`1px solid ${saved?"rgba(42,154,96,0.20)":"rgba(0,0,0,0.07)"}` }}>
-                        <div style={{ display:"flex", alignItems:"baseline", gap:"8px" }}>
-                          <span style={{ fontSize:"15px", fontWeight:800, color:"#1A2A40", fontFamily:"'Nunito',sans-serif" }}>{p.palavra}</span>
-                          <span style={{ fontSize:"11px", color:"#8A9AB8", fontStyle:"italic" }}>{p.fonetica}</span>
-                          <span style={{ fontSize:"14px", color:"#5A6A80" }}>→ {(p as any).traducao}</span>
-                        </div>
-                        <button onClick={()=>salvarPalavra(p)} disabled={saved||savingWord===p.palavra}
-                          style={{ padding:"5px 12px", borderRadius:"8px", border:"none", background:saved?"rgba(42,154,96,0.12)":"rgba(26,74,138,0.08)", color:saved?"#2A9A60":"#1A4A8A", fontSize:"12px", fontWeight:700, cursor:saved?"default":"pointer", fontFamily:"'Nunito',sans-serif", flexShrink:0 }}>
-                          {savingWord===p.palavra?"...":saved?"✓ Salvo":"+ Nexo"}
+                <div style={{flex:1, minWidth:"200px"}}>
+                  <div style={{fontSize:"11px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"6px"}}>Nível</div>
+                  <div style={{display:"flex", gap:"6px"}}>
+                    {(["iniciante","intermediário","avançado"] as const).map(n=>{
+                      const nc=nivelCores[n];
+                      return(
+                        <button key={n} onClick={()=>setNivel(n)}
+                          style={{padding:"7px 14px", borderRadius:"20px", border:`2px solid ${nivel===n?nc.border:"rgba(0,0,0,0.09)"}`, background:nivel===n?nc.bg:"transparent", color:nivel===n?nc.color:"#5A6A80", fontSize:"13px", fontWeight:nivel===n?800:500, cursor:"pointer", fontFamily:"'Nunito',sans-serif", transition:"all 0.15s", textTransform:"capitalize" as const}}>
+                          {n}
                         </button>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            )}
-
-            {/* Quiz */}
-            {!quizStarted ? (
-              <button onClick={()=>setQuizStarted(true)}
-                style={{ width:"100%", padding:"14px", borderRadius:"14px", border:"none", background:"linear-gradient(135deg,#E07820,#F09030)", color:"#fff", fontSize:"15px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 3px 14px rgba(224,120,32,0.28)" }}>
-                Testar compreensão →
+              <button onClick={gerarHistoria} disabled={loading}
+                style={{width:"100%", padding:"14px", borderRadius:"14px", border:"none", background:loading?"rgba(0,0,0,0.07)":"linear-gradient(135deg,#1A4A8A,#2A6ACC)", color:loading?"#AEAEB2":"#fff", fontSize:"15px", fontWeight:800, cursor:loading?"not-allowed":"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:loading?"none":"0 3px 14px rgba(26,74,138,0.28)"}}>
+                {loading?"Gerando história...":textoAtual?"Nova história →":"Gerar história →"}
               </button>
-            ) : (
-              <div style={{ background:"#fff", borderRadius:"18px", padding:"22px", boxShadow:"0 2px 12px rgba(26,74,138,0.07)" }}>
-                <div style={{ fontSize:"13px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"16px" }}>Perguntas de compreensão</div>
-                <div style={{ display:"flex", flexDirection:"column", gap:"20px" }}>
-                  {historia.perguntas.map((q, qi) => (
-                    <div key={qi}>
-                      <div style={{ fontSize:"15px", fontWeight:700, color:"#1A2A40", marginBottom:"10px", fontFamily:"'Nunito',sans-serif" }}>
-                        {qi+1}. {q.pergunta}
-                      </div>
-                      <div style={{ display:"flex", flexDirection:"column", gap:"7px" }}>
-                        {q.opcoes.map((op, oi) => {
-                          const answered = quizAnswers[qi] !== null;
-                          const isSelected = quizAnswers[qi] === oi;
-                          const isCorrect  = oi === q.correta;
-                          let bg = "#F7F8FC", border = "1px solid rgba(0,0,0,0.08)", color = "#1A2A40";
-                          if (answered) {
-                            if (isCorrect)       { bg="rgba(42,154,96,0.08)";   border="1.5px solid #2A9A60"; color="#2A9A60"; }
-                            else if (isSelected) { bg="rgba(204,42,32,0.08)";   border="1.5px solid #CC2A20"; color="#CC2A20"; }
-                          }
-                          return (
-                            <button key={oi} disabled={answered}
-                              onClick={()=>handleQuizAnswer(qi, oi)}
-                              style={{ width:"100%", padding:"12px 16px", borderRadius:"12px", border, background:bg, color, fontSize:"14px", fontWeight:isCorrect&&answered?800:500, cursor:answered?"default":"pointer", fontFamily:"'Nunito',sans-serif", textAlign:"left" as const, transition:"all 0.2s" }}>
-                              {op}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  ))}
+            </div>
+
+            {/* História */}
+            {textoAtual && (
+              <>
+                {/* Header da história */}
+                <div style={{background:"linear-gradient(135deg,#1A4A8A,#2A6ACC)", borderRadius:"18px", padding:"22px 24px", marginBottom:"12px", boxShadow:"0 4px 20px rgba(26,74,138,0.25)"}}>
+                  <div style={{display:"flex", alignItems:"center", gap:"8px", marginBottom:"10px"}}>
+                    <span style={{padding:"4px 12px", borderRadius:"20px", background:"rgba(255,255,255,0.15)", fontSize:"12px", fontWeight:700, color:"#fff"}}>{textoAtual.lingua}</span>
+                    <span style={{padding:"4px 12px", borderRadius:"20px", background:"rgba(255,255,255,0.12)", fontSize:"12px", fontWeight:700, color:"rgba(255,255,255,0.85)", textTransform:"capitalize" as const}}>{textoAtual.nivel}</span>
+                    <span style={{marginLeft:"auto", fontSize:"12px", color:"rgba(255,255,255,0.65)"}}>🔖</span>
+                  </div>
+                  <div style={{fontSize:"22px", fontWeight:800, color:"#fff", fontFamily:"'Nunito',sans-serif", lineHeight:1.2, marginBottom:"4px"}}>{textoAtual.titulo}</div>
+                  <div style={{fontSize:"14px", color:"rgba(255,255,255,0.70)", fontStyle:"italic"}}>{textoAtual.titulo_pt}</div>
                 </div>
 
-                {quizDone && (
-                  <div style={{ marginTop:"20px", padding:"16px 20px", borderRadius:"14px", background:acertos===3?"rgba(42,154,96,0.08)":acertos>=2?"rgba(224,120,32,0.08)":"rgba(26,74,138,0.08)", border:`1.5px solid ${acertos===3?"rgba(42,154,96,0.25)":acertos>=2?"rgba(224,120,32,0.25)":"rgba(26,74,138,0.20)"}`, textAlign:"center" as const }}>
-                    <div style={{ fontSize:"28px", fontWeight:800, color:acertos===3?"#2A9A60":acertos>=2?"#C06010":"#1A4A8A", fontFamily:"'Nunito',sans-serif" }}>
-                      {acertos}/3 {acertos===3?"🎉":acertos>=2?"👍":"💪"}
-                    </div>
-                    <div style={{ fontSize:"14px", color:"#5A6A80", marginTop:"4px" }}>
-                      {acertos===3?"Perfeito! Você entendeu tudo.":acertos>=2?"Muito bem! Quase perfeito.":"Continue praticando!"}
-                    </div>
-                    <button onClick={gerarHistoria}
-                      style={{ marginTop:"14px", padding:"10px 24px", borderRadius:"12px", border:"none", background:"linear-gradient(135deg,#1A4A8A,#2A6ACC)", color:"#fff", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito',sans-serif" }}>
-                      Nova história
+                {/* Barra de ferramentas */}
+                <div style={{display:"flex", gap:"8px", marginBottom:"12px", flexWrap:"wrap" as const}}>
+                  {/* Áudio */}
+                  <button onClick={toggleAudio}
+                    style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 16px", borderRadius:"10px", border:"none", background:playing?"rgba(204,42,32,0.09)":"rgba(26,74,138,0.08)", color:playing?"#CC2A20":"#1A4A8A", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito',sans-serif", transition:"all 0.2s"}}>
+                    {playing
+                      ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>Pausar</>
+                      : <><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>Ouvir</>
+                    }
+                  </button>
+                  {/* Modo paralelo */}
+                  <button onClick={ativarParalelo} disabled={loadingParalelo}
+                    style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 16px", borderRadius:"10px", border:"none", background:paralelo?"rgba(94,92,230,0.12)":"rgba(0,0,0,0.06)", color:paralelo?"#5E5CE6":"#5A6A80", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito',sans-serif"}}>
+                    {loadingParalelo?"Traduzindo...":paralelo?"🇧🇷 Ocultar PT":"🇧🇷 Ler em PT"}
+                  </button>
+                  {/* Salvar */}
+                  {!historiaSelecionada && (
+                    <button onClick={salvarHistoria}
+                      style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 16px", borderRadius:"10px", border:"none", background:"rgba(42,154,96,0.08)", color:"#2A9A60", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito',sans-serif", marginLeft:"auto"}}>
+                      🔖 Salvar história
                     </button>
+                  )}
+                </div>
+
+                {/* Popup de tradução de palavra */}
+                {selWord && (
+                  <div style={{background:"#fff", borderRadius:"14px", padding:"14px 16px", marginBottom:"12px", border:"1.5px solid rgba(26,74,138,0.15)", boxShadow:"0 2px 12px rgba(26,74,138,0.10)", display:"flex", alignItems:"center", gap:"14px", animation:"fadeIn 0.2s ease forwards"}}>
+                    {translating
+                      ? <div style={{fontSize:"14px", color:"#8A9AB8"}}>Traduzindo "{selWord}"...</div>
+                      : wordTranslation
+                        ? <>
+                            <div style={{flex:1}}>
+                              <div style={{fontSize:"18px", fontWeight:800, color:"#1A4A8A", fontFamily:"'Nunito',sans-serif"}}>{selWord}</div>
+                              <div style={{fontSize:"11px", color:"#8A9AB8", fontStyle:"italic", margin:"1px 0"}}>{wordTranslation.fonetica} · {wordTranslation.classe}</div>
+                              <div style={{fontSize:"15px", fontWeight:700, color:"#1A2A40"}}>{wordTranslation.traducao_pt}</div>
+                              {wordTranslation.exemplo_pt && <div style={{fontSize:"12px", color:"#8A9AB8", marginTop:"4px", fontStyle:"italic"}}>"{wordTranslation.exemplo_pt}"</div>}
+                            </div>
+                            <div style={{display:"flex", flexDirection:"column" as const, gap:"6px"}}>
+                              <button onClick={()=>salvarPalavraComNexo({palavra:selWord, traducao_pt:wordTranslation.traducao_pt, fonetica:wordTranslation.fonetica})}
+                                disabled={savedWords.has(selWord)||savingWord===selWord}
+                                style={{padding:"7px 14px", borderRadius:"10px", border:"none", background:savedWords.has(selWord)?"rgba(42,154,96,0.10)":"linear-gradient(135deg,#E07820,#F09030)", color:savedWords.has(selWord)?"#2A9A60":"#fff", fontSize:"13px", fontWeight:800, cursor:savedWords.has(selWord)?"default":"pointer", fontFamily:"'Nunito',sans-serif", whiteSpace:"nowrap" as const}}>
+                                {savingWord===selWord?"...":savedWords.has(selWord)?"✓ Salvo":"+ Nexo"}
+                              </button>
+                              <button onClick={()=>{setSelWord(null);setWordTranslation(null);}}
+                                style={{padding:"4px", border:"none", background:"none", color:"#AEAEB2", fontSize:"18px", cursor:"pointer", lineHeight:1}}>×</button>
+                            </div>
+                          </>
+                        : <div style={{fontSize:"14px", color:"#CC2A20"}}>Não foi possível traduzir.</div>
+                    }
                   </div>
                 )}
+
+                {/* Texto */}
+                <div style={{background:"#fff", borderRadius:"18px", padding:"24px", marginBottom:"12px", boxShadow:"0 2px 12px rgba(26,74,138,0.07)"}}>
+                  <div style={{fontSize:"12px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"16px"}}>
+                    Toque em qualquer palavra para traduzir
+                  </div>
+                  {renderTexto(textoAtual.texto, textoAtual)}
+                </div>
+
+                {/* Glossário */}
+                {textoAtual.palavras_chave.length>0 && (
+                  <div style={{background:"#fff", borderRadius:"18px", padding:"20px", marginBottom:"12px", boxShadow:"0 2px 12px rgba(26,74,138,0.07)"}}>
+                    <div style={{fontSize:"13px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"14px"}}>Glossário da história</div>
+                    <div style={{display:"flex", flexDirection:"column" as const, gap:"8px"}}>
+                      {textoAtual.palavras_chave.map((p,i)=>{
+                        const saved=savedWords.has(p.palavra);
+                        return(
+                          <div key={i} style={{display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", borderRadius:"12px", background:saved?"rgba(42,154,96,0.06)":"#F7F8FC", border:`1px solid ${saved?"rgba(42,154,96,0.20)":"rgba(0,0,0,0.07)"}`}}>
+                            <div style={{display:"flex", alignItems:"baseline", gap:"8px", flexWrap:"wrap" as const}}>
+                              <span style={{fontSize:"15px", fontWeight:800, color:"#B05A10", fontFamily:"'Nunito',sans-serif"}}>{p.palavra}</span>
+                              <span style={{fontSize:"11px", color:"#8A9AB8", fontStyle:"italic"}}>{p.fonetica}</span>
+                              <span style={{fontSize:"14px", color:"#5A6A80"}}>→ {p.traducao_pt}</span>
+                            </div>
+                            <button onClick={()=>salvarPalavraComNexo(p)} disabled={saved||savingWord===p.palavra}
+                              style={{padding:"5px 12px", borderRadius:"8px", border:"none", background:saved?"rgba(42,154,96,0.12)":"rgba(26,74,138,0.08)", color:saved?"#2A9A60":"#1A4A8A", fontSize:"12px", fontWeight:700, cursor:saved?"default":"pointer", fontFamily:"'Nunito',sans-serif", flexShrink:0}}>
+                              {savingWord===p.palavra?"...":saved?"✓":"+ Nexo"}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Quiz */}
+                {!quizStarted
+                  ? <button onClick={()=>setQuizStarted(true)}
+                      style={{width:"100%", padding:"14px", borderRadius:"14px", border:"none", background:"linear-gradient(135deg,#E07820,#F09030)", color:"#fff", fontSize:"15px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito',sans-serif", boxShadow:"0 3px 14px rgba(224,120,32,0.28)"}}>
+                      Testar compreensão →
+                    </button>
+                  : (
+                    <div style={{background:"#fff", borderRadius:"18px", padding:"22px", boxShadow:"0 2px 12px rgba(26,74,138,0.07)"}}>
+                      <div style={{fontSize:"13px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"16px"}}>Perguntas de compreensão</div>
+                      <div style={{display:"flex", flexDirection:"column" as const, gap:"20px"}}>
+                        {textoAtual.perguntas.map((q,qi)=>(
+                          <div key={qi}>
+                            <div style={{fontSize:"15px", fontWeight:700, color:"#1A2A40", marginBottom:"10px", fontFamily:"'Nunito',sans-serif"}}>{qi+1}. {q.pergunta}</div>
+                            <div style={{display:"flex", flexDirection:"column" as const, gap:"7px"}}>
+                              {q.opcoes.map((op,oi)=>{
+                                const answered=quizAnswers[qi]!==null;
+                                const isSelected=quizAnswers[qi]===oi;
+                                const isCorrect=oi===q.correta;
+                                let bg="#F7F8FC", border="1px solid rgba(0,0,0,0.08)", color="#1A2A40";
+                                if(answered){
+                                  if(isCorrect){bg="rgba(42,154,96,0.08)";border="1.5px solid #2A9A60";color="#2A9A60";}
+                                  else if(isSelected){bg="rgba(204,42,32,0.08)";border="1.5px solid #CC2A20";color="#CC2A20";}
+                                }
+                                return(
+                                  <button key={oi} disabled={answered} onClick={()=>handleQuizAnswer(qi,oi)}
+                                    style={{width:"100%", padding:"12px 16px", borderRadius:"12px", border, background:bg, color, fontSize:"14px", fontWeight:isCorrect&&answered?800:500, cursor:answered?"default":"pointer", fontFamily:"'Nunito',sans-serif", textAlign:"left" as const, transition:"all 0.2s"}}>
+                                    {op}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      {quizDone && (
+                        <div style={{marginTop:"20px", padding:"16px 20px", borderRadius:"14px", background:acertos===3?"rgba(42,154,96,0.08)":acertos>=2?"rgba(224,120,32,0.08)":"rgba(26,74,138,0.08)", border:`1.5px solid ${acertos===3?"rgba(42,154,96,0.25)":acertos>=2?"rgba(224,120,32,0.25)":"rgba(26,74,138,0.20)"}`, textAlign:"center" as const}}>
+                          <div style={{fontSize:"28px", fontWeight:800, color:acertos===3?"#2A9A60":acertos>=2?"#C06010":"#1A4A8A", fontFamily:"'Nunito',sans-serif"}}>
+                            {acertos}/3 {acertos===3?"🎉":acertos>=2?"👍":"💪"}
+                          </div>
+                          <div style={{fontSize:"14px", color:"#5A6A80", marginTop:"4px"}}>{acertos===3?"Perfeito!":acertos>=2?"Muito bem!":"Continue praticando!"}</div>
+                          <button onClick={gerarHistoria}
+                            style={{marginTop:"14px", padding:"10px 24px", borderRadius:"12px", border:"none", background:"linear-gradient(135deg,#1A4A8A,#2A6ACC)", color:"#fff", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"'Nunito',sans-serif"}}>
+                            Nova história
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )
+                }
+              </>
+            )}
+
+            {/* Estado vazio */}
+            {!textoAtual && !loading && (
+              <div style={{textAlign:"center", padding:"48px 24px", color:"#8A9AB8"}}>
+                <div style={{fontSize:"48px", marginBottom:"12px"}}>📖</div>
+                <div style={{fontSize:"16px", fontWeight:700, color:"#5A6A80", fontFamily:"'Nunito',sans-serif", marginBottom:"6px"}}>Pronto para ler?</div>
+                <div style={{fontSize:"14px", lineHeight:1.5}}>Escolha a língua e o nível acima,<br/>e o Chico cria uma história só para você.</div>
               </div>
             )}
           </>
         )}
 
-        {/* Estado vazio */}
-        {!historia && !loading && (
-          <div style={{ textAlign:"center", padding:"48px 24px", color:"#8A9AB8" }}>
-            <div style={{ fontSize:"48px", marginBottom:"12px" }}>📖</div>
-            <div style={{ fontSize:"16px", fontWeight:700, color:"#5A6A80", fontFamily:"'Nunito',sans-serif", marginBottom:"6px" }}>Pronto para ler?</div>
-            <div style={{ fontSize:"14px", lineHeight:1.5 }}>Escolha a língua e o nível acima,<br/>e o Chico cria uma história só para você.</div>
-          </div>
+        {/* ── VIEW: SALVAS ── */}
+        {view==="salvas" && (
+          <>
+            {historiaSelecionada
+              ? (
+                <>
+                  <button onClick={()=>setHistoriaSelecionada(null)}
+                    style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 14px", borderRadius:"10px", border:"1px solid rgba(0,0,0,0.09)", background:"#fff", color:"#5A6A80", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito',sans-serif", marginBottom:"14px"}}>
+                    ← Voltar
+                  </button>
+                  {/* Reutiliza a renderização da história */}
+                  <div style={{background:"linear-gradient(135deg,#1A4A8A,#2A6ACC)", borderRadius:"18px", padding:"22px 24px", marginBottom:"12px", boxShadow:"0 4px 20px rgba(26,74,138,0.25)"}}>
+                    <div style={{display:"flex", gap:"8px", marginBottom:"10px"}}>
+                      <span style={{padding:"4px 12px", borderRadius:"20px", background:"rgba(255,255,255,0.15)", fontSize:"12px", fontWeight:700, color:"#fff"}}>{historiaSelecionada.lingua}</span>
+                      <span style={{padding:"4px 12px", borderRadius:"20px", background:"rgba(255,255,255,0.12)", fontSize:"12px", fontWeight:700, color:"rgba(255,255,255,0.85)", textTransform:"capitalize" as const}}>{historiaSelecionada.nivel}</span>
+                    </div>
+                    <div style={{fontSize:"22px", fontWeight:800, color:"#fff", fontFamily:"'Nunito',sans-serif", lineHeight:1.2, marginBottom:"4px"}}>{historiaSelecionada.titulo}</div>
+                    <div style={{fontSize:"14px", color:"rgba(255,255,255,0.70)", fontStyle:"italic"}}>{historiaSelecionada.titulo_pt}</div>
+                  </div>
+                  <div style={{display:"flex", gap:"8px", marginBottom:"12px"}}>
+                    <button onClick={toggleAudio}
+                      style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 16px", borderRadius:"10px", border:"none", background:playing?"rgba(204,42,32,0.09)":"rgba(26,74,138,0.08)", color:playing?"#CC2A20":"#1A4A8A", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito',sans-serif"}}>
+                      {playing ? "⏸ Pausar" : "▶ Ouvir"}
+                    </button>
+                    <button onClick={ativarParalelo} disabled={loadingParalelo}
+                      style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 16px", borderRadius:"10px", border:"none", background:paralelo?"rgba(94,92,230,0.12)":"rgba(0,0,0,0.06)", color:paralelo?"#5E5CE6":"#5A6A80", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito',sans-serif"}}>
+                      {loadingParalelo?"Traduzindo...":paralelo?"🇧🇷 Ocultar PT":"🇧🇷 Ler em PT"}
+                    </button>
+                  </div>
+                  {selWord && (
+                    <div style={{background:"#fff", borderRadius:"14px", padding:"14px 16px", marginBottom:"12px", border:"1.5px solid rgba(26,74,138,0.15)", animation:"fadeIn 0.2s ease forwards"}}>
+                      {translating
+                        ? <div style={{fontSize:"14px", color:"#8A9AB8"}}>Traduzindo "{selWord}"...</div>
+                        : wordTranslation
+                          ? <div style={{display:"flex", alignItems:"center", gap:"14px"}}>
+                              <div style={{flex:1}}>
+                                <div style={{fontSize:"18px", fontWeight:800, color:"#1A4A8A", fontFamily:"'Nunito',sans-serif"}}>{selWord}</div>
+                                <div style={{fontSize:"11px", color:"#8A9AB8", fontStyle:"italic"}}>{wordTranslation.fonetica} · {wordTranslation.classe}</div>
+                                <div style={{fontSize:"15px", fontWeight:700}}>{wordTranslation.traducao_pt}</div>
+                              </div>
+                              <button onClick={()=>salvarPalavraComNexo({palavra:selWord, traducao_pt:wordTranslation.traducao_pt, fonetica:wordTranslation.fonetica})}
+                                disabled={savedWords.has(selWord)||savingWord===selWord}
+                                style={{padding:"7px 14px", borderRadius:"10px", border:"none", background:savedWords.has(selWord)?"rgba(42,154,96,0.10)":"linear-gradient(135deg,#E07820,#F09030)", color:savedWords.has(selWord)?"#2A9A60":"#fff", fontSize:"13px", fontWeight:800, cursor:savedWords.has(selWord)?"default":"pointer", fontFamily:"'Nunito',sans-serif"}}>
+                                {savedWords.has(selWord)?"✓ Salvo":"+ Nexo"}
+                              </button>
+                            </div>
+                          : null
+                      }
+                    </div>
+                  )}
+                  <div style={{background:"#fff", borderRadius:"18px", padding:"24px", boxShadow:"0 2px 12px rgba(26,74,138,0.07)"}}>
+                    {renderTexto(historiaSelecionada.texto, historiaSelecionada)}
+                  </div>
+                </>
+              )
+              : historiasSalvas.length===0
+                ? (
+                  <div style={{textAlign:"center", padding:"48px 24px", color:"#8A9AB8"}}>
+                    <div style={{fontSize:"48px", marginBottom:"12px"}}>🔖</div>
+                    <div style={{fontSize:"16px", fontWeight:700, color:"#5A6A80", fontFamily:"'Nunito',sans-serif", marginBottom:"6px"}}>Nenhuma história salva</div>
+                    <div style={{fontSize:"14px"}}>Gere uma história e clique em "Salvar história" para guardar aqui.</div>
+                  </div>
+                )
+                : (
+                  <div style={{display:"flex", flexDirection:"column" as const, gap:"10px"}}>
+                    {historiasSalvas.map(h=>(
+                      <div key={h.id} style={{background:"#fff", borderRadius:"16px", padding:"16px 18px", boxShadow:"0 2px 8px rgba(26,74,138,0.06)", display:"flex", alignItems:"center", gap:"14px", cursor:"pointer"}}
+                        onClick={()=>{ marcarLida(h.id); setHistoriaSelecionada(h); setSelWord(null); setWordTranslation(null); setParalelo(false); setParagrafosPt([]); setPlaying(false); synth?.cancel(); }}>
+                        <div style={{flex:1, minWidth:0}}>
+                          <div style={{display:"flex", alignItems:"center", gap:"8px", marginBottom:"4px"}}>
+                            <span style={{padding:"2px 8px", borderRadius:"20px", background:"rgba(26,74,138,0.08)", color:"#1A4A8A", fontSize:"11px", fontWeight:700}}>{h.lingua}</span>
+                            <span style={{padding:"2px 8px", borderRadius:"20px", background:`${nivelCores[h.nivel]?.bg??"rgba(0,0,0,0.05)"}`, color:`${nivelCores[h.nivel]?.color??"#5A6A80"}`, fontSize:"11px", fontWeight:700, textTransform:"capitalize" as const}}>{h.nivel}</span>
+                            {!h.lida && <span style={{padding:"2px 8px", borderRadius:"20px", background:"rgba(224,120,32,0.10)", color:"#C06010", fontSize:"11px", fontWeight:700}}>Nova</span>}
+                          </div>
+                          <div style={{fontSize:"16px", fontWeight:800, color:"#1A2A40", fontFamily:"'Nunito',sans-serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{h.titulo}</div>
+                          <div style={{fontSize:"13px", color:"#8A9AB8", marginTop:"2px"}}>{h.titulo_pt} · {h.salva_em}</div>
+                        </div>
+                        <button onClick={e=>{e.stopPropagation(); excluirHistoria(h.id);}}
+                          style={{width:30, height:30, borderRadius:"8px", border:"none", background:"rgba(204,42,32,0.07)", color:"#CC2A20", fontSize:"16px", cursor:"pointer", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center"}}>
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )
+            }
+          </>
         )}
       </div>
     </div>
