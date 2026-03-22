@@ -686,7 +686,8 @@ ${letra}`;
 
       // Traduz para as outras línguas do tronco
       const outras = linguas.filter((_:any, i:number) => i !== origemIdx);
-      const promptTrad = "Traduza a palavra " + palavra + " (" + lingua_origem + ") para: " + outras.map((l:any)=>l.nome).join(" e ") + ". Responda APENAS com JSON: {"a":{"txt":"traducao","fon":"[fo-NE-ti-ca]","exemplo":"frase curta"},"b":{"txt":"traducao","fon":"[fo-NE-ti-ca]","exemplo":"frase curta"}}";
+      const jsonSchema = JSON.stringify({"a":{"txt":"traducao","fon":"[fo-NE-ti-ca]","exemplo":"frase curta"},"b":{"txt":"traducao","fon":"[fo-NE-ti-ca]","exemplo":"frase curta"}});
+      const promptTrad = ["Traduza a palavra", palavra, "("+lingua_origem+")", "para:", outras.map((l:any)=>l.nome).join(" e "), ". Responda APENAS com JSON:", jsonSchema].join(" ");
 
       let trad: any = { a:{ txt:"—", fon:"—", exemplo:"—" }, b:{ txt:"—", fon:"—", exemplo:"—" } };
       try {
