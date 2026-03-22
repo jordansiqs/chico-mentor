@@ -66,7 +66,7 @@ const Icon = {
   Settings:  ({ c }: { c: string }) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>),
   Library:   ({ c }: { c: string }) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>),
   Book:      () => (<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>),
-  Chevron:   ({ down }: { down: boolean }) => (<svg width="12" height="12" viewBox="0 0 12 12" style={{ transform:down?"rotate(180deg)":"rotate(0deg)", transition:"transform 0.2s" }}><path d="M2 4l4 4 4-4" stroke="#0071E3" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  Chevron:   ({ down }: { down: boolean }) => (<svg width="12" height="12" viewBox="0 0 12 12" style={{ transform:down?"rotate(180deg)":"rotate(0deg)", transition:"transform 0.2s" }}><path d="M2 4l4 4 4-4" stroke="#1A4A8A" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>),
   Play:      () => (<svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><polygon points="1,0.5 9,5 1,9.5"/></svg>),
   Wave:      () => (<span style={{ display:"flex", gap:"2px", alignItems:"center" }}>{[10,14,8].map((h,i)=><span key={i} style={{ width:3, height:h, background:"currentColor", borderRadius:2, animation:`pulse 0.6s ${i*0.15}s ease-in-out infinite alternate` }}/>)}</span>),
   Mic:       ({ active }: { active: boolean }) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={active?"#fff":"#86868B"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>),
@@ -143,7 +143,7 @@ function InlineCard({ card, audio }: { card: MentoriaCard; audio: ReturnType<typ
     { nome:card.lang_3_nome, txt:card.lang_3_txt, fon:card.lang_3_fon, bcp47:card.lang_3_bcp47, exemplo:card.lang_3_exemplo },
   ];
   const isRom = card.tronco === "românico";
-  const accent = isRom ? "#FF3B30" : "#0071E3";
+  const accent = isRom ? "#FF3B30" : "#1A4A8A";
   const titulo = card.titulo_card || card.tema_gerador;
 
   return (
@@ -167,13 +167,13 @@ function InlineCard({ card, audio }: { card: MentoriaCard; audio: ReturnType<typ
           return (
             <button key={l.bcp47}
               onClick={() => isPlaying ? audio.stopSpeaking() : audio.speak(l.txt, l.bcp47, key)}
-              style={{ display:"flex", alignItems:"center", gap:"10px", padding:"8px 10px", borderRadius:"10px", background:isPlaying?"rgba(0,113,227,0.08)":"#F5F5F7", border:isPlaying?"1px solid rgba(0,113,227,0.20)":"1px solid transparent", cursor:"pointer", textAlign:"left" as const, fontFamily:"inherit", transition:"all 0.2s", width:"100%" }}>
-              <div style={{ width:32, height:32, borderRadius:"50%", background:isPlaying?"#0071E3":"rgba(0,113,227,0.10)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:isPlaying?"#fff":"#0071E3", transition:"all 0.2s" }}>
+              style={{ display:"flex", alignItems:"center", gap:"10px", padding:"8px 10px", borderRadius:"10px", background:isPlaying?"rgba(26,74,138,0.08)":"#F5F7FF", border:isPlaying?"1px solid rgba(0,113,227,0.20)":"1px solid transparent", cursor:"pointer", textAlign:"left" as const, fontFamily:"'Nunito', sans-serif", transition:"all 0.2s", width:"100%" }}>
+              <div style={{ width:32, height:32, borderRadius:"50%", background:isPlaying?"#1A4A8A":"rgba(26,74,138,0.10)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:isPlaying?"#fff":"#1A4A8A", transition:"all 0.2s" }}>
                 {isPlaying ? <Icon.Wave/> : <Icon.Volume/>}
               </div>
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:"10px", fontWeight:600, color:isPlaying?"#0071E3":"#86868B", textTransform:"uppercase" as const, letterSpacing:"0.04em", marginBottom:"1px" }}>{l.nome}</div>
-                <div style={{ fontSize:"15px", fontWeight:700, color:isPlaying?"#0071E3":"#1D1D1F" }}>{l.txt}</div>
+                <div style={{ fontSize:"10px", fontWeight:600, color:isPlaying?"#1A4A8A":"#86868B", textTransform:"uppercase" as const, letterSpacing:"0.04em", marginBottom:"1px" }}>{l.nome}</div>
+                <div style={{ fontSize:"15px", fontWeight:700, color:isPlaying?"#1A4A8A":"#1D1D1F" }}>{l.txt}</div>
                 {l.fon && l.fon !== "—" && (
                   <div style={{ fontSize:"11px", color:"#86868B", fontStyle:"italic", marginTop:"1px" }}>{l.fon}</div>
                 )}
@@ -186,7 +186,7 @@ function InlineCard({ card, audio }: { card: MentoriaCard; audio: ReturnType<typ
       {/* Exemplos expansíveis */}
       <button onClick={() => setExpanded(v => !v)}
         style={{ width:"100%", padding:"8px 14px", background:"none", border:"none", borderTop:"1px solid rgba(0,0,0,0.06)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
-        <span style={{ fontSize:"11px", fontWeight:600, color:"#0071E3", display:"flex", alignItems:"center", gap:"5px" }}>
+        <span style={{ fontSize:"11px", fontWeight:600, color:"#1A4A8A", display:"flex", alignItems:"center", gap:"5px" }}>
           <Icon.Book/>{expanded ? "Ocultar exemplos" : "Ver exemplos de uso"}
         </span>
         <Icon.Chevron down={expanded}/>
@@ -201,7 +201,7 @@ function InlineCard({ card, audio }: { card: MentoriaCard; audio: ReturnType<typ
             return (
               <div key={l.bcp47} style={{ display:"flex", alignItems:"flex-start", gap:"8px" }}>
                 <button onClick={() => isPlaying ? audio.stopSpeaking() : audio.speak(l.exemplo!, l.bcp47, key)}
-                  style={{ width:24, height:24, borderRadius:"50%", border:"none", background:isPlaying?"#0071E3":"rgba(0,113,227,0.10)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:isPlaying?"#fff":"#0071E3", marginTop:"1px" }}>
+                  style={{ width:24, height:24, borderRadius:"50%", border:"none", background:isPlaying?"#1A4A8A":"rgba(26,74,138,0.10)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:isPlaying?"#fff":"#1A4A8A", marginTop:"1px" }}>
                   {isPlaying ? <span style={{ fontSize:"8px" }}>◼</span> : <Icon.Play/>}
                 </button>
                 <div>
@@ -233,7 +233,7 @@ function NexoCard({ card, audio, onDelete }: {
   ];
 
   const isRom = card.tronco === "românico";
-  const accent = isRom ? "#FF3B30" : "#0071E3";
+  const accent = isRom ? "#FF3B30" : "#1A4A8A";
   const titulo = card.titulo_card || card.tema_gerador;
   const diasDesde = Math.floor((Date.now() - new Date(card.criado_em).getTime()) / 86400000);
 
@@ -267,8 +267,8 @@ function NexoCard({ card, audio, onDelete }: {
         <div style={{ display:"flex", gap:"4px", marginLeft:"8px", flexShrink:0 }}>
           {confirmDelete ? (
             <>
-              <button onClick={handleDelete} disabled={deleting} style={{ padding:"4px 10px", borderRadius:"8px", border:"none", background:"#FF3B30", color:"#fff", fontSize:"11px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>{deleting?"...":"Apagar"}</button>
-              <button onClick={()=>setConfirm(false)} style={{ padding:"4px 8px", borderRadius:"8px", border:"1px solid rgba(0,0,0,0.12)", background:"transparent", color:"#86868B", fontSize:"11px", cursor:"pointer", fontFamily:"inherit" }}>✕</button>
+              <button onClick={handleDelete} disabled={deleting} style={{ padding:"4px 10px", borderRadius:"8px", border:"none", background:"#FF3B30", color:"#fff", fontSize:"11px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>{deleting?"...":"Apagar"}</button>
+              <button onClick={()=>setConfirm(false)} style={{ padding:"4px 8px", borderRadius:"8px", border:"1px solid rgba(0,0,0,0.12)", background:"transparent", color:"#86868B", fontSize:"11px", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>✕</button>
             </>
           ) : (
             <button onClick={()=>setConfirm(true)}
@@ -286,9 +286,9 @@ function NexoCard({ card, audio, onDelete }: {
           const key = `side-${l.bcp47}-${l.txt}`;
           const isPlaying = audio.isSpeaking && audio.speakingKey === key;
           return (
-            <div key={l.bcp47} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"7px 10px", borderRadius:"10px", background:"#F5F5F7" }}>
+            <div key={l.bcp47} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"7px 10px", borderRadius:"10px", background:"#F5F7FF" }}>
               <button onClick={() => isPlaying ? audio.stopSpeaking() : audio.speak(l.txt, l.bcp47, key)}
-                style={{ width:26, height:26, borderRadius:"50%", border:"none", background:isPlaying?"#0071E3":"rgba(0,113,227,0.10)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:isPlaying?"#fff":"#0071E3", transition:"all 0.2s" }}>
+                style={{ width:26, height:26, borderRadius:"50%", border:"none", background:isPlaying?"#1A4A8A":"rgba(26,74,138,0.10)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:isPlaying?"#fff":"#1A4A8A", transition:"all 0.2s" }}>
                 {isPlaying ? <Icon.Wave/> : <Icon.Volume/>}
               </button>
               <div style={{ flex:1, minWidth:0 }}>
@@ -302,8 +302,8 @@ function NexoCard({ card, audio, onDelete }: {
       </div>
 
       <button onClick={()=>setExpanded(v=>!v)} style={{ width:"100%", background:"none", border:"none", cursor:"pointer", padding:0 }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 10px", borderRadius:"10px", background:expanded?"rgba(0,113,227,0.08)":"#F5F5F7", transition:"background 0.2s" }}>
-          <span style={{ fontSize:"11px", fontWeight:600, color:"#0071E3", display:"flex", alignItems:"center", gap:"5px" }}><Icon.Book/>Lição</span>
+        <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", padding:"7px 10px", borderRadius:"10px", background:expanded?"rgba(26,74,138,0.08)":"#F5F7FF", transition:"background 0.2s" }}>
+          <span style={{ fontSize:"11px", fontWeight:600, color:"#1A4A8A", display:"flex", alignItems:"center", gap:"5px" }}><Icon.Book/>Lição</span>
           <Icon.Chevron down={expanded}/>
         </div>
       </button>
@@ -319,7 +319,7 @@ function ChatBubble({ message, audio }: { message: ChatMessage; audio: ReturnTyp
 
   if (message.isLoading) return (
     <div style={{ display:"flex", justifyContent:"flex-start", marginBottom:"4px" }}>
-      <div style={{ padding:"10px 14px", borderRadius:"18px 18px 18px 4px", background:"#F5F5F7", boxShadow:"0 1px 4px rgba(0,0,0,0.20)", display:"flex", gap:"4px", alignItems:"center" }}>
+      <div style={{ padding:"10px 14px", borderRadius:"18px 18px 18px 4px", background:"#F5F7FF", boxShadow:"0 1px 4px rgba(0,0,0,0.20)", display:"flex", gap:"4px", alignItems:"center" }}>
         {[0,1,2].map(i=><span key={i} style={{ width:6, height:6, borderRadius:"50%", background:"#C7C7CC", animation:`typingDot 1.2s ${i*0.2}s ease-in-out infinite` }}/>)}
       </div>
     </div>
@@ -328,7 +328,7 @@ function ChatBubble({ message, audio }: { message: ChatMessage; audio: ReturnTyp
   // Verificação — bolha azul sutil
   if (message.isVerificacao) return (
     <div style={{ display:"flex", justifyContent:"flex-start", marginBottom:"4px" }}>
-      <div style={{ maxWidth:"82%", padding:"10px 14px", borderRadius:"4px 18px 18px 18px", background:"rgba(0,113,227,0.06)", border:"1px solid rgba(212,175,55,0.20)", fontSize:"14px", lineHeight:"1.55", color:"#0071E3" }}>
+      <div style={{ maxWidth:"82%", padding:"10px 14px", borderRadius:"4px 18px 18px 18px", background:"rgba(26,74,138,0.06)", border:"1px solid rgba(212,175,55,0.20)", fontSize:"14px", lineHeight:"1.55", color:"#1A4A8A" }}>
         {message.content}
       </div>
     </div>
@@ -348,10 +348,25 @@ function ChatBubble({ message, audio }: { message: ChatMessage; audio: ReturnTyp
 
   // Mensagem normal do Chico — com card inline se houver
   if (isChico) return (
-    <div style={{ display:"flex", justifyContent:"flex-start", marginBottom:"4px" }}>
-      <div style={{ maxWidth:"82%" }}>
+    <div style={{ display:"flex", justifyContent:"flex-start", marginBottom:"4px", gap:"8px", alignItems:"flex-end" }}>
+      <svg width="32" height="32" viewBox="0 0 160 160" style={{ borderRadius:"50%", border:"2px solid #E29830", flexShrink:0, background:"#FFF6E8" }}>
+        <rect x="8" y="32" width="34" height="68" rx="17" fill="#B8721A"/>
+        <rect x="118" y="32" width="34" height="68" rx="17" fill="#B8721A"/>
+        <circle cx="80" cy="80" r="56" fill="#E29830"/>
+        <circle cx="46" cy="92" r="17" fill="#D08828"/><circle cx="114" cy="92" r="17" fill="#D08828"/>
+        <ellipse cx="80" cy="100" rx="26" ry="20" fill="#F2DFA0"/>
+        <ellipse cx="80" cy="88" rx="12" ry="8" fill="#1A0800"/>
+        <circle cx="60" cy="72" r="12" fill="white"/><circle cx="100" cy="72" r="12" fill="white"/>
+        <circle cx="60" cy="72" r="7" fill="#0E0400"/><circle cx="100" cy="72" r="7" fill="#0E0400"/>
+        <circle cx="64" cy="68" r="2.5" fill="white"/><circle cx="104" cy="68" r="2.5" fill="white"/>
+        <path d="M66 108 Q80 118 94 108" stroke="#7A4008" strokeWidth="2" fill="none" strokeLinecap="round"/>
+        <ellipse cx="80" cy="113" rx="8" ry="6" fill="#E04870"/>
+        <ellipse cx="44" cy="96" rx="9" ry="5" fill="#E07070" opacity="0.22"/>
+        <ellipse cx="116" cy="96" rx="9" ry="5" fill="#E07070" opacity="0.22"/>
+      </svg>
+      <div style={{ maxWidth:"78%" }}>
         {/* Texto da resposta */}
-        <div style={{ padding:"10px 14px", borderRadius:"4px 18px 18px 18px", background:"#F5F5F7", boxShadow:"0 1px 4px rgba(0,0,0,0.20)", fontSize:"14px", lineHeight:"1.6", color:"#1D1D1F", whiteSpace:"pre-wrap" }}>
+        <div style={{ padding:"10px 14px", borderRadius:"4px 18px 18px 18px", background:"#F5F7FF", boxShadow:"0 1px 4px rgba(0,0,0,0.20)", fontSize:"14px", lineHeight:"1.6", color:"#1D1D1F", whiteSpace:"pre-wrap" }}>
           {message.content}
         </div>
         {/* Card de traduções inline */}
@@ -452,7 +467,7 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
         <div style={{ width:1, background:"rgba(0,0,0,0.08)" }}/>
         <div style={{ textAlign:"center" }}><div style={{ fontSize:"32px", fontWeight:700, color:"#FF3B30" }}>{score.erros}</div><div style={{ fontSize:"12px", color:"#86868B" }}>Erros</div></div>
       </div>
-      <button onClick={doRestart} style={{ padding:"12px 28px", borderRadius:"12px", border:"none", background:"linear-gradient(135deg,#0071E3,#0077ED)", color:"#fff", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Revisar novamente</button>
+      <button onClick={doRestart} style={{ padding:"12px 28px", borderRadius:"12px", border:"none", background:"linear-gradient(135deg,#0071E3,#0077ED)", color:"#fff", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>Revisar novamente</button>
     </div>
   );
 
@@ -476,7 +491,7 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
       )}
       <div style={{ display:"flex", gap:"6px", padding:"3px", borderRadius:"10px", background:"rgba(0,0,0,0.06)", width:"100%", maxWidth:"500px" }}>
         {(["flip","quiz"] as const).map(m=>(
-          <button key={m} onClick={()=>{setMode(m);doRestart();}} style={{ flex:1, padding:"6px", borderRadius:"8px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:mode===m?600:500, background:mode===m?"#fff":"transparent", color:mode===m?"#1D1D1F":"#86868B", boxShadow:mode===m?"0 1px 4px rgba(0,0,0,0.10)":"none", fontFamily:"inherit" }}>
+          <button key={m} onClick={()=>{setMode(m);doRestart();}} style={{ flex:1, padding:"6px", borderRadius:"8px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:mode===m?600:500, background:mode===m?"#fff":"transparent", color:mode===m?"#1D1D1F":"#86868B", boxShadow:mode===m?"0 1px 4px rgba(0,0,0,0.10)":"none", fontFamily:"'Nunito', sans-serif" }}>
             {m==="flip"?"Virar Card":"Quiz"}
           </button>
         ))}
@@ -508,7 +523,7 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
           ) : (
             /* Verso — cada língua é clicável para ouvir */
             <div style={{ width:"100%", maxWidth:"500px", borderRadius:"20px", background:"#FFFFFF", boxShadow:"0 4px 24px rgba(0,0,0,0.40)", padding:"20px", border:"1.5px solid rgba(0,0,0,0.06)" }}>
-              <span style={{ fontSize:"10px", color:"#0071E3", fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.06em", display:"block", marginBottom:"12px", textAlign:"center" as const }}>
+              <span style={{ fontSize:"10px", color:"#1A4A8A", fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.06em", display:"block", marginBottom:"12px", textAlign:"center" as const }}>
                 Toque numa língua para ouvir
               </span>
               <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
@@ -518,14 +533,14 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
                   return (
                     <button key={l.bcp47}
                       onClick={e => { e.stopPropagation(); isPlay ? audio.stopSpeaking() : audio.speak(l.txt, l.bcp47, fkey); }}
-                      style={{ width:"100%", borderRadius:"12px", background:isPlay?"rgba(0,113,227,0.08)":"#F5F5F7", border:isPlay?"1.5px solid rgba(0,113,227,0.25)":"1.5px solid transparent", cursor:"pointer", padding:0, overflow:"hidden", fontFamily:"inherit", transition:"all 0.2s", textAlign:"left" as const }}>
+                      style={{ width:"100%", borderRadius:"12px", background:isPlay?"rgba(26,74,138,0.08)":"#F5F7FF", border:isPlay?"1.5px solid rgba(0,113,227,0.25)":"1.5px solid transparent", cursor:"pointer", padding:0, overflow:"hidden", fontFamily:"'Nunito', sans-serif", transition:"all 0.2s", textAlign:"left" as const }}>
                       <div style={{ display:"flex", alignItems:"center", gap:"10px", padding:"10px 14px" }}>
-                        <div style={{ width:34, height:34, borderRadius:"50%", background:isPlay?"#0071E3":"rgba(0,113,227,0.08)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:isPlay?"#fff":"#0071E3", transition:"all 0.2s" }}>
+                        <div style={{ width:34, height:34, borderRadius:"50%", background:isPlay?"#1A4A8A":"rgba(26,74,138,0.08)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:isPlay?"#fff":"#1A4A8A", transition:"all 0.2s" }}>
                           {isPlay ? <Icon.Wave/> : <Icon.Volume/>}
                         </div>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:"10px", fontWeight:600, color:isPlay?"#0071E3":"#86868B", textTransform:"uppercase" as const, letterSpacing:"0.05em", marginBottom:"2px" }}>{l.nome}</div>
-                          <div style={{ fontSize:"16px", fontWeight:700, color:isPlay?"#0071E3":"#1D1D1F" }}>{l.txt}</div>
+                          <div style={{ fontSize:"10px", fontWeight:600, color:isPlay?"#1A4A8A":"#86868B", textTransform:"uppercase" as const, letterSpacing:"0.05em", marginBottom:"2px" }}>{l.nome}</div>
+                          <div style={{ fontSize:"16px", fontWeight:700, color:isPlay?"#1A4A8A":"#1D1D1F" }}>{l.txt}</div>
                           <div style={{ fontSize:"12px", color:"#86868B", fontStyle:"italic", marginTop:"2px" }}>{l.fon}</div>
                         </div>
                       </div>
@@ -539,7 +554,7 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
                 })}
               </div>
               <button onClick={()=>setFlipped(false)}
-                style={{ width:"100%", marginTop:"10px", padding:"6px", background:"none", border:"none", cursor:"pointer", fontSize:"11px", color:"#AEAEB2", fontFamily:"inherit" }}>
+                style={{ width:"100%", marginTop:"10px", padding:"6px", background:"none", border:"none", cursor:"pointer", fontSize:"11px", color:"#AEAEB2", fontFamily:"'Nunito', sans-serif" }}>
                 Virar de volta
               </button>
             </div>
@@ -547,8 +562,8 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
           {/* Botões Acertei/Errei só aparecem quando virado */}
           {flipped
             ? <div style={{ display:"flex", gap:"12px", width:"100%", maxWidth:"500px" }}>
-                <button onClick={()=>next(false)} style={{ flex:1, padding:"12px", borderRadius:"12px", border:"1.5px solid rgba(255,59,48,0.25)", background:"rgba(255,59,48,0.05)", color:"#FF3B30", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:"6px" }}><Icon.X/>Errei</button>
-                <button onClick={()=>next(true)}  style={{ flex:1, padding:"12px", borderRadius:"12px", border:"1.5px solid rgba(52,199,89,0.25)", background:"rgba(52,199,89,0.05)", color:"#34C759", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"inherit", display:"flex", alignItems:"center", justifyContent:"center", gap:"6px" }}><Icon.Check/>Acertei</button>
+                <button onClick={()=>next(false)} style={{ flex:1, padding:"12px", borderRadius:"12px", border:"1.5px solid rgba(255,59,48,0.25)", background:"rgba(255,59,48,0.05)", color:"#FF3B30", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito', sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"6px" }}><Icon.X/>Errei</button>
+                <button onClick={()=>next(true)}  style={{ flex:1, padding:"12px", borderRadius:"12px", border:"1.5px solid rgba(52,199,89,0.25)", background:"rgba(52,199,89,0.05)", color:"#34C759", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito', sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"6px" }}><Icon.Check/>Acertei</button>
               </div>
             : <p style={{ fontSize:"12px", color:"#AEAEB2", margin:0 }}>Tente lembrar antes de tocar no card</p>
           }
@@ -595,7 +610,7 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
                           isPlay ? audio.stopSpeaking() : audio.speak(opt, langs[quizLang]?.bcp47 ?? "pt-BR", qkey);
                         }
                       }}
-                      style={{ width:"100%", padding:"14px 16px", borderRadius:"12px", border:`1.5px solid ${borderColor}`, background:bg, color:textColor, fontSize:"14px", fontWeight:isCorrect&&answered?700:500, cursor:answered&&!isCorrect?"default":"pointer", fontFamily:"inherit", textAlign:"left" as const, transition:"all 0.2s", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px" }}>
+                      style={{ width:"100%", padding:"14px 16px", borderRadius:"12px", border:`1.5px solid ${borderColor}`, background:bg, color:textColor, fontSize:"14px", fontWeight:isCorrect&&answered?700:500, cursor:answered&&!isCorrect?"default":"pointer", fontFamily:"'Nunito', sans-serif", textAlign:"left" as const, transition:"all 0.2s", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px" }}>
                       <div>
                         <div>{opt}</div>
                         {/* Mostra fonética da correta após responder */}
@@ -648,7 +663,7 @@ function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
       {streak>0&&<div style={{background:"linear-gradient(135deg,#FF9500,#FF6B00)",borderRadius:"16px",padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}><div><div style={{fontSize:"12px",fontWeight:600,color:"rgba(255,255,255,0.8)",marginBottom:"2px"}}>Sequência atual</div><div style={{fontSize:"28px",fontWeight:700,color:"#fff"}}>{streak} {streak===1?"dia":"dias"} seguidos</div></div><Icon.Fire/></div>}
       {paraRevisar>0&&<div style={{background:"rgba(255,149,0,0.08)",borderRadius:"14px",padding:"14px 16px",border:"1px solid rgba(255,149,0,0.25)",display:"flex",alignItems:"center",justifyContent:"space-between"}}><div><div style={{fontSize:"12px",fontWeight:700,color:"#FF9500"}}>{paraRevisar} card{paraRevisar>1?"s":""} para revisar</div><div style={{fontSize:"11px",color:"#86868B",marginTop:"2px"}}>Não vistos há 3+ dias</div></div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF9500" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>}
       <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px"}}>
-        {[{value:total,label:"Nexos",color:"#0071E3"},{value:diasUnicos,label:"Dias ativos",color:"#FF9500"},{value:total*3,label:"Traduções",color:"#34C759"}].map(s=>(
+        {[{value:total,label:"Nexos",color:"#1A4A8A"},{value:diasUnicos,label:"Dias ativos",color:"#FF9500"},{value:total*3,label:"Traduções",color:"#34C759"}].map(s=>(
           <div key={s.label} style={{background:"#fff",borderRadius:"14px",padding:"14px",boxShadow:"0 1px 4px rgba(0,0,0,0.06)",textAlign:"center"}}><div style={{fontSize:"26px",fontWeight:700,color:s.color}}>{s.value}</div><div style={{fontSize:"11px",color:"#86868B",fontWeight:500,marginTop:"2px"}}>{s.label}</div></div>
         ))}
       </div>
@@ -658,14 +673,14 @@ function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
           {ultimos7.map(d=>(
             <div key={d.label} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:"5px",height:"100%",justifyContent:"flex-end"}}>
               <div style={{width:"100%",borderRadius:"4px 4px 0 0",background:d.count>0?(d.isToday?"linear-gradient(180deg,#FF9500,#FF6B00)":"linear-gradient(180deg,#0071E3,#34AADC)"):"#F0F0F0",height:`${Math.max((d.count/maxCount)*44,d.count>0?6:3)}px`,transition:"height 0.4s ease"}}/>
-              <span style={{fontSize:"9px",color:d.isToday?"#0071E3":"#86868B",fontWeight:d.isToday?700:400,textTransform:"capitalize" as const}}>{d.label}</span>
+              <span style={{fontSize:"9px",color:d.isToday?"#1A4A8A":"#86868B",fontWeight:d.isToday?700:400,textTransform:"capitalize" as const}}>{d.label}</span>
             </div>
           ))}
         </div>
       </div>
       <div style={{background:"#fff",borderRadius:"16px",padding:"18px",boxShadow:"0 1px 4px rgba(0,0,0,0.06)"}}>
         <h3 style={{margin:"0 0 12px",fontSize:"13px",fontWeight:700,color:"#1D1D1F"}}>Por tronco</h3>
-        {[{label:"Tear Românico",count:romanicos,color:"#FF3B30"},{label:"Tear Germânico",count:germanicos,color:"#0071E3"}].map(t=>(
+        {[{label:"Tear Românico",count:romanicos,color:"#FF3B30"},{label:"Tear Germânico",count:germanicos,color:"#1A4A8A"}].map(t=>(
           <div key={t.label} style={{marginBottom:"10px"}}>
             <div style={{display:"flex",justifyContent:"space-between",marginBottom:"5px"}}><span style={{fontSize:"12px",fontWeight:500,color:"#3A3A3C"}}>{t.label}</span><span style={{fontSize:"12px",fontWeight:600,color:t.color}}>{t.count}</span></div>
             <div style={{height:5,borderRadius:5,background:"rgba(0,0,0,0.06)",overflow:"hidden"}}><div style={{height:"100%",borderRadius:5,background:t.color,width:`${total>0?(t.count/total)*100:0}%`,transition:"width 0.5s ease"}}/></div>
@@ -676,9 +691,9 @@ function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
         <h3 style={{margin:"0 0 14px",fontSize:"13px",fontWeight:700,color:"#1D1D1F"}}>Conquistas</h3>
         <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px"}}>
           {badges.map(b=>(
-            <div key={b.label} style={{padding:"12px 8px",borderRadius:"12px",background:b.unlocked?"rgba(0,113,227,0.06)":"rgba(255,255,255,0.03)",border:`1px solid ${b.unlocked?"rgba(212,175,55,0.25)":"rgba(0,0,0,0.05)"}`,textAlign:"center",opacity:b.unlocked?1:0.5}}>
+            <div key={b.label} style={{padding:"12px 8px",borderRadius:"12px",background:b.unlocked?"rgba(26,74,138,0.06)":"rgba(255,255,255,0.03)",border:`1px solid ${b.unlocked?"rgba(212,175,55,0.25)":"rgba(0,0,0,0.05)"}`,textAlign:"center",opacity:b.unlocked?1:0.5}}>
               <div style={{fontSize:"18px",marginBottom:"5px"}}>{b.unlocked?"⭐":"🔒"}</div>
-              <div style={{fontSize:"11px",fontWeight:600,color:b.unlocked?"#0071E3":"#86868B",lineHeight:1.3}}>{b.label}</div>
+              <div style={{fontSize:"11px",fontWeight:600,color:b.unlocked?"#1A4A8A":"#86868B",lineHeight:1.3}}>{b.label}</div>
               <div style={{fontSize:"10px",color:"#AEAEB2",marginTop:"2px"}}>{b.desc}</div>
             </div>
           ))}
@@ -688,12 +703,12 @@ function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
         <h3 style={{margin:"0 0 12px",fontSize:"13px",fontWeight:700,color:"#1D1D1F"}}>Top línguas</h3>
         {topLangs.map(([lang,count])=>(
           <div key={lang} style={{marginBottom:"10px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:"5px"}}><span style={{fontSize:"12px",fontWeight:500,color:"#3A3A3C"}}>{lang}</span><span style={{fontSize:"12px",fontWeight:600,color:"#0071E3"}}>{count}x</span></div>
+            <div style={{display:"flex",justifyContent:"space-between",marginBottom:"5px"}}><span style={{fontSize:"12px",fontWeight:500,color:"#3A3A3C"}}>{lang}</span><span style={{fontSize:"12px",fontWeight:600,color:"#1A4A8A"}}>{count}x</span></div>
             <div style={{height:5,borderRadius:5,background:"rgba(0,0,0,0.06)",overflow:"hidden"}}><div style={{height:"100%",borderRadius:5,background:"linear-gradient(90deg,#0071E3,#34AADC)",width:`${(count/maxLang)*100}%`,transition:"width 0.5s ease"}}/></div>
           </div>
         ))}
       </div>}
-      <button onClick={exportTxt} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",padding:"13px",borderRadius:"12px",border:"1.5px solid rgba(0,113,227,0.25)",background:"rgba(0,113,227,0.05)",color:"#0071E3",fontSize:"14px",fontWeight:600,cursor:"pointer",fontFamily:"inherit"}}>
+      <button onClick={exportTxt} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",padding:"13px",borderRadius:"12px",border:"1.5px solid rgba(0,113,227,0.25)",background:"rgba(0,113,227,0.05)",color:"#1A4A8A",fontSize:"14px",fontWeight:600,cursor:"pointer",fontFamily:"'Nunito', sans-serif"}}>
         <Icon.Download/>Exportar ({total} nexos)
       </button>
     </div>
@@ -732,11 +747,11 @@ function ViagemTab({ profile, audio }: { profile: UserProfile | null; audio: Ret
 
       <div style={{ display:"flex", gap:"8px" }}>
         <input value={destino} onChange={e=>setDestino(e.target.value)} placeholder="Ex: Buenos Aires, Paris, Roma..."
-          style={{ flex:1, padding:"12px 14px", borderRadius:"12px", border:"1.5px solid rgba(0,0,0,0.10)", fontSize:"14px", color:"#1D1D1F", fontFamily:"inherit", background:"#fff", outline:"none" }}
-          onFocus={e=>(e.target.style.borderColor="#0071E3")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}
+          style={{ flex:1, padding:"12px 14px", borderRadius:"12px", border:"1.5px solid rgba(0,0,0,0.10)", fontSize:"14px", color:"#1D1D1F", fontFamily:"'Nunito', sans-serif", background:"#fff", outline:"none" }}
+          onFocus={e=>(e.target.style.borderColor="#1A4A8A")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}
           onKeyDown={e=>e.key==="Enter"&&handleGerar()}/>
         <button onClick={handleGerar} disabled={!destino.trim()||loading}
-          style={{ padding:"12px 20px", borderRadius:"12px", border:"none", background:!destino.trim()||loading?"rgba(0,0,0,0.08)":"linear-gradient(135deg,#0071E3,#0077ED)", color:!destino.trim()||loading?"#86868B":"#fff", fontSize:"14px", fontWeight:600, cursor:!destino.trim()||loading?"not-allowed":"pointer", fontFamily:"inherit", whiteSpace:"nowrap" as const }}>
+          style={{ padding:"12px 20px", borderRadius:"12px", border:"none", background:!destino.trim()||loading?"rgba(0,0,0,0.08)":"linear-gradient(135deg,#0071E3,#0077ED)", color:!destino.trim()||loading?"#86868B":"#fff", fontSize:"14px", fontWeight:600, cursor:!destino.trim()||loading?"not-allowed":"pointer", fontFamily:"'Nunito', sans-serif", whiteSpace:"nowrap" as const }}>
           {loading?"Gerando...":"Gerar guia"}
         </button>
       </div>
@@ -745,7 +760,7 @@ function ViagemTab({ profile, audio }: { profile: UserProfile | null; audio: Ret
         <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
           {/* Dica cultural */}
           <div style={{ padding:"14px 16px", borderRadius:"14px", background:"rgba(0,113,227,0.04)", border:"1px solid rgba(212,175,55,0.20)" }}>
-            <div style={{ fontSize:"10px", fontWeight:700, color:"#0071E3", textTransform:"uppercase" as const, letterSpacing:"0.05em", marginBottom:"5px" }}>Dica cultural</div>
+            <div style={{ fontSize:"10px", fontWeight:700, color:"#1A4A8A", textTransform:"uppercase" as const, letterSpacing:"0.05em", marginBottom:"5px" }}>Dica cultural</div>
             <p style={{ margin:0, fontSize:"13px", color:"#1D1D1F", lineHeight:1.6 }}>{guia.dica_cultural}</p>
           </div>
 
@@ -769,13 +784,13 @@ function ViagemTab({ profile, audio }: { profile: UserProfile | null; audio: Ret
                   const isPlay = audio.isSpeaking && audio.speakingKey === vkey;
                   return (
                     <button key={li} onClick={() => isPlay ? audio.stopSpeaking() : audio.speak(l.txt, l.bcp47, vkey)}
-                      style={{ display:"flex", alignItems:"center", gap:"10px", padding:"8px 12px", borderRadius:"10px", background:isPlay?"rgba(0,113,227,0.08)":"#F5F5F7", border:isPlay?"1.5px solid rgba(0,113,227,0.20)":"1.5px solid transparent", cursor:"pointer", textAlign:"left" as const, fontFamily:"inherit", transition:"all 0.2s" }}>
-                      <div style={{ width:28, height:28, borderRadius:"50%", background:isPlay?"#0071E3":"rgba(0,113,227,0.08)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:isPlay?"#fff":"#0071E3" }}>
+                      style={{ display:"flex", alignItems:"center", gap:"10px", padding:"8px 12px", borderRadius:"10px", background:isPlay?"rgba(26,74,138,0.08)":"#F5F7FF", border:isPlay?"1.5px solid rgba(0,113,227,0.20)":"1.5px solid transparent", cursor:"pointer", textAlign:"left" as const, fontFamily:"'Nunito', sans-serif", transition:"all 0.2s" }}>
+                      <div style={{ width:28, height:28, borderRadius:"50%", background:isPlay?"#1A4A8A":"rgba(26,74,138,0.08)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:isPlay?"#fff":"#1A4A8A" }}>
                         {isPlay ? <Icon.Wave/> : <Icon.Volume/>}
                       </div>
                       <div>
-                        <div style={{ fontSize:"11px", fontWeight:600, color:isPlay?"#0071E3":"#86868B", textTransform:"uppercase" as const, letterSpacing:"0.04em" }}>{l.nome}</div>
-                        <div style={{ fontSize:"14px", fontWeight:600, color:isPlay?"#0071E3":"#1D1D1F" }}>{l.txt}</div>
+                        <div style={{ fontSize:"11px", fontWeight:600, color:isPlay?"#1A4A8A":"#86868B", textTransform:"uppercase" as const, letterSpacing:"0.04em" }}>{l.nome}</div>
+                        <div style={{ fontSize:"14px", fontWeight:600, color:isPlay?"#1A4A8A":"#1D1D1F" }}>{l.txt}</div>
                         <div style={{ fontSize:"11px", color:"#86868B", fontStyle:"italic" }}>{l.fon}</div>
                       </div>
                     </button>
@@ -828,17 +843,17 @@ function MusicaTab({ profile }: { profile: UserProfile | null }) {
       </div>
 
       <input value={artista} onChange={e=>setArtista(e.target.value)} placeholder="Artista ou banda (opcional)"
-        style={{ width:"100%", padding:"10px 12px", borderRadius:"10px", border:"1.5px solid rgba(0,0,0,0.10)", fontSize:"14px", color:"#1D1D1F", fontFamily:"inherit", background:"#fff", outline:"none", boxSizing:"border-box" as const }}
-        onFocus={e=>(e.target.style.borderColor="#0071E3")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
+        style={{ width:"100%", padding:"10px 12px", borderRadius:"10px", border:"1.5px solid rgba(0,0,0,0.10)", fontSize:"14px", color:"#1D1D1F", fontFamily:"'Nunito', sans-serif", background:"#fff", outline:"none", boxSizing:"border-box" as const }}
+        onFocus={e=>(e.target.style.borderColor="#1A4A8A")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
 
       <textarea value={letra} onChange={e=>setLetra(e.target.value)}
         placeholder="Cole aqui os versos da música... Ex: La vie en rose / Des yeux qui font baisser les miens"
         rows={7}
-        style={{ width:"100%", padding:"13px", borderRadius:"14px", border:"1.5px solid rgba(0,0,0,0.10)", fontSize:"14px", lineHeight:"1.7", color:"#1D1D1F", fontFamily:"inherit", background:"#fff", resize:"vertical" as const, outline:"none", boxSizing:"border-box" as const }}
-        onFocus={e=>(e.target.style.borderColor="#0071E3")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
+        style={{ width:"100%", padding:"13px", borderRadius:"14px", border:"1.5px solid rgba(0,0,0,0.10)", fontSize:"14px", lineHeight:"1.7", color:"#1D1D1F", fontFamily:"'Nunito', sans-serif", background:"#fff", resize:"vertical" as const, outline:"none", boxSizing:"border-box" as const }}
+        onFocus={e=>(e.target.style.borderColor="#1A4A8A")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
 
       <button onClick={handleAnalisar} disabled={!letra.trim()||loading}
-        style={{ padding:"13px", borderRadius:"12px", border:"none", background:!letra.trim()||loading?"rgba(0,0,0,0.08)":"linear-gradient(135deg,#0071E3,#0077ED)", color:!letra.trim()||loading?"#86868B":"#fff", fontSize:"14px", fontWeight:600, cursor:!letra.trim()||loading?"not-allowed":"pointer", fontFamily:"inherit", boxShadow:!letra.trim()||loading?"none":"0 2px 10px rgba(0,113,227,0.25)" }}>
+        style={{ padding:"13px", borderRadius:"12px", border:"none", background:!letra.trim()||loading?"rgba(0,0,0,0.08)":"linear-gradient(135deg,#0071E3,#0077ED)", color:!letra.trim()||loading?"#86868B":"#fff", fontSize:"14px", fontWeight:600, cursor:!letra.trim()||loading?"not-allowed":"pointer", fontFamily:"'Nunito', sans-serif", boxShadow:!letra.trim()||loading?"none":"0 2px 10px rgba(0,113,227,0.25)" }}>
         {loading ? "O Chico está analisando..." : "Analisar com o Chico"}
       </button>
 
@@ -846,11 +861,11 @@ function MusicaTab({ profile }: { profile: UserProfile | null }) {
         <div style={{ background:"#FFFFFF", borderRadius:"16px", padding:"18px", border:"1px solid rgba(255,255,255,0.06)" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"12px" }}>
             <div>
-              <div style={{ fontSize:"12px", fontWeight:700, color:"#0071E3" }}>Análise do Chico</div>
+              <div style={{ fontSize:"12px", fontWeight:700, color:"#1A4A8A" }}>Análise do Chico</div>
               {artista && <div style={{ fontSize:"11px", color:"#86868B", marginTop:"1px" }}>{artista}</div>}
             </div>
             <button onClick={()=>{ navigator.clipboard.writeText(resultado); setCopied(true); setTimeout(()=>setCopied(false),2000); }}
-              style={{ display:"flex", alignItems:"center", gap:"5px", padding:"4px 10px", borderRadius:"8px", border:"1px solid rgba(0,0,0,0.10)", background:copied?"rgba(52,199,89,0.08)":"transparent", color:copied?"#34C759":"#86868B", fontSize:"12px", cursor:"pointer", fontFamily:"inherit" }}>
+              style={{ display:"flex", alignItems:"center", gap:"5px", padding:"4px 10px", borderRadius:"8px", border:"1px solid rgba(0,0,0,0.10)", background:copied?"rgba(52,199,89,0.08)":"transparent", color:copied?"#34C759":"#86868B", fontSize:"12px", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
               <Icon.Copy/>{copied?"Copiado!":"Copiar"}
             </button>
           </div>
@@ -953,13 +968,13 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
 
   const TC = [
     { id:"românico" as const,  label:"Tear Românico",  desc:"Espanhol, Francês e Italiano", color:"#FF3B30", bg:"rgba(255,59,48,0.06)" },
-    { id:"germânico" as const, label:"Tear Germânico", desc:"Inglês, Alemão e Holandês",    color:"#0071E3", bg:"rgba(0,113,227,0.06)" },
+    { id:"germânico" as const, label:"Tear Germânico", desc:"Inglês, Alemão e Holandês",    color:"#1A4A8A", bg:"rgba(26,74,138,0.06)" },
   ];
 
   const inputStyle: React.CSSProperties = {
     width:"100%", padding:"10px 12px", borderRadius:"10px",
     border:"1.5px solid rgba(0,0,0,0.10)", fontSize:"14px",
-    color:"#1D1D1F", fontFamily:"inherit", background:"#FAFAFA",
+    color:"#1D1D1F", fontFamily:"'Nunito', sans-serif", background:"#FAFAFA",
     boxSizing:"border-box",
   };
 
@@ -983,11 +998,11 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
         {/* Stats resumidas */}
         <div style={{ display:"grid", gridTemplateColumns:"repeat(3,1fr)", gap:"10px" }}>
           {[
-            { value:total,  label:"Nexos",  color:"#0071E3" },
+            { value:total,  label:"Nexos",  color:"#1A4A8A" },
             { value:streak, label:"Streak", color:"#FF9500" },
             { value:total*3,label:"Traduções", color:"#34C759" },
           ].map(s=>(
-            <div key={s.label} style={{ padding:"12px 10px", borderRadius:"12px", background:"#F5F5F7", textAlign:"center" }}>
+            <div key={s.label} style={{ padding:"12px 10px", borderRadius:"12px", background:"#F5F7FF", textAlign:"center" }}>
               <div style={{ fontSize:"22px", fontWeight:700, color:s.color, lineHeight:1 }}>{s.value}</div>
               <div style={{ fontSize:"11px", color:"#86868B", marginTop:"4px", fontWeight:500 }}>{s.label}</div>
             </div>
@@ -999,7 +1014,7 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
       <div style={{ background:"#FFFFFF", borderRadius:"16px", padding:"18px", border:"1px solid rgba(255,255,255,0.06)" }}>
         <h3 style={{ margin:"0 0 12px", fontSize:"14px", fontWeight:700, color:"#1D1D1F" }}>Nome</h3>
         <input value={nome} onChange={e=>setNome(e.target.value)} placeholder="Seu nome" style={inputStyle}
-          onFocus={e=>(e.target.style.borderColor="#0071E3")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
+          onFocus={e=>(e.target.style.borderColor="#1A4A8A")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
       </div>
 
       {/* Troncos */}
@@ -1008,7 +1023,7 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
         <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
           {TC.map(t=>{ const sel=troncos.includes(t.id); return (
             <button key={t.id} onClick={()=>toggleTronco(t.id)}
-              style={{ width:"100%", padding:"12px 14px", borderRadius:"12px", border:`2px solid ${sel?t.color:"rgba(0,0,0,0.08)"}`, background:sel?t.bg:"#FAFAFA", cursor:"pointer", textAlign:"left", fontFamily:"inherit", transition:"all 0.2s", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              style={{ width:"100%", padding:"12px 14px", borderRadius:"12px", border:`2px solid ${sel?t.color:"rgba(0,0,0,0.08)"}`, background:sel?t.bg:"#FAFAFA", cursor:"pointer", textAlign:"left", fontFamily:"'Nunito', sans-serif", transition:"all 0.2s", display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <div>
                 <div style={{ fontSize:"13px", fontWeight:700, color:sel?t.color:"#1D1D1F" }}>{t.label}</div>
                 <div style={{ fontSize:"11px", color:"#86868B", marginTop:"1px" }}>{t.desc}</div>
@@ -1030,7 +1045,7 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
             const sel = interesses.includes(item);
             return (
               <button key={item} onClick={()=>toggleInteresse(item)}
-                style={{ padding:"6px 12px", borderRadius:"20px", border:`1.5px solid ${sel?"#0071E3":"rgba(0,0,0,0.10)"}`, background:sel?"rgba(0,113,227,0.08)":"transparent", color:sel?"#0071E3":"#3A3A3C", fontSize:"13px", fontWeight:sel?600:400, cursor:"pointer", fontFamily:"inherit", transition:"all 0.15s" }}>
+                style={{ padding:"6px 12px", borderRadius:"20px", border:`1.5px solid ${sel?"#1A4A8A":"rgba(0,0,0,0.10)"}`, background:sel?"rgba(26,74,138,0.08)":"transparent", color:sel?"#1A4A8A":"#3A3A3C", fontSize:"13px", fontWeight:sel?600:400, cursor:"pointer", fontFamily:"'Nunito', sans-serif", transition:"all 0.15s" }}>
                 {item}
               </button>
             );
@@ -1040,7 +1055,7 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
 
       {/* Botão salvar */}
       <button onClick={handleSave} disabled={troncos.length===0||saving}
-        style={{ padding:"13px", borderRadius:"12px", border:"none", background:troncos.length===0||saving?"rgba(0,0,0,0.08)":saved?"rgba(52,199,89,0.12)":"linear-gradient(135deg,#0071E3,#0077ED)", color:troncos.length===0||saving?"#86868B":saved?"#34C759":"#fff", fontSize:"14px", fontWeight:600, cursor:troncos.length===0||saving?"not-allowed":"pointer", fontFamily:"inherit", transition:"all 0.3s", boxShadow:saved||troncos.length===0||saving?"none":"0 2px 10px rgba(0,113,227,0.25)" }}>
+        style={{ padding:"13px", borderRadius:"12px", border:"none", background:troncos.length===0||saving?"rgba(0,0,0,0.08)":saved?"rgba(52,199,89,0.12)":"linear-gradient(135deg,#0071E3,#0077ED)", color:troncos.length===0||saving?"#86868B":saved?"#34C759":"#fff", fontSize:"14px", fontWeight:600, cursor:troncos.length===0||saving?"not-allowed":"pointer", fontFamily:"'Nunito', sans-serif", transition:"all 0.3s", boxShadow:saved||troncos.length===0||saving?"none":"0 2px 10px rgba(0,113,227,0.25)" }}>
         {saving?"Salvando...":saved?"Salvo!":"Salvar alterações"}
       </button>
 
@@ -1052,7 +1067,7 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
           {/* Redefinir senha */}
           {!resetSent ? (
             <button onClick={handleResetPassword} disabled={sendingReset}
-              style={{ width:"100%", padding:"12px", borderRadius:"12px", border:"1px solid rgba(0,0,0,0.10)", background:"transparent", color:"#1D1D1F", fontSize:"14px", fontWeight:500, cursor:"pointer", fontFamily:"inherit" }}>
+              style={{ width:"100%", padding:"12px", borderRadius:"12px", border:"1px solid rgba(0,0,0,0.10)", background:"transparent", color:"#1D1D1F", fontSize:"14px", fontWeight:500, cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
               {sendingReset?"Enviando...":"Redefinir senha por email"}
             </button>
           ) : (
@@ -1064,28 +1079,28 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
           {/* Sair */}
           {!confirmLogout ? (
             <button onClick={()=>setConfirmLogout(true)}
-              style={{ width:"100%", padding:"12px", borderRadius:"12px", border:"1.5px solid rgba(255,59,48,0.25)", background:"rgba(255,59,48,0.05)", color:"#FF3B30", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+              style={{ width:"100%", padding:"12px", borderRadius:"12px", border:"1.5px solid rgba(255,59,48,0.25)", background:"rgba(255,59,48,0.05)", color:"#FF3B30", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
               Sair da conta
             </button>
           ) : (
             <div style={{ display:"flex", gap:"10px" }}>
-              <button onClick={()=>setConfirmLogout(false)} style={{ flex:1, padding:"12px", borderRadius:"12px", border:"1.5px solid rgba(0,0,0,0.12)", background:"transparent", color:"#86868B", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
-              <button onClick={handleLogout} style={{ flex:1, padding:"12px", borderRadius:"12px", border:"none", background:"#FF3B30", color:"#fff", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>Confirmar saída</button>
+              <button onClick={()=>setConfirmLogout(false)} style={{ flex:1, padding:"12px", borderRadius:"12px", border:"1.5px solid rgba(0,0,0,0.12)", background:"transparent", color:"#86868B", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>Cancelar</button>
+              <button onClick={handleLogout} style={{ flex:1, padding:"12px", borderRadius:"12px", border:"none", background:"#FF3B30", color:"#fff", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>Confirmar saída</button>
             </div>
           )}
 
           {/* Apagar conta */}
           {!confirmDelete ? (
             <button onClick={()=>setConfirmDelete(true)}
-              style={{ width:"100%", padding:"10px", borderRadius:"12px", border:"none", background:"transparent", color:"#AEAEB2", fontSize:"13px", cursor:"pointer", fontFamily:"inherit" }}>
+              style={{ width:"100%", padding:"10px", borderRadius:"12px", border:"none", background:"transparent", color:"#AEAEB2", fontSize:"13px", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
               Apagar minha conta
             </button>
           ) : (
             <div style={{ padding:"14px", borderRadius:"12px", background:"rgba(255,59,48,0.05)", border:"1px solid rgba(255,59,48,0.20)" }}>
               <p style={{ margin:"0 0 10px", fontSize:"13px", color:"#FF3B30", fontWeight:600 }}>Isso apagará todos os seus nexos e dados. Não tem volta.</p>
               <div style={{ display:"flex", gap:"8px" }}>
-                <button onClick={()=>setConfirmDelete(false)} style={{ flex:1, padding:"10px", borderRadius:"10px", border:"1px solid rgba(0,0,0,0.12)", background:"transparent", color:"#86868B", fontSize:"13px", cursor:"pointer", fontFamily:"inherit" }}>Cancelar</button>
-                <button onClick={handleDeleteAccount} disabled={deletingAccount} style={{ flex:1, padding:"10px", borderRadius:"10px", border:"none", background:"#FF3B30", color:"#fff", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"inherit" }}>
+                <button onClick={()=>setConfirmDelete(false)} style={{ flex:1, padding:"10px", borderRadius:"10px", border:"1px solid rgba(0,0,0,0.12)", background:"transparent", color:"#86868B", fontSize:"13px", cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>Cancelar</button>
+                <button onClick={handleDeleteAccount} disabled={deletingAccount} style={{ flex:1, padding:"10px", borderRadius:"10px", border:"none", background:"#FF3B30", color:"#fff", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
                   {deletingAccount?"Apagando...":"Sim, apagar tudo"}
                 </button>
               </div>
@@ -1117,7 +1132,6 @@ export default function ChicoDashboard() {
   const [gerandoRoteiro, setGerandoRoteiro] = useState(false);
   const [memoria, setMemoria]               = useState<ChicoMemoria>({});
   const [sugestao, setSugestao]             = useState<{titulo:string;mensagem:string;acao:string;palavra_sugerida?:string}|null>(null);
-  const [modoCultura, setModoCultura]       = useState(false);
   const [temaRoteiro, setTemaRoteiro]       = useState("");
   const [showRoteiroInput, setShowRoteiroInput] = useState(false);
 
@@ -1187,7 +1201,7 @@ export default function ChicoDashboard() {
       const res = await fetch("/api/chico",{
         method:"POST",
         headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({ tema_gerador:text.trim(), tronco:profile.tronco, interesses:profile.interesses??[], historico:chatHistoryRef.current, nexos_recentes, memoria, modo_especial: modoCultura ? "cultura" : "normal" })
+        body:JSON.stringify({ tema_gerador:text.trim(), tronco:profile.tronco, interesses:profile.interesses??[], historico:chatHistoryRef.current, nexos_recentes, memoria })
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error??"Erro desconhecido");
@@ -1262,16 +1276,16 @@ export default function ChicoDashboard() {
 
   // ── Design tokens — Apple Clean ──────────────────────────────────────────
   const C = {
-    bg:         "#F5F5F7",
+    bg:         "#F5F7FF",
     bgPanel:    "#FFFFFF",
     bgCard:     "#FFFFFF",
-    bgInput:    "#F5F5F7",
-    bgChat:     "#F5F5F7",
+    bgInput:    "#F5F7FF",
+    bgChat:     "#F5F7FF",
     border:     "rgba(0,0,0,0.08)",
     borderSub:  "rgba(0,0,0,0.05)",
-    blue:       "#0071E3",
-    blueHover:  "#0077ED",
-    blueDim:    "rgba(0,113,227,0.08)",
+    blue:       "#1A4A8A",
+    blueHover:  "#2A6ACC",
+    blueDim:    "rgba(26,74,138,0.08)",
     text:       "#1D1D1F",
     textSub:    "#3A3A3C",
     textDim:    "#86868B",
@@ -1295,6 +1309,7 @@ export default function ChicoDashboard() {
   return (
     <>
       <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
         @keyframes typingDot{0%,60%,100%{transform:translateY(0);opacity:.4;}30%{transform:translateY(-6px);opacity:1;}}
         @keyframes pulse{from{transform:scaleY(.6);}to{transform:scaleY(1.3);}}
         @keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
@@ -1306,7 +1321,7 @@ export default function ChicoDashboard() {
         button:focus-visible{outline:2px solid #0071E3;outline-offset:2px;}
       `}</style>
 
-      <div style={{ display:"flex", height:"100vh", background:C.bg, fontFamily:"-apple-system,BlinkMacSystemFont,'SF Pro Display','Segoe UI',sans-serif", color:C.text, overflow:"hidden" }}>
+      <div style={{ display:"flex", height:"100vh", background:C.bg, fontFamily:"'Nunito', -apple-system, BlinkMacSystemFont, sans-serif", color:C.text, overflow:"hidden" }}>
 
         {/* ── ÁREA PRINCIPAL ── */}
         <div style={{ flex:1, display:"flex", flexDirection:"column", overflow:"hidden", minWidth:0 }}>
@@ -1320,15 +1335,29 @@ export default function ChicoDashboard() {
                 </button>
               )}
               <div style={{ display:"flex", alignItems:"center", gap:"10px" }}>
-                <div style={{ width:30, height:30, borderRadius:"8px", background:`linear-gradient(135deg,${C.blue},#34AADC)`, display:"flex", alignItems:"center", justifyContent:"center" }}>
-                  <Icon.Logo/>
+                <div style={{ width:34, height:34, borderRadius:"10px", background:"#FFF6E8", border:"1.5px solid #E8C870", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, overflow:"hidden" }}>
+                  <svg width="34" height="34" viewBox="0 0 160 160">
+                    <rect x="8" y="32" width="34" height="68" rx="17" fill="#B8721A"/>
+                    <rect x="118" y="32" width="34" height="68" rx="17" fill="#B8721A"/>
+                    <circle cx="80" cy="80" r="56" fill="#E29830"/>
+                    <circle cx="46" cy="92" r="17" fill="#D08828"/>
+                    <circle cx="114" cy="92" r="17" fill="#D08828"/>
+                    <ellipse cx="80" cy="100" rx="26" ry="20" fill="#F2DFA0"/>
+                    <ellipse cx="80" cy="88" rx="12" ry="8" fill="#1A0800"/>
+                    <circle cx="60" cy="72" r="12" fill="white"/><circle cx="100" cy="72" r="12" fill="white"/>
+                    <circle cx="60" cy="72" r="8" fill="#5A3208"/><circle cx="100" cy="72" r="8" fill="#5A3208"/>
+                    <circle cx="60" cy="72" r="4.5" fill="#0E0400"/><circle cx="100" cy="72" r="4.5" fill="#0E0400"/>
+                    <circle cx="64" cy="68" r="2.5" fill="white"/><circle cx="104" cy="68" r="2.5" fill="white"/>
+                    <path d="M66 108 Q80 118 94 108" stroke="#7A4008" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+                    <ellipse cx="80" cy="114" rx="10" ry="8" fill="#E04870"/>
+                    <ellipse cx="44" cy="96" rx="10" ry="6" fill="#E07070" opacity="0.22"/>
+                    <ellipse cx="116" cy="96" rx="10" ry="6" fill="#E07070" opacity="0.22"/>
+                  </svg>
                 </div>
-                <span style={{ fontSize:"17px", fontWeight:700, color:C.text, letterSpacing:"-0.02em" }}>
-                  Chico Mentor
-                </span>
+                <span style={{ fontSize:"18px", fontWeight:800, color:"#1A4A8A", letterSpacing:"-0.01em", fontFamily:"'Nunito', sans-serif" }}>chico <span style={{ color:"#E07820" }}>mentor</span></span>
               </div>
               {!isMobile && profile?.tronco && (
-                <span style={{ padding:"3px 10px", borderRadius:"20px", fontSize:"11px", fontWeight:600, background:`${troncoColor}12`, color:troncoColor, letterSpacing:"0.03em", textTransform:"uppercase" as const }}>
+                <span style={{ padding:"3px 10px", borderRadius:"20px", fontSize:"11px", fontWeight:600, background:profile?.tronco==="românico"?"rgba(224,87,32,0.10)":"rgba(26,74,138,0.10)", color:profile?.tronco==="românico"?"#C04018":"#1A4A8A", letterSpacing:"0.03em", textTransform:"uppercase" as const }}>
                   {troncoLabel}
                 </span>
               )}
@@ -1355,21 +1384,18 @@ export default function ChicoDashboard() {
                   {!showRoteiroInput ? (
                     <>
                       <button onClick={()=>setShowRoteiroInput(true)}
-                        style={{ display:"flex", alignItems:"center", gap:"5px", padding:"4px 12px", borderRadius:"20px", border:`1px solid rgba(255,149,0,0.30)`, background:"transparent", color:C.orange, fontSize:"11px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                        style={{ display:"flex", alignItems:"center", gap:"5px", padding:"4px 12px", borderRadius:"20px", border:`1px solid rgba(255,149,0,0.30)`, background:"transparent", color:C.orange, fontSize:"11px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
                         <Icon.Route/>Roteiro
                       </button>
-                      <button onClick={()=>setModoCultura(v=>!v)}
-                        style={{ display:"flex", alignItems:"center", gap:"5px", padding:"4px 12px", borderRadius:"20px", border:`1px solid ${modoCultura?"rgba(94,92,230,0.35)":C.border}`, background:modoCultura?"rgba(94,92,230,0.08)":"transparent", color:modoCultura?"#5E5CE6":C.textDim, fontSize:"11px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
-                        🏛 {modoCultura ? "Cultura ON" : "Cultura"}
-                      </button>
+
                     </>
                   ) : (
                     <>
                       <input value={temaRoteiro} onChange={e=>setTemaRoteiro(e.target.value)} placeholder="Tema do roteiro..."
-                        style={{ flex:1, padding:"5px 12px", borderRadius:"20px", border:`1.5px solid rgba(255,149,0,0.40)`, fontSize:"12px", color:C.text, fontFamily:"inherit", background:C.white }}
+                        style={{ flex:1, padding:"5px 12px", borderRadius:"20px", border:`1.5px solid rgba(255,149,0,0.40)`, fontSize:"12px", color:C.text, fontFamily:"'Nunito', sans-serif", background:C.white }}
                         onKeyDown={e=>e.key==="Enter"&&gerarRoteiro()}/>
                       <button onClick={gerarRoteiro} disabled={!temaRoteiro.trim()||gerandoRoteiro}
-                        style={{ padding:"5px 14px", borderRadius:"20px", border:"none", background:C.orange, color:"#fff", fontSize:"12px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                        style={{ padding:"5px 14px", borderRadius:"20px", border:"none", background:C.orange, color:"#fff", fontSize:"12px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
                         {gerandoRoteiro ? "..." : "Gerar"}
                       </button>
                       <button onClick={()=>{setShowRoteiroInput(false);setTemaRoteiro("");}}
@@ -1388,7 +1414,7 @@ export default function ChicoDashboard() {
                     <div style={{ display:"flex", gap:"6px", flexShrink:0 }}>
                       {sugestao.palavra_sugerida && (
                         <button onClick={()=>{ setInputText(sugestao.palavra_sugerida!); setSugestao(null); }}
-                          style={{ padding:"5px 12px", borderRadius:"8px", border:"none", background:"#5E5CE6", color:"#fff", fontSize:"11px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
+                          style={{ padding:"5px 12px", borderRadius:"8px", border:"none", background:"#5E5CE6", color:"#fff", fontSize:"11px", fontWeight:600, cursor:"pointer", fontFamily:"'Nunito', sans-serif" }}>
                           Iniciar
                         </button>
                       )}
@@ -1399,7 +1425,7 @@ export default function ChicoDashboard() {
                 )}
 
                 {/* Mensagens */}
-                <div style={{ flex:1, overflowY:"auto", padding:isMobile?"12px 14px":"20px 32px", display:"flex", flexDirection:"column", gap:"10px", background:C.bgChat }}>
+                <div style={{ flex:1, overflowY:"auto", padding:isMobile?"12px 14px":"20px 32px", display:"flex", flexDirection:"column", gap:"10px", background:"#F5F7FF" }}>
                   {messages.map(msg=>(
                     <div key={msg.id} style={{ animation:"fadeIn 0.25s ease forwards" }}>
                       <ChatBubble message={msg} audio={audio}/>
@@ -1417,17 +1443,17 @@ export default function ChicoDashboard() {
 
                 {/* Input */}
                 <div style={{ padding:isMobile?"8px 12px 12px":"10px 24px 14px", background:"rgba(255,255,255,0.92)", backdropFilter:"blur(20px)", borderTop:`1px solid ${C.border}`, flexShrink:0 }}>
-                  <div style={{ display:"flex", gap:"8px", alignItems:"flex-end", background:C.bgInput, borderRadius:"20px", padding:"8px 8px 8px 18px", border:`1px solid ${C.border}` }}>
+                  <div style={{ display:"flex", gap:"8px", alignItems:"flex-end", background:C.bgInput, borderRadius:"20px", padding:"8px 8px 8px 18px", border:"1px solid #D0E0F8" }}>
                     <textarea ref={textareaRef} value={inputText} onChange={e=>setInputText(e.target.value)} onKeyDown={handleKeyDown}
                       placeholder="Escreva para o Chico..." rows={1} disabled={isLoading}
-                      style={{ flex:1, border:"none", background:"transparent", fontSize:"15px", lineHeight:"1.4", color:C.text, fontFamily:"inherit", maxHeight:"120px", overflowY:"auto", padding:0 }}/>
+                      style={{ flex:1, border:"none", background:"transparent", fontSize:"15px", lineHeight:"1.4", color:C.text, fontFamily:"'Nunito', sans-serif", maxHeight:"120px", overflowY:"auto", padding:0 }}/>
                     <div style={{ display:"flex", gap:"6px", alignItems:"center" }}>
                       <button type="button" onClick={handleMic}
                         style={{ width:34, height:34, borderRadius:"50%", border:"none", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:audio.isListening?C.red:"rgba(0,0,0,0.06)", transition:"all 0.2s" }}>
                         <Icon.Mic active={audio.isListening}/>
                       </button>
                       <button onClick={()=>sendMessage(inputText)} disabled={!inputText.trim()||isLoading}
-                        style={{ width:34, height:34, borderRadius:"50%", border:"none", cursor:!inputText.trim()||isLoading?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:!inputText.trim()||isLoading?"rgba(0,0,0,0.08)":`linear-gradient(135deg,${C.blue},${C.blueHover})`, transition:"all 0.2s", boxShadow:!inputText.trim()||isLoading?"none":`0 2px 8px rgba(0,113,227,0.30)` }}>
+                        style={{ width:34, height:34, borderRadius:"50%", border:"none", cursor:!inputText.trim()||isLoading?"not-allowed":"pointer", display:"flex", alignItems:"center", justifyContent:"center", background:!inputText.trim()||isLoading?"rgba(0,0,0,0.08)":`linear-gradient(135deg,${C.blue},${C.blueHover})`, transition:"all 0.2s", boxShadow:!inputText.trim()||isLoading?"none":"0 2px 12px rgba(26,74,138,0.25)" }}>
                         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke={!inputText.trim()||isLoading?"#C7C7CC":"#fff"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
                       </button>
                     </div>
@@ -1437,11 +1463,11 @@ export default function ChicoDashboard() {
               </>
             )}
 
-            {activeTab==="flashcards" && <div style={{ flex:1, overflow:"hidden", background:C.bgChat }}><FlashcardsTab cards={cards} audio={audio}/></div>}
-            {activeTab==="progresso"  && <div style={{ flex:1, overflow:"hidden", background:C.bgChat }}><ProgressoTab cards={cards}/></div>}
-            {activeTab==="viagem"     && <div style={{ flex:1, overflow:"hidden", background:C.bgChat }}><ViagemTab profile={profile} audio={audio}/></div>}
-            {activeTab==="musica"     && <div style={{ flex:1, overflow:"hidden", background:C.bgChat }}><MusicaTab profile={profile}/></div>}
-            {activeTab==="perfil"     && <div style={{ flex:1, overflow:"hidden", background:C.bgChat }}><PerfilTab profile={profile} onProfileUpdate={setProfile} cards={cards}/></div>}
+            {activeTab==="flashcards" && <div style={{ flex:1, overflow:"hidden", background:"#F5F7FF" }}><FlashcardsTab cards={cards} audio={audio}/></div>}
+            {activeTab==="progresso"  && <div style={{ flex:1, overflow:"hidden", background:"#F5F7FF" }}><ProgressoTab cards={cards}/></div>}
+            {activeTab==="viagem"     && <div style={{ flex:1, overflow:"hidden", background:"#F5F7FF" }}><ViagemTab profile={profile} audio={audio}/></div>}
+            {activeTab==="musica"     && <div style={{ flex:1, overflow:"hidden", background:"#F5F7FF" }}><MusicaTab profile={profile}/></div>}
+            {activeTab==="perfil"     && <div style={{ flex:1, overflow:"hidden", background:"#F5F7FF" }}><PerfilTab profile={profile} onProfileUpdate={setProfile} cards={cards}/></div>}
           </div>
         </div>
 
@@ -1453,7 +1479,7 @@ export default function ChicoDashboard() {
               return (
                 <button key={tab.id} onClick={()=>setActiveTab(tab.id)} title={tab.label}
                   style={{ width:52, height:52, borderRadius:"14px", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"4px", background:active?C.blueDim:"transparent", transition:"all 0.15s", position:"relative" as const }}>
-                  {active && <div style={{ position:"absolute", right:0, top:"50%", transform:"translateY(-50%)", width:3, height:26, background:C.blue, borderRadius:"3px 0 0 3px" }}/>}
+                  {active && <div style={{ position:"absolute", right:0, top:"50%", transform:"translateY(-50%)", width:3, height:26, background:"#1A4A8A", borderRadius:"3px 0 0 3px" }}/>}
                   {tab.icon(active ? C.blue : C.textMuted)}
                   <span style={{ fontSize:"8px", fontWeight:active?600:400, color:active?C.blue:C.textMuted, letterSpacing:"0.01em" }}>{tab.label}</span>
                 </button>
@@ -1462,9 +1488,9 @@ export default function ChicoDashboard() {
             <div style={{ flex:1 }}/>
             <div style={{ width:32, height:1, background:C.border, margin:"4px 0" }}/>
             <button onClick={()=>setSidebarOpen(v=>!v)} title="Biblioteca de Nexos"
-              style={{ width:52, height:52, borderRadius:"14px", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"4px", background:sidebarOpen?C.blueDim:"transparent", transition:"all 0.15s" }}>
+              style={{ width:52, height:52, borderRadius:"14px", border:"none", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"4px", background:sidebarOpen?"#FFF3E0":"transparent", transition:"all 0.15s" }}>
               <Icon.Library c={sidebarOpen?C.blue:C.textMuted}/>
-              <span style={{ fontSize:"8px", fontWeight:sidebarOpen?600:400, color:sidebarOpen?C.blue:C.textMuted }}>Nexos</span>
+              <span style={{ fontSize:"8px", fontWeight:sidebarOpen?600:400, color:sidebarOpen?"#E07820":C.textMuted }}>Nexos</span>
             </button>
           </nav>
         )}
@@ -1474,19 +1500,19 @@ export default function ChicoDashboard() {
           <aside style={{ width:SIDEBAR_W, display:"flex", flexDirection:"column", borderLeft:`1px solid ${C.border}`, background:C.bgPanel, flexShrink:0, overflow:"hidden" }}>
             <div style={{ padding:"14px 14px 10px", flexShrink:0 }}>
               <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"10px" }}>
-                <h2 style={{ margin:0, fontSize:"15px", fontWeight:700, color:C.text, letterSpacing:"-0.01em" }}>Biblioteca de Nexos</h2>
+                <h2 style={{ margin:0, fontSize:"16px", fontWeight:800, color:"#1A4A8A", letterSpacing:"-0.01em", fontFamily:"'Nunito', sans-serif" }}>Biblioteca de Nexos</h2>
                 <span style={{ fontSize:"11px", color:C.textMuted }}>{filteredCards.length} nexos</span>
               </div>
-              <div style={{ display:"flex", alignItems:"center", gap:"8px", padding:"7px 10px", background:C.bgInput, borderRadius:"10px", border:`1px solid ${C.border}`, marginBottom:"8px" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:"8px", padding:"7px 10px", background:C.bgInput, borderRadius:"10px", border:"1px solid #D0E0F8", marginBottom:"8px" }}>
                 <Icon.Search size={13} color={C.textMuted}/>
                 <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Buscar nexos..."
-                  style={{ flex:1, border:"none", background:"transparent", fontSize:"13px", color:C.text, fontFamily:"inherit" }}/>
+                  style={{ flex:1, border:"none", background:"transparent", fontSize:"13px", color:C.text, fontFamily:"'Nunito', sans-serif" }}/>
                 {searchQuery && <button onClick={()=>setSearchQuery("")} style={{ border:"none", background:"none", cursor:"pointer", color:C.textMuted, fontSize:"15px", lineHeight:1, padding:0 }}>×</button>}
               </div>
               <div style={{ display:"flex", gap:"4px", padding:"3px", borderRadius:"10px", background:"rgba(0,0,0,0.05)" }}>
                 {(["todos","românico","germânico"] as const).map(f=>(
                   <button key={f} onClick={()=>setSidebarFilter(f)}
-                    style={{ flex:1, padding:"5px 6px", borderRadius:"8px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:sidebarFilter===f?600:400, background:sidebarFilter===f?C.white:"transparent", color:sidebarFilter===f?C.text:C.textDim, boxShadow:sidebarFilter===f?"0 1px 4px rgba(0,0,0,0.08)":"none", fontFamily:"inherit", transition:"all 0.15s" }}>
+                    style={{ flex:1, padding:"5px 6px", borderRadius:"8px", border:"none", cursor:"pointer", fontSize:"11px", fontWeight:sidebarFilter===f?600:400, background:sidebarFilter===f?C.white:"transparent", color:sidebarFilter===f?C.text:C.textDim, boxShadow:sidebarFilter===f?"0 1px 4px rgba(0,0,0,0.08)":"none", fontFamily:"'Nunito', sans-serif", transition:"all 0.15s" }}>
                     {f==="todos"?"Todos":f==="românico"?"Românico":"Germânico"}
                   </button>
                 ))}
@@ -1529,15 +1555,15 @@ export default function ChicoDashboard() {
           <nav style={{ position:"fixed", bottom:0, left:0, right:0, height:MOBILE_NAV_H, background:"rgba(255,255,255,0.95)", backdropFilter:"blur(20px)", borderTop:`1px solid ${C.border}`, display:"flex", alignItems:"center", zIndex:200, paddingBottom:"env(safe-area-inset-bottom)" }}>
             {navTabs.map(tab=>{ const active=activeTab===tab.id; return (
               <button key={tab.id} onClick={()=>{setActiveTab(tab.id);setSidebarOpen(false);}}
-                style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", padding:"6px 0", border:"none", background:"transparent", cursor:"pointer", fontFamily:"inherit", flex:1 }}>
+                style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", padding:"6px 0", border:"none", background:"transparent", cursor:"pointer", fontFamily:"'Nunito', sans-serif", flex:1 }}>
                 {tab.icon(active?C.blue:C.textMuted)}
                 <span style={{ fontSize:"9px", fontWeight:active?600:400, color:active?C.blue:C.textMuted }}>{tab.label}</span>
               </button>
             );})}
             <button onClick={()=>setSidebarOpen(v=>!v)}
-              style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", padding:"6px 0", border:"none", background:"transparent", cursor:"pointer", fontFamily:"inherit", flex:1 }}>
+              style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", padding:"6px 0", border:"none", background:"transparent", cursor:"pointer", fontFamily:"'Nunito', sans-serif", flex:1 }}>
               <Icon.Library c={sidebarOpen?C.blue:C.textMuted}/>
-              <span style={{ fontSize:"9px", fontWeight:sidebarOpen?600:400, color:sidebarOpen?C.blue:C.textMuted }}>Nexos</span>
+              <span style={{ fontSize:"9px", fontWeight:sidebarOpen?600:400, color:sidebarOpen?"#E07820":C.textMuted }}>Nexos</span>
             </button>
           </nav>
         )}
