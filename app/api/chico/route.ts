@@ -91,12 +91,6 @@ function buildSystemPrompt(
     : "";
 
   const modoExtra: Record<string, string> = {
-    cultura: `
-## Modo Cultura ativo
-Vá fundo na história e alma da palavra. O que ela revela sobre a cultura de origem?
-Por que essa língua escolheu ESSA palavra e não outra? O que isso diz sobre o povo?
-Seja fascinante — trate cada palavra como arqueologia viva.`,
-
     viagem: `
 ## Modo Viagem ativo
 Foco em sobrevivência comunicativa no destino mencionado.
@@ -591,6 +585,231 @@ ${letra}`;
 
       const analise = completion.choices[0]?.message?.content ?? "";
       return NextResponse.json({ analise });
+    }
+
+    // ── Gerar história ────────────────────────────────────────────────────────
+    if (acao === "gerar_historia") {
+      const { tronco, interesses, lingua, nivel } = body;
+      const troncoInfo = TRONCOS[tronco as "românico"|"germânico"];
+      if (!troncoInfo) return NextResponse.json({ error:"Tronco inválido." },{ status:400 });
+
+      const interessesStr = (interesses||[]).join(", ") || "cotidiano";
+      const linguaInfo    = troncoInfo.linguas.find(l => l.nome === lingua) || troncoInfo.linguas[0];
+
+      const nivelInstrucao = {
+        iniciante:     "Frases curtas e simples. Vocabulário básico. Máx 120 palavras. Presente do indicativo predominante.",
+        intermediário: "Parágrafos fluidos. Vocabulário variado. Máx 200 palavras. Mistura de tempos verbais.",
+        avançado:      "Texto rico e natural. Expressões idiomáticas. Máx 280 palavras. Registros formais e informais.",
+      }[nivel as string] || "Frases curtas e simples. Vocabulário básico. Máx 120 palavras.";
+
+      const prompt = `Você é o Chico, linguista. Crie uma história curta em ${linguaInfo.nome} baseada nos interesses: ${interessesStr}.
+
+Nível: ${nivel}. ${nivelInstrucao}
+
+REGRAS:
+- A história deve ser envolvente e usar vocabulário dos interesses do aluno
+- Inclua personagens com nomes reais do país (ex: espanhol = Carlos, María)
+- Termine com algo que convide a continuar
+
+Responda APENAS com JSON:
+{
+  "titulo": "Título da história em ${linguaInfo.nome}",
+  "titulo_pt": "Título traduzido para português",
+  "lingua": "${linguaInfo.nome}",
+  "nivel": "${nivel}",
+  "texto": "A história completa em ${linguaInfo.nome}",
+  "resumo_pt": "Resumo da história em português (2 frases)",
+  "palavras_chave": [
+    { "palavra": "palavra em ${linguaInfo.nome}", "traducao_pt": "tradução", "fonetica": "[fo-NÉ-ti-ca]" }
+  ],
+  "perguntas": [
+    { "pergunta": "Pergunta em português sobre a história", "opcoes": ["opção A", "opção B", "opção C"], "correta": 0 },
+    { "pergunta": "Segunda pergunta", "opcoes": ["opção A", "opção B", "opção C"], "correta": 1 },
+    { "pergunta": "Terceira pergunta", "opcoes": ["opção A", "opção B", "opção C"], "correta": 2 }
+  ]
+}`;
+
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        temperature: 0.75,
+        max_tokens: 1200,
+        messages: [{ role:"user", content:prompt }],
+      });
+
+      const raw = completion.choices[0]?.message?.content ?? "";
+      try {
+        const historia = parseJSON(raw);
+        return NextResponse.json({ historia });
+      } catch {
+        return NextResponse.json({ error:"Erro ao gerar história." },{ status:500 });
+      }
+    }
+
+    // ── Salvar palavra da história como nexo ──────────────────────────────────
+    if (acao === "salvar_palavra_historia") {
+      const { palavra, traducao_pt, fonetica, tronco, lingua_origem } = body;
+      const troncoInfo = TRONCOS[tronco as "românico"|"germânico"];
+      if (!troncoInfo) return NextResponse.json({ error:"Tronco inválido." },{ status:400 });
+
+      const supabase = await createSupabaseServer();
+      const { data:{ session } } = await supabase.auth.getSession();
+      if (!session) return NextResponse.json({ error:"Não autorizado." },{ status:401 });
+
+      // Gera as traduções nas outras línguas do tronco
+      const outrasLinguas = troncoInfo.linguas.filter(l => l.nome !== lingua_origem);
+      const prompt = `Traduza a palavra "${palavra}" (${lingua_origem}) para: ${outrasLinguas.map(l=>l.nome).join(" e ")}.
+Responda APENAS com JSON:
+{
+  "lang_a": { "txt": "tradução para ${outrasLinguas[0]?.nome}", "fon": "fonética [ex: fo-NÉ-ti-ca]", "exemplo": "frase curta natural" },
+  "lang_b": { "txt": "tradução para ${outrasLinguas[1]?.nome}", "fon": "fonética", "exemplo": "frase curta natural" }
+}`;
+
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile", temperature:0.4, max_tokens:300,
+        messages:[{ role:"user", content:prompt }],
+      });
+
+      let outras = { lang_a:{ txt:"—", fon:"—", exemplo:"—" }, lang_b:{ txt:"—", fon:"—", exemplo:"—" } };
+      try { outras = parseJSON(completion.choices[0]?.message?.content ?? ""); } catch {}
+
+      // Identifica qual slot é a língua de origem
+      const origemIdx = troncoInfo.linguas.findIndex(l => l.nome === lingua_origem);
+      const langs = troncoInfo.linguas.map((l, i) => {
+        if (i === origemIdx) return { txt:palavra, fon:fonetica, exemplo:"—" };
+        const slot = troncoInfo.linguas.filter((_,j)=>j!==origemIdx).indexOf(l) === 0 ? outras.lang_a : outras.lang_b;
+        return { txt:slot.txt, fon:slot.fon, exemplo:slot.exemplo };
+      });
+
+      const card = {
+        user_id:     session.user.id,
+        tema_gerador: `${palavra} (${lingua_origem})`,
+        titulo_card:  palavra,
+        tronco,
+        aula_chico:   `Palavra encontrada na leitura. "${palavra}" em ${lingua_origem} significa "${traducao_pt}" em português.`,
+        lang_1_nome: troncoInfo.linguas[0].nome, lang_1_txt: langs[0].txt, lang_1_fon: langs[0].fon, lang_1_exemplo: langs[0].exemplo, lang_1_bcp47: troncoInfo.linguas[0].bcp47,
+        lang_2_nome: troncoInfo.linguas[1].nome, lang_2_txt: langs[1].txt, lang_2_fon: langs[1].fon, lang_2_exemplo: langs[1].exemplo, lang_2_bcp47: troncoInfo.linguas[1].bcp47,
+        lang_3_nome: troncoInfo.linguas[2].nome, lang_3_txt: langs[2].txt, lang_3_fon: langs[2].fon, lang_3_exemplo: langs[2].exemplo, lang_3_bcp47: troncoInfo.linguas[2].bcp47,
+      };
+
+      const { data:saved, error:dbErr } = await supabase.from("mentoria_cards").insert(card).select().single();
+      if (dbErr) return NextResponse.json({ error:dbErr.message },{ status:500 });
+      return NextResponse.json({ card:saved });
+    }
+
+        // ── Gerar história ────────────────────────────────────────────────────────
+    if (acao === "gerar_historia") {
+      const { tronco, interesses, lingua_alvo } = body;
+      const troncoInfo = TRONCOS[tronco as "românico"|"germânico"];
+      if (!troncoInfo) return NextResponse.json({ error:"Tronco inválido." },{ status:400 });
+
+      const interessesStr = (interesses||[]).slice(0,3).join(", ") || "cotidiano";
+      const lingua = lingua_alvo || troncoInfo.linguas[0].nome;
+      const bcp47  = troncoInfo.linguas.find((l:any) => l.nome === lingua)?.bcp47 || troncoInfo.linguas[0].bcp47;
+
+      const prompt = `Você é um escritor que cria histórias curtas para aprendizes de idiomas.
+
+Crie uma história curta em ${lingua} (não em português) com as seguintes características:
+- Tema ligado aos interesses: ${interessesStr}
+- Entre 120 e 180 palavras
+- Nível intermediário — frases completas, vocabulário rico mas acessível
+- Narrativa envolvente com começo, meio e fim
+- Tom leve e positivo
+
+Depois crie 3 perguntas de compreensão em português sobre a história. Cada pergunta com 3 opções (a, b, c) sendo apenas uma correta.
+
+Responda APENAS com JSON:
+{
+  "titulo": "Título da história em ${lingua}",
+  "titulo_pt": "Título traduzido em português",
+  "lingua": "${lingua}",
+  "bcp47": "${bcp47}",
+  "texto": "O texto completo da história em ${lingua}",
+  "resumo_pt": "Resumo em 1 frase em português do que acontece na história",
+  "palavras_chave": [
+    {"palavra": "palavra em ${lingua}", "traducao": "tradução em português", "fon": "fonética [sílabas]"}
+  ],
+  "perguntas": [
+    {
+      "pergunta": "Pergunta em português sobre a história",
+      "opcoes": ["a) opção 1", "b) opção 2", "c) opção 3"],
+      "correta": 0
+    }
+  ]
+}
+
+palavras_chave: inclua exatamente 5 palavras importantes da história que o aluno deveria aprender.
+perguntas: exatamente 3 perguntas, campo correta é o índice (0, 1 ou 2) da opção correta.`;
+
+      const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        temperature: 0.8,
+        max_tokens: 1200,
+        messages: [{ role:"user", content:prompt }],
+      });
+
+      const raw = completion.choices[0]?.message?.content ?? "";
+      try {
+        const historia = parseJSON(raw);
+        return NextResponse.json({ historia });
+      } catch {
+        return NextResponse.json({ error:"Erro ao gerar história." },{ status:500 });
+      }
+    }
+
+    // ── Salvar palavra da história como nexo ──────────────────────────────────
+    if (acao === "salvar_palavra_historia") {
+      const { palavra, traducao, fon, tronco, lingua_origem } = body;
+      const troncoInfo = TRONCOS[tronco as "românico"|"germânico"];
+      if (!troncoInfo) return NextResponse.json({ error:"Tronco inválido." },{ status:400 });
+
+      const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+      const linguas = troncoInfo.linguas;
+
+      // Gera as traduções para as outras 2 línguas do tronco
+      const prompt = `Dada a palavra "${palavra}" em ${lingua_origem} (tradução: "${traducao}"), forneça as traduções e fonética nas seguintes línguas: ${linguas.map((l:any)=>l.nome).join(", ")}.
+Responda APENAS com JSON:
+{
+  "lang_1": {"txt": "tradução em ${linguas[0].nome}", "fon": "fonética [sílabas]", "exemplo": "frase curta natural"},
+  "lang_2": {"txt": "tradução em ${linguas[1].nome}", "fon": "fonética [sílabas]", "exemplo": "frase curta natural"},
+  "lang_3": {"txt": "tradução em ${linguas[2].nome}", "fon": "fonética [sílabas]", "exemplo": "frase curta natural"}
+}`;
+
+      const completion = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        temperature: 0.4,
+        max_tokens: 400,
+        messages: [{ role:"user", content:prompt }],
+      });
+
+      const raw = completion.choices[0]?.message?.content ?? "";
+      let traducoesLinguas;
+      try { traducoesLinguas = parseJSON(raw); }
+      catch { return NextResponse.json({ error:"Erro ao processar." },{ status:500 }); }
+
+      const supabase = await createSupabaseServer();
+      const { data:{ session } } = await supabase.auth.getSession();
+      if (!session) return NextResponse.json({ error:"Não autorizado." },{ status:401 });
+
+      const card = {
+        user_id:      session.user.id,
+        tema_gerador: palavra,
+        titulo_card:  palavra,
+        tronco,
+        aula_chico:   `Palavra aprendida na leitura: "${palavra}" significa "${traducao}" em português.`,
+        lang_1_nome:  linguas[0].nome, lang_1_txt: traducoesLinguas.lang_1.txt,
+        lang_1_fon:   traducoesLinguas.lang_1.fon, lang_1_exemplo: traducoesLinguas.lang_1.exemplo,
+        lang_1_bcp47: linguas[0].bcp47,
+        lang_2_nome:  linguas[1].nome, lang_2_txt: traducoesLinguas.lang_2.txt,
+        lang_2_fon:   traducoesLinguas.lang_2.fon, lang_2_exemplo: traducoesLinguas.lang_2.exemplo,
+        lang_2_bcp47: linguas[1].bcp47,
+        lang_3_nome:  linguas[2].nome, lang_3_txt: traducoesLinguas.lang_3.txt,
+        lang_3_fon:   traducoesLinguas.lang_3.fon, lang_3_exemplo: traducoesLinguas.lang_3.exemplo,
+        lang_3_bcp47: linguas[2].bcp47,
+      };
+
+      const { data:savedCard } = await supabase.from("mentoria_cards").insert(card).select().single();
+      return NextResponse.json({ card: savedCard, saved:true }, { status:201 });
     }
 
     return NextResponse.json({ error:"Ação desconhecida." },{ status:400 });
