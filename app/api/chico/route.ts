@@ -596,44 +596,80 @@ ${letra}`;
       const interessesStr = (interesses||[]).join(", ") || "cotidiano";
       const linguaInfo    = troncoInfo.linguas.find(l => l.nome === lingua) || troncoInfo.linguas[0];
 
-      const nivelInstrucao = {
-        iniciante:     "Frases curtas e simples. Vocabulário básico. Máx 120 palavras. Presente do indicativo predominante.",
-        intermediário: "Parágrafos fluidos. Vocabulário variado. Máx 200 palavras. Mistura de tempos verbais.",
-        avançado:      "Texto rico e natural. Expressões idiomáticas. Máx 280 palavras. Registros formais e informais.",
-      }[nivel as string] || "Frases curtas e simples. Vocabulário básico. Máx 120 palavras.";
+      const nivelConfig: Record<string,{ palavras:string; gramatica:string; vocabulario:string }> = {
+        iniciante: {
+          palavras:    "entre 200 e 280 palavras",
+          gramatica:   "presente do indicativo e pretérito perfeito simples. Frases de 8 a 14 palavras. Parágrafos de 2 a 3 frases.",
+          vocabulario: "cotidiano e concreto: lugares, alimentos, família, rotina, trabalho simples. Evite subjuntivo e vocabulário abstrato.",
+        },
+        intermediário: {
+          palavras:    "entre 320 e 420 palavras",
+          gramatica:   "presente, pretérito imperfeito e perfeito, futuro próximo. Frases mais elaboradas com conectores (porque, aunque, mientras, sin embargo). Parágrafos de 3 a 4 frases.",
+          vocabulario: "emoções, opiniões, descrições de ambiente, relações interpessoais. Inclua pelo menos 2 expressões típicas da língua.",
+        },
+        avançado: {
+          palavras:    "entre 480 e 600 palavras",
+          gramatica:   "todos os tempos verbais incluindo subjuntivo, condicional e voz passiva. Estruturas subordinadas complexas. Parágrafos densos com progressão narrativa clara.",
+          vocabulario: "rico e variado: expressões idiomáticas, registros formais e informais, nuances culturais. Inclua pelo menos 3 expressões ou gírias autênticas.",
+        },
+      };
 
-      const prompt = `Você é o Chico, linguista. Crie uma história curta em ${linguaInfo.nome} baseada nos interesses: ${interessesStr}.
+      const cfg = nivelConfig[nivel as string] || nivelConfig["iniciante"];
 
-Nível: ${nivel}. ${nivelInstrucao}
+      const systemPrompt = `Você é um escritor especialista em material pedagógico para aprendizes de línguas estrangeiras. Seu estilo combina a acessibilidade do Lingua.com com a riqueza narrativa do LingQ — textos que ensinam através de histórias reais, não de exercícios escolares.`;
+
+      const userPrompt = `Crie uma história COMPLETA em ${linguaInfo.nome} baseada nos interesses do aluno: ${interessesStr}.
+
+NÍVEL: ${nivel}
+TAMANHO: ${cfg.palavras}
+GRAMÁTICA: ${cfg.gramatica}
+VOCABULÁRIO: ${cfg.vocabulario}
+
+ESTRUTURA OBRIGATÓRIA (5 blocos separados por linha em branco):
+
+Bloco 1 — ABERTURA: Apresente cenário e personagem com detalhes sensoriais. Nome típico do país da língua. O leitor deve conseguir visualizar a cena.
+
+Bloco 2 — SITUAÇÃO: A situação do personagem se desenvolve. Relacione com os interesses: ${interessesStr}. Inclua um detalhe cultural autêntico do país (lugar real, prato típico, hábito local).
+
+Bloco 3 — DIÁLOGO: Um diálogo de 3 a 5 trocas entre personagens. Natural, como pessoas realmente falam. Use o formato com travessão (—) ou aspas conforme a convenção da língua.
+
+Bloco 4 — COMPLICAÇÃO: Surge um problema, surpresa ou decisão. O personagem reage. Mostre emoção.
+
+Bloco 5 — DESFECHO: Resolução satisfatória. Termine com uma frase que deixe o leitor pensando ou sorrindo.
 
 REGRAS:
-- A história deve ser envolvente e usar vocabulário dos interesses do aluno
-- Inclua personagens com nomes reais do país (ex: espanhol = Carlos, María)
-- Termine com algo que convide a continuar
+- Texto corrido, sem títulos de seção, sem numeração, sem markdown
+- Personagens com nomes típicos do país (espanhol: Carlos, María; francês: Lucie, Antoine; italiano: Marco, Giulia)
+- Baseie fortemente na temática dos interesses: ${interessesStr}
+- O texto deve soar como uma história real, não como material didático
+- PALAVRAS-CHAVE: selecione 8 a 12 palavras ou expressões do texto que sejam úteis e não óbvias para um aprendiz. Priorize verbos expressivos, substantivos culturais e expressões idiomáticas.
 
-Responda APENAS com JSON:
+Responda SOMENTE com JSON válido, sem texto antes ou depois:
 {
-  "titulo": "Título da história em ${linguaInfo.nome}",
-  "titulo_pt": "Título traduzido para português",
+  "titulo": "Título criativo e chamativo em ${linguaInfo.nome}",
+  "titulo_pt": "Tradução do título para português",
   "lingua": "${linguaInfo.nome}",
   "nivel": "${nivel}",
-  "texto": "A história completa em ${linguaInfo.nome}",
-  "resumo_pt": "Resumo da história em português (2 frases)",
+  "texto": "A história completa conforme as instruções acima. Parágrafos separados por \n\n.",
+  "resumo_pt": "Resumo de 2 a 3 frases em português descrevendo a história.",
   "palavras_chave": [
-    { "palavra": "palavra em ${linguaInfo.nome}", "traducao_pt": "tradução", "fonetica": "[fo-NÉ-ti-ca]" }
+    { "palavra": "palavra ou expressão exata do texto", "traducao_pt": "tradução em português", "fonetica": "[fo-NÉ-ti-ca]" }
   ],
   "perguntas": [
-    { "pergunta": "Pergunta em português sobre a história", "opcoes": ["opção A", "opção B", "opção C"], "correta": 0 },
-    { "pergunta": "Segunda pergunta", "opcoes": ["opção A", "opção B", "opção C"], "correta": 1 },
-    { "pergunta": "Terceira pergunta", "opcoes": ["opção A", "opção B", "opção C"], "correta": 2 }
+    { "pergunta": "Pergunta factual sobre a história em português", "opcoes": ["A...", "B...", "C..."], "correta": 0 },
+    { "pergunta": "Pergunta sobre motivação ou sentimento do personagem", "opcoes": ["A...", "B...", "C..."], "correta": 1 },
+    { "pergunta": "Pergunta sobre detalhe cultural ou significado de palavra", "opcoes": ["A...", "B...", "C..."], "correta": 2 }
   ]
 }`;
 
       const completion = await groq.chat.completions.create({
         model: "llama-3.3-70b-versatile",
-        temperature: 0.75,
-        max_tokens: 1200,
-        messages: [{ role:"user", content:prompt }],
+        temperature: 0.78,
+        max_tokens: 2800,
+        messages: [
+          { role:"system", content:systemPrompt },
+          { role:"user",   content:userPrompt   },
+        ],
       });
 
       const raw = completion.choices[0]?.message?.content ?? "";
@@ -645,7 +681,6 @@ Responda APENAS com JSON:
       }
     }
 
-    // ── Salvar palavra da história como nexo ──────────────────────────────────
     if (acao === "salvar_palavra_historia") {
       const { palavra, traducao_pt, fonetica, tronco, lingua_origem } = body;
       const troncoInfo = TRONCOS[tronco as "românico"|"germânico"];
