@@ -1260,9 +1260,12 @@ export default function ChicoDashboard() {
     {id:"perfil",     label:"Perfil",     icon:c=><Icon.Settings c={c}/>},
   ];
 
-  const TOPBAR_H = 52, MOBILE_NAV_H = 68;
-
   // ── Paleta azul profundo + dourado ─────────────────────────────────────────
+  const TOPBAR_H     = 56;
+  const MOBILE_NAV_H = 68;
+  const NAV_W        = 72;
+  const SIDEBAR_W    = 320;
+
   const C = {
     bg:         "#0A0F1E",   // fundo escuro principal
     bgPanel:    "#0D1425",   // painel lateral
@@ -1283,11 +1286,6 @@ export default function ChicoDashboard() {
     green:      "#4DB87A",
     chatBg:     "#080D1A",
   };
-
-  const TOPBAR_H     = 56;
-  const MOBILE_NAV_H = 68;
-  const NAV_W        = 72;   // largura do menu vertical direito
-  const SIDEBAR_W    = 320;  // largura da biblioteca direita
 
   return (
     <>
