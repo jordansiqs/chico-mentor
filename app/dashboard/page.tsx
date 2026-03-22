@@ -244,7 +244,7 @@ function NexoCard({ card, audio, onDelete }: {
   }
 
   return (
-    <article style={{ background:"#111827", borderRadius:"16px", padding:"16px", border:"1px solid rgba(255,255,255,0.06)"", border:`1px solid ${diasDesde>=3?"rgba(255,149,0,0.25)":"rgba(0,0,0,0.05)"}`, transition:"all 0.2s" }}
+    <article style={{ background:"#111827", borderRadius:"16px", padding:"16px", border:`1px solid ${diasDesde>=3?"rgba(255,149,0,0.25)":"rgba(255,255,255,0.06)"}`, transition:"all 0.2s" }}
       onMouseEnter={e=>{ (e.currentTarget as HTMLElement).style.boxShadow="0 4px 16px rgba(212,175,55,0.12)"; }}
       onMouseLeave={e=>{ (e.currentTarget as HTMLElement).style.boxShadow="0 1px 3px rgba(0,0,0,0.06)"; }}>
 
