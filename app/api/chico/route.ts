@@ -252,13 +252,44 @@ async function createSupabaseServer() {
 
 // ── Parsear JSON robusto ──────────────────────────────────────────────────────
 
-function parseJSON(raw: string) {
-  const jsonMatch = raw.match(/\{[\s\S]*\}/);
-  if (jsonMatch) {
-    try { return JSON.parse(jsonMatch[0]); } catch {}
+function sanitizeJSON(str: string): string {
+  // Remove markdown fences
+  str = str.replace(/^```json\s*/i,"").replace(/^```\s*/i,"").replace(/```\s*$/i,"").trim();
+  // Extract first JSON object
+  const match = str.match(/\{[\s\S]*\}/);
+  if (match) str = match[0];
+  // Replace literal control characters inside string values with escaped versions
+  // This handles newlines, tabs, carriage returns inside JSON string values
+  let result = "";
+  let inString = false;
+  let escape = false;
+  for (let i = 0; i < str.length; i++) {
+    const ch = str[i];
+    const code = str.charCodeAt(i);
+    if (escape) { result += ch; escape = false; continue; }
+    if (ch === "\\") { escape = true; result += ch; continue; }
+    if (ch === "\"") { inString = !inString; result += ch; continue; }
+    if (inString && code < 32) {
+      if (code === 10) { result += "\\n"; continue; }
+      if (code === 13) { result += "\\r"; continue; }
+      if (code === 9)  { result += "\\t"; continue; }
+      continue; // drop other control chars
+    }
+    result += ch;
   }
-  const cleaned = raw.replace(/^```json\s*/i,"").replace(/^```\s*/i,"").replace(/```\s*$/i,"").trim();
-  return JSON.parse(cleaned);
+  return result;
+}
+
+function parseJSON(raw: string) {
+  try {
+    const sanitized = sanitizeJSON(raw);
+    return JSON.parse(sanitized);
+  } catch {
+    // Last resort: try raw
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) return JSON.parse(match[0]);
+    throw new Error("Cannot parse JSON");
+  }
 }
 
 // ── POST ──────────────────────────────────────────────────────────────────────
