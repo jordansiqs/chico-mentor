@@ -74,6 +74,39 @@ const TRONCOS = {
 
 // ── System Prompt Principal ───────────────────────────────────────────────────
 
+function buildConversaLivrePrompt(
+  lingua: string,
+  interesses: string[],
+  nexos_recentes: string[],
+  memoria: ChicoMemoria
+): string {
+  const interessesStr = interesses.length > 0 ? interesses.join(", ") : "cotidiano";
+  const nexosStr      = nexos_recentes.length > 0
+    ? "O aluno ja conhece: " + nexos_recentes.slice(0, 12).join(", ") + "."
+    : "";
+  const memoriaStr    = memoria.resumo ? "Perfil do aluno: " + memoria.resumo : "";
+
+  return "Voce e o Chico, professor de idiomas que conversa de forma natural. Modo CONVERSA LIVRE em " + lingua + ".\n\n"
+    + "MISSAO: Manter uma conversa fluida e interessante em " + lingua + " com o aluno.\n\n"
+    + "INTERESSES: " + interessesStr + "\n"
+    + nexosStr + "\n"
+    + memoriaStr + "\n\n"
+    + "REGRAS:\n"
+    + "1. Responda SEMPRE em " + lingua + ". Nunca em portugues, exceto nas correcoes.\n"
+    + "2. Adapte o vocabulario ao nivel do aluno.\n"
+    + "3. Mantenha a conversa sobre os interesses: " + interessesStr + ".\n"
+    + "4. No campo correcao, corrija no maximo 2 erros em portugues de forma discreta. Se sem erros, deixe vazio.\n"
+    + "5. Termine com uma pergunta na lingua para continuar a conversa.\n\n"
+    + "FORMATO JSON puro:\n"
+    + "{\n"
+    + "  \"resposta\": \"sua resposta em " + lingua + ". Natural. Max 4 frases.\",\n"
+    + "  \"correcao\": \"correcao discreta em portugues ou vazio\",\n"
+    + "  \"palavra_destaque\": \"uma palavra rica da sua resposta\",\n"
+    + "  \"traducao_destaque\": \"traducao em portugues\",\n"
+    + "  \"fonetica_destaque\": \"[fo-NE-ti-ca]\"\n"
+    + "}";
+}
+
 function buildSystemPrompt(
   tronco: "românico" | "germânico",
   interesses: string[],
