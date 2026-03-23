@@ -13,7 +13,8 @@ export interface ChicoRequest {
   historico?: { role: "user" | "assistant"; content: string }[];
   nexos_recentes?: string[];
   memoria?: ChicoMemoria;
-  modo_especial?: "cultura" | "viagem" | "musica" | "normal";
+  modo_especial?: "cultura" | "viagem" | "musica" | "normal" | "conversa_livre";
+  lingua_conversa?: string;
 }
 
 export interface ChicoMemoria {
@@ -247,6 +248,46 @@ export async function POST(request: NextRequest) {
     } = body;
 
     if (!tema_gerador?.trim()) return NextResponse.json({ error: "Tema vazio." }, { status: 400 });
+
+    // ── MODO CONVERSA LIVRE ───────────────────────────────────────────────────
+    if (modo_especial === "conversa_livre") {
+      const lingua = body.lingua_conversa || "Espanhol";
+      if (!["românico","germânico"].includes(tronco)) return NextResponse.json({ error: "Tronco inválido." }, { status: 400 });
+
+      const groq2 = new Groq({ apiKey: process.env.GROQ_API_KEY });
+      const historicoConv = historico.slice(-10).map(m => ({
+        role: m.role as "user"|"assistant",
+        content: m.content,
+      }));
+
+      const completion2 = await groq2.chat.completions.create({
+        model:       "llama-3.3-70b-versatile",
+        temperature: 0.72,
+        max_tokens:  600,
+        messages: [
+          { role:"system", content: buildConversaLivrePrompt(lingua, interesses||[], nexos_recentes, memoria) },
+          ...historicoConv,
+          { role:"user", content: tema_gerador },
+        ],
+      });
+
+      const raw2 = completion2.choices[0]?.message?.content ?? "";
+      try {
+        const parsed2 = parseJSON(raw2);
+        return NextResponse.json({
+          conversa_livre: true,
+          resposta:           parsed2.resposta        || "",
+          correcao:           parsed2.correcao        || "",
+          palavra_destaque:   parsed2.palavra_destaque   || "",
+          traducao_destaque:  parsed2.traducao_destaque  || "",
+          fonetica_destaque:  parsed2.fonetica_destaque  || "",
+          lingua,
+        });
+      } catch {
+        return NextResponse.json({ error: "Erro na conversa livre." }, { status: 500 });
+      }
+    }
+
     if (!["românico","germânico"].includes(tronco)) return NextResponse.json({ error: "Tronco inválido." }, { status: 400 });
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
