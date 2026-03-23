@@ -1910,39 +1910,7 @@ export default function ChicoDashboard() {
               <>
                 {/* Toolbar roteiro */}
                 <div style={{ padding:"8px 20px", background:"rgba(255,255,255,0.9)", backdropFilter:"blur(12px)", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:"8px", flexShrink:0 }}>
-                  {!showRoteiroInput ? (
-                    <button onClick={()=>setShowRoteiroInput(true)}
-                      style={{ display:"flex", alignItems:"center", gap:"6px", padding:"6px 14px", borderRadius:"20px", border:`1.5px solid ${C.orange}`, background:C.orangeLight, color:C.orange, fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>
-                      Gerar roteiro
-                    </button>
-                    {/* Toggle Conversa Livre */}
-                    <div style={{ display:"flex", alignItems:"center", gap:"6px" }}>
-                      <button onClick={()=>{ setModoConversa(v=>!v); setShowLinguaPicker(false); }}
-                        style={{ display:"flex", alignItems:"center", gap:"6px", padding:"6px 14px", borderRadius:"20px", border:`1.5px solid ${modoConversa?"rgba(42,154,96,0.40)":"rgba(0,0,0,0.10)"}`, background:modoConversa?"rgba(42,154,96,0.10)":"transparent", color:modoConversa?"#2A9A60":"#6A7A9A", fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"Nunito, sans-serif", transition:"all 0.2s" }}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-                        {modoConversa ? "Conversa livre ON" : "Conversa livre"}
-                      </button>
-                      {modoConversa && (
-                        <div style={{ position:"relative" as const }}>
-                          <button onClick={()=>setShowLinguaPicker(v=>!v)}
-                            style={{ padding:"6px 12px", borderRadius:"20px", border:"1.5px solid rgba(42,154,96,0.30)", background:"rgba(42,154,96,0.07)", color:"#2A9A60", fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"Nunito, sans-serif", display:"flex", alignItems:"center", gap:"5px" }}>
-                            🌍 {linguaConversa} ▾
-                          </button>
-                          {showLinguaPicker && (
-                            <div style={{ position:"absolute" as const, top:"100%", left:0, marginTop:"4px", background:"#fff", borderRadius:"14px", boxShadow:"0 4px 20px rgba(0,0,0,0.12)", border:"1px solid rgba(0,0,0,0.08)", zIndex:200, minWidth:"160px", overflow:"hidden" }}>
-                              {TODAS_LINGUAS.map(l=>(
-                                <button key={l} onClick={()=>{ setLinguaConversa(l); setShowLinguaPicker(false); }}
-                                  style={{ width:"100%", padding:"10px 16px", border:"none", background:linguaConversa===l?"rgba(42,154,96,0.08)":"transparent", color:linguaConversa===l?"#2A9A60":"#1A2A40", fontSize:"13px", fontWeight:linguaConversa===l?800:500, cursor:"pointer", fontFamily:"Nunito, sans-serif", textAlign:"left" as const, transition:"background 0.15s" }}>
-                                  {l}
-                                </button>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  ) : (
+                  {!showRoteiroInput ? (<><button onClick={()=>setShowRoteiroInput(true)} style={{ display:"flex", alignItems:"center", gap:"6px", padding:"6px 14px", borderRadius:"20px", border:`1.5px solid ${C.orange}`, background:C.orangeLight, color:C.orange, fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>Gerar roteiro</button><div style={{ display:"flex", alignItems:"center", gap:"6px" }}><button onClick={()=>{ setModoConversa(v=>!v); setShowLinguaPicker(false); }} style={{ display:"flex", alignItems:"center", gap:"6px", padding:"6px 14px", borderRadius:"20px", border:`1.5px solid ${modoConversa?"rgba(42,154,96,0.40)":"rgba(0,0,0,0.10)"}`, background:modoConversa?"rgba(42,154,96,0.10)":"transparent", color:modoConversa?"#2A9A60":"#6A7A9A", fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>{modoConversa?"Conversa livre ON":"Conversa livre"}</button>{modoConversa&&(<div style={{ position:"relative" as const }}><button onClick={()=>setShowLinguaPicker(v=>!v)} style={{ padding:"6px 12px", borderRadius:"20px", border:"1.5px solid rgba(42,154,96,0.30)", background:"rgba(42,154,96,0.07)", color:"#2A9A60", fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"Nunito, sans-serif", display:"flex", alignItems:"center", gap:"5px" }}>🌍 {linguaConversa} ▾</button>{showLinguaPicker&&(<div style={{ position:"absolute" as const, top:"100%", left:0, marginTop:"4px", background:"#fff", borderRadius:"14px", boxShadow:"0 4px 20px rgba(0,0,0,0.12)", border:"1px solid rgba(0,0,0,0.08)", zIndex:200, minWidth:"160px", overflow:"hidden" }}>{TODAS_LINGUAS.map(l=>(<button key={l} onClick={()=>{ setLinguaConversa(l); setShowLinguaPicker(false); }} style={{ width:"100%", padding:"10px 16px", border:"none", background:linguaConversa===l?"rgba(42,154,96,0.08)":"transparent", color:linguaConversa===l?"#2A9A60":"#1A2A40", fontSize:"13px", fontWeight:linguaConversa===l?800:500, cursor:"pointer", fontFamily:"Nunito, sans-serif", textAlign:"left" as const }}>{l}</button>))}</div>)}</div>)}</div></>) : (
                     <>
                       <input value={temaRoteiro} onChange={e=>setTemaRoteiro(e.target.value)} placeholder="Tema do roteiro..."
                         style={{ flex:1, padding:"6px 14px", borderRadius:"20px", border:`1.5px solid ${C.orange}`, fontSize:"13px", color:C.text, fontFamily:"Nunito, sans-serif", background:"#fff", outline:"none" }}
