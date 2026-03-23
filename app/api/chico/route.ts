@@ -735,13 +735,23 @@ ${letra}`;
       });
 
       const raw = completion.choices[0]?.message?.content ?? "";
+      console.log("[historia] raw:", raw.slice(0,120));
       try {
         const historia = parseJSON(raw);
+        if (historia.palavras_chave) {
+          historia.palavras_chave = (historia.palavras_chave as any[]).map((p:any) => ({
+            palavra:     p.palavra || p.word || "",
+            traducao_pt: p.traducao_pt || p.traducao || p.translation || "",
+            fonetica:    p.fonetica || p.fon || "",
+          }));
+        }
         if (!historia.texto || historia.texto.length < 80) {
+          console.log("[historia] texto too short:", historia.texto?.length);
           return NextResponse.json({ error:"Erro ao gerar historia." },{ status:500 });
         }
         return NextResponse.json({ historia });
-      } catch {
+      } catch (e:any) {
+        console.log("[historia] parse failed:", e?.message, raw.slice(0,200));
         return NextResponse.json({ error:"Erro ao gerar historia." },{ status:500 });
       }
     }
