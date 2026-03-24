@@ -90,36 +90,134 @@ const Icon = {
 
 // ── Audio Hook ────────────────────────────────────────────────────────────────
 
+// ── Seletor de melhor voz disponível ─────────────────────────────────────────
+// Ordem de prioridade: Neural remota > neural local > qualquer voz do idioma
+// Chrome/Edge baixam vozes neurais de servidores Google quando há conexão.
+// Essas vozes (localService=false) são dramaticamente melhores que as nativas.
+function pickBestVoice(bcp47: string): SpeechSynthesisVoice | null {
+  if (typeof window === "undefined") return null;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return null;
+
+  const lang  = bcp47.toLowerCase();
+  const base  = lang.split("-")[0];
+
+  // Nomes de vozes neurais conhecidas por navegador (substrings para match parcial)
+  const neuralKeywords = [
+    "neural", "natural", "wavenet", "enhanced", "premium",
+    "google", "microsoft", "online",
+    // Vozes neurais específicas por idioma
+    "diego", "elena", "alvaro",      // ES neural Chrome
+    "amelie", "thomas", "lea",       // FR neural
+    "alice", "luca", "isabella",     // IT neural
+    "george", "libby", "ryan",       // EN-GB neural
+    "aria", "jenny", "guy",          // EN-US neural
+    "katja", "konrad", "amala",      // DE neural
+    "fenna", "colette",              // NL neural
+  ];
+
+  const score = (v: SpeechSynthesisVoice): number => {
+    const name = v.name.toLowerCase();
+    const langMatch = v.lang.toLowerCase();
+    if (!langMatch.startsWith(base)) return -1;         // idioma errado
+    let s = 0;
+    if (langMatch === lang) s += 100;                   // match exato de locale
+    else if (langMatch.startsWith(lang)) s += 80;
+    if (!v.localService) s += 60;                       // remota = neural no Chrome/Edge
+    if (neuralKeywords.some(k => name.includes(k))) s += 40;
+    if (name.includes("female") || name.includes("mujer")) s += 5;
+    return s;
+  };
+
+  const ranked = voices
+    .map(v => ({ v, s: score(v) }))
+    .filter(x => x.s >= 0)
+    .sort((a, b) => b.s - a.s);
+
+  return ranked[0]?.v ?? null;
+}
+
+// Configurações de voz por idioma: rate e pitch calibrados para soar natural
+const VOICE_CONFIG: Record<string, { rate: number; pitch: number }> = {
+  "es": { rate: 0.90, pitch: 1.05 },
+  "fr": { rate: 0.88, pitch: 1.00 },
+  "it": { rate: 0.92, pitch: 1.05 },
+  "en": { rate: 0.92, pitch: 1.00 },
+  "de": { rate: 0.85, pitch: 0.98 },
+  "nl": { rate: 0.88, pitch: 1.00 },
+  "ja": { rate: 0.85, pitch: 1.10 },
+  "ko": { rate: 0.88, pitch: 1.05 },
+  "zh": { rate: 0.82, pitch: 1.00 },
+  "ar": { rate: 0.85, pitch: 1.00 },
+  "ru": { rate: 0.87, pitch: 1.00 },
+};
+
 function useAudio() {
-  const [isSpeaking, setIsSpeaking]       = useState(false);
-  const [speakingKey, setSpeakingKey]     = useState<string | null>(null);
-  const [isListening, setIsListening]     = useState(false);
+  const [isSpeaking, setIsSpeaking]   = useState(false);
+  const [speakingKey, setSpeakingKey] = useState<string | null>(null);
+  const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const voiceCacheRef  = useRef<Map<string, SpeechSynthesisVoice | null>>(new Map());
+
+  // Pré-carrega a lista de vozes assim que o hook monta
+  // (Chrome carrega de forma assíncrona na primeira chamada)
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const synth = window.speechSynthesis;
+    const load = () => { synth.getVoices(); voiceCacheRef.current.clear(); };
+    synth.addEventListener("voiceschanged", load);
+    load();
+    return () => synth.removeEventListener("voiceschanged", load);
+  }, []);
+
+  function getBestVoice(bcp47: string): SpeechSynthesisVoice | null {
+    if (voiceCacheRef.current.has(bcp47)) return voiceCacheRef.current.get(bcp47)!;
+    const v = pickBestVoice(bcp47);
+    voiceCacheRef.current.set(bcp47, v);
+    return v;
+  }
 
   function speak(text: string, bcp47: string, key?: string) {
     if (typeof window === "undefined") return;
     window.speechSynthesis.cancel();
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.lang = bcp47; utt.rate = 0.88;
-    const voices = window.speechSynthesis.getVoices();
-    const best = voices.find(v => v.lang === bcp47) || voices.find(v => v.lang.startsWith(bcp47.split("-")[0]));
-    if (best) utt.voice = best;
-    const k = key || `${bcp47}-${text.slice(0,10)}`;
-    utt.onstart = () => { setIsSpeaking(true); setSpeakingKey(k); };
+
+    const utt   = new SpeechSynthesisUtterance(text);
+    utt.lang    = bcp47;
+
+    const cfg   = VOICE_CONFIG[bcp47.split("-")[0]] ?? { rate: 0.90, pitch: 1.00 };
+    utt.rate    = cfg.rate;
+    utt.pitch   = cfg.pitch;
+    utt.volume  = 1.0;
+
+    const voice = getBestVoice(bcp47);
+    if (voice) utt.voice = voice;
+
+    const k = key ?? `${bcp47}-${text.slice(0, 12)}`;
+    utt.onstart = () => { setIsSpeaking(true);  setSpeakingKey(k); };
     utt.onend   = () => { setIsSpeaking(false); setSpeakingKey(null); };
     utt.onerror = () => { setIsSpeaking(false); setSpeakingKey(null); };
+
+    // Workaround bug Chrome: síntese para após ~14s em algumas versões
     window.speechSynthesis.speak(utt);
+    const keepAlive = setInterval(() => {
+      if (!window.speechSynthesis.speaking) { clearInterval(keepAlive); return; }
+      window.speechSynthesis.pause();
+      window.speechSynthesis.resume();
+    }, 10000);
+    utt.onend   = () => { clearInterval(keepAlive); setIsSpeaking(false); setSpeakingKey(null); };
+    utt.onerror = () => { clearInterval(keepAlive); setIsSpeaking(false); setSpeakingKey(null); };
   }
 
   function stopSpeaking() {
     if (typeof window !== "undefined") window.speechSynthesis.cancel();
-    setIsSpeaking(false); setSpeakingKey(null);
+    setIsSpeaking(false);
+    setSpeakingKey(null);
   }
 
   function startListening(onResult: (text: string) => void) {
     if (typeof window === "undefined") return;
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) { alert("Reconhecimento de voz não suportado."); return; }
+    if (!SR) { alert("Reconhecimento de voz nao suportado neste navegador."); return; }
     const rec = new SR();
     rec.lang = "pt-BR"; rec.continuous = false; rec.interimResults = false;
     rec.onstart  = () => setIsListening(true);
