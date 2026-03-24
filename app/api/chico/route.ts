@@ -399,10 +399,11 @@ export async function POST(request: NextRequest) {
     try {
       parsed = parseJSON(rawContent);
       // Normalize field names — model might return different structures
-      if (parsed && !parsed.lang_1 && parsed.lang_1_txt) {
-        parsed.lang_1 = { txt: parsed.lang_1_txt, fon: parsed.lang_1_fon||"", exemplo: parsed.lang_1_exemplo||"" };
-        parsed.lang_2 = { txt: parsed.lang_2_txt, fon: parsed.lang_2_fon||"", exemplo: parsed.lang_2_exemplo||"" };
-        parsed.lang_3 = { txt: parsed.lang_3_txt, fon: parsed.lang_3_fon||"", exemplo: parsed.lang_3_exemplo||"" };
+      const p: any = parsed;
+      if (p && !p.lang_1 && p.lang_1_txt) {
+        parsed.lang_1 = { txt: p.lang_1_txt, fon: p.lang_1_fon||"", exemplo: p.lang_1_exemplo||"" };
+        parsed.lang_2 = { txt: p.lang_2_txt, fon: p.lang_2_fon||"", exemplo: p.lang_2_exemplo||"" };
+        parsed.lang_3 = { txt: p.lang_3_txt, fon: p.lang_3_fon||"", exemplo: p.lang_3_exemplo||"" };
       }
       // Fill missing lang objects
       if (!parsed.lang_1) parsed.lang_1 = { txt:"", fon:"", exemplo:"" };
