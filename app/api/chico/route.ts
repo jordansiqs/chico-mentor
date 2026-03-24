@@ -376,7 +376,7 @@ export async function POST(request: NextRequest) {
 
     const completion = await groq.chat.completions.create({
       model:       "llama-3.3-70b-versatile",
-      temperature: 0.55,
+      temperature: 0.50,
       max_tokens:  1400,
       messages: [
         { role:"system", content: buildSystemPrompt(tronco, interesses||[], nexos_recentes, memoria, modo_especial) },
@@ -398,17 +398,28 @@ export async function POST(request: NextRequest) {
 
     try {
       parsed = parseJSON(rawContent);
-      if (!parsed.aula_chico || !parsed.lang_1 || !parsed.lang_2 || !parsed.lang_3)
-        throw new Error("Campos ausentes");
+      // Normalize field names — model might return different structures
+      if (parsed && !parsed.lang_1 && parsed.lang_1_txt) {
+        parsed.lang_1 = { txt: parsed.lang_1_txt, fon: parsed.lang_1_fon||"", exemplo: parsed.lang_1_exemplo||"" };
+        parsed.lang_2 = { txt: parsed.lang_2_txt, fon: parsed.lang_2_fon||"", exemplo: parsed.lang_2_exemplo||"" };
+        parsed.lang_3 = { txt: parsed.lang_3_txt, fon: parsed.lang_3_fon||"", exemplo: parsed.lang_3_exemplo||"" };
+      }
+      // Fill missing lang objects
+      if (!parsed.lang_1) parsed.lang_1 = { txt:"", fon:"", exemplo:"" };
+      if (!parsed.lang_2) parsed.lang_2 = { txt:"", fon:"", exemplo:"" };
+      if (!parsed.lang_3) parsed.lang_3 = { txt:"", fon:"", exemplo:"" };
+      if (!parsed.aula_chico) throw new Error("Sem aula_chico");
     } catch {
-      console.error("Parse error:", rawContent.slice(0, 200));
+      console.error("[POST] Parse error. Raw:", rawContent.slice(0, 300));
+      // Try to extract just the text response as aula_chico
+      const cleanText = rawContent.replace(/```[\s\S]*?```/g,"").trim();
       parsed = {
         titulo_card:          tema_gerador.slice(0, 30),
-        aula_chico:           rawContent.replace(/```[\s\S]*?```/g,"").trim() || "Tente reformular sua pergunta.",
+        aula_chico:           cleanText || "Tente reformular sua pergunta.",
         pergunta_verificacao: undefined,
-        lang_1: { txt:"--", fon:"--", exemplo:"--" },
-        lang_2: { txt:"--", fon:"--", exemplo:"--" },
-        lang_3: { txt:"--", fon:"--", exemplo:"--" },
+        lang_1: { txt:"", fon:"", exemplo:"" },
+        lang_2: { txt:"", fon:"", exemplo:"" },
+        lang_3: { txt:"", fon:"", exemplo:"" },
       };
     }
 
