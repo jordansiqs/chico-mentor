@@ -740,7 +740,7 @@ ${letra}`;
 
       const lines = [
         "INSTRUCOES CRITICAS:",
-        "1. LINGUA: Escreva O TEXTO INTEIRO da historia em " + linguaNome + ". NAO use portugues no texto. Zero excecoes.",
+        "1. LINGUA OBRIGATORIA: O campo texto do JSON deve conter a historia COMPLETA escrita em " + linguaNome + " (nao em portugues, nao em espanhol, nao em outra lingua). Cada frase, cada palavra, cada dialogo: TUDO em " + linguaNome + ". Isso e inegociavel.",
         "2. NIVEL: " + nivelStr.toUpperCase(),
         "   - Tamanho: " + cfg.palavras,
         "   - Gramatica: " + cfg.gramatica,
@@ -778,11 +778,28 @@ ${letra}`;
       ];
 
       const userPrompt   = lines.join("\n");
-      const systemPrompt = "Voce e um escritor especialista em textos pedagogicos para aprendizes de idiomas. Voce SEMPRE escreve na lingua solicitada com rigor absoluto de nivel e gramatica.";
+      const systemPrompt = "Sei uno scrittore madrelingua specializzato in testi pedagogici. " +
+        "Scrivi SEMPRE e SOLO in " + linguaNome + ". " +
+        "NON usare mai il portoghese nel testo della storia. " +
+        "Rispondi SOLO con JSON valido, senza testo prima o dopo.";
+      // Override systemPrompt per lingua específica
+      if (linguaNome === "Italiano") {
+        systemPrompt = "Sei uno scrittore italiano madrelingua. Scrivi la storia ESCLUSIVAMENTE in italiano. Zero eccezioni. Rispondi solo con JSON valido.";
+      } else if (linguaNome === "Espanhol") {
+        systemPrompt = "Eres un escritor hispanohablante nativo. Escribe la historia EXCLUSIVAMENTE en espanol. Cero excepciones. Responde solo con JSON valido.";
+      } else if (linguaNome === "Frances" || linguaNome === "Francês") {
+        systemPrompt = "Tu es un ecrivain francophone natif. Ecris l histoire EXCLUSIVEMENT en francais. Zero exception. Reponds uniquement avec du JSON valide.";
+      } else if (linguaNome === "Ingles" || linguaNome === "Inglês") {
+        systemPrompt = "You are a native English writer. Write the story EXCLUSIVELY in English. Zero exceptions. Respond only with valid JSON.";
+      } else if (linguaNome === "Alemao" || linguaNome === "Alemão") {
+        systemPrompt = "Du bist ein deutschsprachiger Schriftsteller. Schreibe die Geschichte AUSSCHLIESSLICH auf Deutsch. Antworte nur mit validem JSON.";
+      } else if (linguaNome === "Holandes" || linguaNome === "Holandês") {
+        systemPrompt = "Je bent een Nederlandstalige schrijver. Schrijf het verhaal UITSLUITEND in het Nederlands. Antwoord alleen met geldige JSON.";
+      }
 
       const completion = await groq.chat.completions.create({
         model: "llama-3.3-70b-versatile",
-        temperature: 0.68,
+        temperature: 0.55,
         max_tokens: 2800,
         messages: [
           { role:"system", content:systemPrompt },
