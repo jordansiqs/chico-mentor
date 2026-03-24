@@ -861,22 +861,22 @@ ${letra}`;
       const outraLinguas  = troncoInfo ? troncoInfo.linguas.map((l:any)=>l.nome).join(", ") : lingua_origem;
 
       const promptLines = [
-        "Você é o Chico -- especialista em ultra-aprendizado, biologia da fala e arqueologia etimológica.",
-        "Analise a palavra/expressão: " + palavra + " (" + lingua_origem + ")",
-        "Interesses do aluno: " + interessesStr,
-        "Outras línguas do tronco do aluno: " + outraLinguas,
-        "",
-        "Responda APENAS com JSON válido:",
-        "{",
-        "  "traducao_pt": "tradução direta e clara em português",",
-        "  "classe": "substantivo|verbo|adjetivo|expressão|advérbio",",
-        "  "fonetica": "fonética para brasileiros. Se tiver som difícil, inclua nota biológica entre parênteses",",
-        "  "instrucao_biologica": "APENAS se a palavra tiver som genuinamente difícil para brasileiros: instrução precisa -- onde a língua vai, se o ar sai, se a corda vocal vibra. Conecte com " + interessesStr + " se possível. Se o som for simples, retorne string vazia.",",
-        "  "ancora": "1 fato surpreendente sobre a origem ou história desta palavra. NUNCA o óbvio. Crie uma imagem mental. Conecte com " + interessesStr + " se possível.",",
-        "  "chunk_tear": "Se esta palavra revelar um padrão clonável nas outras línguas (" + outraLinguas + "), mostre a regra em 1 frase. Ex: AQUA→AGUA→ACQUA→EAU. Se não aplicável, retorne string vazia.",",
-        "  "exemplo_uso": "frase curta e natural em " + lingua_origem + " usando a palavra, ligada a " + interessesStr + """,
-        "}",
-      ];
+        'Você é o Chico -- especialista em ultra-aprendizado, biologia da fala e arqueologia etimológica.',
+        'Analise a palavra/expressão: ' + palavra + ' (' + lingua_origem + ')',
+        'Interesses do aluno: ' + interessesStr,
+        'Outras línguas do tronco do aluno: ' + outraLinguas,
+        '',
+        'Responda APENAS com JSON válido:',
+        '{',
+        '  "traducao_pt": "tradução direta e clara em português",',
+        '  "classe": "substantivo|verbo|adjetivo|expressão|advérbio",',
+        '  "fonetica": "fonética para brasileiros. Se som difícil, nota biológica entre parênteses",',
+        '  "instrucao_biologica": "APENAS se som difícil: onde língua vai, se ar sai, se corda vibra. Conecte com ' + interessesStr + '. Se som simples, string vazia.",',
+        '  "ancora": "1 fato surpreendente sobre origem da palavra. NUNCA o óbvio. Imagem mental. Conecte com ' + interessesStr + '.",',
+        '  "chunk_tear": "Se padrão clonável nas outras línguas (' + outraLinguas + '), mostre a regra em 1 frase. Se não, string vazia.",',
+        '  "exemplo_uso": "frase curta em ' + lingua_origem + ' ligada a ' + interessesStr + '"',
+        '}',
+      ]
 
       const completion = await groq.chat.completions.create({
         model: "llama-3.3-70b-versatile",
