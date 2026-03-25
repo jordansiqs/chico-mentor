@@ -31,6 +31,10 @@ export interface ChicoCard {
   tronco: "românico" | "germânico";
   aula_chico: string;
   pergunta_verificacao?: string;
+  quiz_acertos?: number;
+  quiz_erros?: number;
+  modo?: string;
+  nivel?: string;
 
   lang_1_nome: string;
   lang_1_txt: string;
