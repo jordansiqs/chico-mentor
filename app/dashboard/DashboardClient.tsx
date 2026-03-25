@@ -49,7 +49,7 @@ interface ChicoMemoria {
   ultima_sessao?: string;
 }
 
-type MainTab       = "chat" | "flashcards" | "progresso" | "viagem" | "musica" | "historias" | "perfil";
+type MainTab       = "chat" | "flashcards" | "progresso" | "praticar" | "viagem" | "musica" | "historias" | "perfil";
 type SidebarFilter = "todos" | "românico" | "germânico";
 
 function createSupabase() {
@@ -1039,6 +1039,448 @@ function ViagemTab({ profile, audio }: { profile: UserProfile | null; audio: Ret
             <div style={{ fontSize:"13px", marginTop:"6px" }}>O Chico cria um guia com as expressões essenciais para se virar no destino.</div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+
+// ── Praticar ─────────────────────────────────────────────────────────────────
+
+function PraticarTab({ profile, cards, audio }: {
+  profile: UserProfile | null;
+  cards: MentoriaCard[];
+  audio: ReturnType<typeof useAudio>;
+}) {
+  const LINGUAS_TRONCO: Record<string,string[]> = {
+    "romanico":  ["Espanhol","Francês","Italiano"],
+    "germanico": ["Inglês","Alemão","Holandês"],
+  };
+  const troncoKey = (profile?.tronco||"romanico").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
+  const linguas   = LINGUAS_TRONCO[troncoKey] ?? ["Espanhol","Francês","Italiano"];
+
+  // ── estado compartilhado ──────────────────────────────────────────────────
+  const [modo, setModo]       = useState<"ditado"|"conversa">("ditado");
+  const [lingua, setLingua]   = useState(linguas[0]);
+  const [nivel, setNivel]     = useState<"iniciante"|"intermediário"|"avançado">("iniciante");
+
+  // ── estado ditado ─────────────────────────────────────────────────────────
+  const [ditado, setDitado]         = useState<any>(null);
+  const [loadingDitado, setLDitado] = useState(false);
+  const [respDitado, setRespDitado] = useState("");
+  const [resultDitado, setResultDitado] = useState<null|{acertos:number;total:number;diff:React.ReactNode[]}>(null);
+  const [playSpeed, setPlaySpeed]   = useState<0.7|1.0|1.3>(0.7);
+
+  // ── estado conversa guiada ────────────────────────────────────────────────
+  const [situacao, setSituacao]     = useState<any>(null);
+  const [loadingSit, setLSit]       = useState(false);
+  const [sitNum, setSitNum]         = useState(1);
+  const [respSit, setRespSit]       = useState("");
+  const [avaliacao, setAvaliacao]   = useState<any>(null);
+  const [loadingAval, setLAval]     = useState(false);
+  const [sessaoDone, setSessaoDone] = useState(false);
+  const [placar, setPlacar]         = useState({ acertos:0, total:0 });
+
+  const nexos = cards.map(c => c.titulo_card||c.tema_gerador).filter(Boolean).slice(0,10);
+
+  // ── DITADO: gerar frase ───────────────────────────────────────────────────
+  async function gerarDitado() {
+    if (!profile) return;
+    setLDitado(true);
+    setDitado(null); setRespDitado(""); setResultDitado(null);
+    try {
+      const res = await fetch("/api/chico", {
+        method:"PATCH", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          acao:"gerar_ditado", tronco:profile.tronco, lingua, nivel,
+          nexos_recentes:nexos, interesses:profile.interesses||[],
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.ditado) setDitado(data.ditado);
+    } catch {}
+    setLDitado(false);
+  }
+
+  // ── DITADO: ouvir frase ───────────────────────────────────────────────────
+  function ouvirFrase() {
+    if (!ditado?.frase || !ditado?.bcp47) return;
+    const synth = window.speechSynthesis;
+    synth.cancel();
+    const utt = new SpeechSynthesisUtterance(ditado.frase);
+    utt.lang = ditado.bcp47;
+    utt.rate = playSpeed;
+    synth.speak(utt);
+  }
+
+  // ── DITADO: verificar resposta ────────────────────────────────────────────
+  function verificarDitado() {
+    if (!ditado?.frase || !respDitado.trim()) return;
+    const esperado = ditado.frase.toLowerCase().trim();
+    const dado     = respDitado.toLowerCase().trim();
+    const palavrasE = esperado.split(/\s+/);
+    const palavrasD = dado.split(/\s+/);
+    let acertos = 0;
+    const diff: React.ReactNode[] = palavrasE.map((p, i) => {
+      const ok = palavrasD[i]?.replace(/[^a-záéíóúüñàâêîôûäëïöùçœæ]/gi,"") === p.replace(/[^a-záéíóúüñàâêîôûäëïöùçœæ]/gi,"");
+      if (ok) acertos++;
+      return (
+        <span key={i} style={{
+          marginRight:"4px", padding:"1px 4px", borderRadius:"4px",
+          background: ok ? "rgba(42,154,96,0.12)" : "rgba(204,42,32,0.12)",
+          color: ok ? "#2A9A60" : "#CC2A20", fontWeight: ok ? 500 : 700,
+        }}>
+          {ok ? p : (palavrasD[i] || "___")}
+          {!ok && <span style={{fontSize:"10px",display:"block",color:"#2A9A60"}}>{p}</span>}
+        </span>
+      );
+    });
+    setResultDitado({ acertos, total: palavrasE.length, diff });
+  }
+
+  // ── CONVERSA: gerar situação ──────────────────────────────────────────────
+  async function gerarSituacao(num: number) {
+    if (!profile) return;
+    setLSit(true); setSituacao(null); setAvaliacao(null); setRespSit("");
+    try {
+      const res = await fetch("/api/chico", {
+        method:"PATCH", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          acao:"gerar_situacao", tronco:profile.tronco, lingua, nivel,
+          interesses:profile.interesses||[], situacao_num:num,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.situacao) setSituacao(data.situacao);
+    } catch {}
+    setLSit(false);
+  }
+
+  // ── CONVERSA: avaliar resposta ────────────────────────────────────────────
+  async function avaliarResposta() {
+    if (!situacao || !respSit.trim()) return;
+    setLAval(true);
+    try {
+      const res = await fetch("/api/chico", {
+        method:"PATCH", headers:{"Content-Type":"application/json"},
+        body: JSON.stringify({
+          acao:"avaliar_resposta", lingua,
+          resposta: respSit,
+          exemplo_resposta: situacao.exemplo_resposta,
+          situacao: situacao.situacao,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.avaliacao) {
+        setAvaliacao(data.avaliacao);
+        const ok = data.avaliacao.correto || data.avaliacao.nota >= 6;
+        setPlacar(p => ({ acertos: p.acertos+(ok?1:0), total: p.total+1 }));
+      }
+    } catch {}
+    setLAval(false);
+  }
+
+  function proximaSituacao() {
+    if (sitNum >= 5) { setSessaoDone(true); return; }
+    const next = sitNum + 1;
+    setSitNum(next);
+    gerarSituacao(next);
+  }
+
+  function reiniciarConversa() {
+    setSitNum(1); setSessaoDone(false); setPlacar({acertos:0,total:0});
+    setSituacao(null); setAvaliacao(null); setRespSit("");
+    gerarSituacao(1);
+  }
+
+  // ── cores e helpers ───────────────────────────────────────────────────────
+  const C3 = { blue:"#1A4A8A", orange:"#E07820", green:"#2A9A60", bg:"#F7F8FC", muted:"#8A9AB8", text:"#1A2A40" };
+  const nivelCores: Record<string,{bg:string;color:string}> = {
+    "iniciante":    {bg:"rgba(42,154,96,0.08)",  color:"#2A9A60"},
+    "intermediário":{bg:"rgba(224,120,32,0.08)", color:"#C06010"},
+    "avançado":     {bg:"rgba(26,74,138,0.08)",  color:"#1A4A8A"},
+  };
+
+  return (
+    <div style={{ height:"100%", overflowY:"auto" as const, background:C3.bg }}>
+      <div style={{ maxWidth:"640px", margin:"0 auto", padding:"24px 20px 48px" }}>
+
+        {/* Título */}
+        <div style={{ fontSize:"22px", fontWeight:800, color:C3.blue, fontFamily:"Nunito, sans-serif", marginBottom:"4px" }}>Praticar</div>
+        <div style={{ fontSize:"14px", color:C3.muted, marginBottom:"20px" }}>Coloque em prática o que aprendeu com o Chico.</div>
+
+        {/* Selector de modo */}
+        <div style={{ display:"flex", gap:"8px", padding:"4px", borderRadius:"14px", background:"rgba(0,0,0,0.06)", marginBottom:"20px" }}>
+          {([["ditado","🎧 Ditado"],["conversa","💬 Conversa Guiada"]] as const).map(([m,label]) => (
+            <button key={m} onClick={()=>setModo(m)}
+              style={{ flex:1, padding:"10px", borderRadius:"11px", border:"none", background:modo===m?"#fff":"transparent", color:modo===m?C3.blue:C3.muted, fontSize:"13px", fontWeight:modo===m?800:500, cursor:"pointer", fontFamily:"Nunito, sans-serif", boxShadow:modo===m?"0 1px 6px rgba(0,0,0,0.10)":"none", transition:"all 0.2s" }}>
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Controles comuns: língua + nível */}
+        <div style={{ background:"#fff", borderRadius:"18px", padding:"18px", marginBottom:"16px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+          <div style={{ display:"flex", gap:"16px", flexWrap:"wrap" as const }}>
+            <div style={{ flex:1, minWidth:"120px" }}>
+              <div style={{ fontSize:"11px", fontWeight:700, color:C3.muted, letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"8px" }}>Língua</div>
+              <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" as const }}>
+                {linguas.map(l => (
+                  <button key={l} onClick={()=>setLingua(l)}
+                    style={{ padding:"6px 12px", borderRadius:"20px", border:`1.5px solid ${lingua===l?C3.blue:"rgba(0,0,0,0.09)"}`, background:lingua===l?"rgba(26,74,138,0.08)":"transparent", color:lingua===l?C3.blue:C3.muted, fontSize:"12px", fontWeight:lingua===l?800:500, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}>
+                    {l}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div style={{ flex:1, minWidth:"180px" }}>
+              <div style={{ fontSize:"11px", fontWeight:700, color:C3.muted, letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"8px" }}>Nível</div>
+              <div style={{ display:"flex", gap:"6px" }}>
+                {(["iniciante","intermediário","avançado"] as const).map(n => {
+                  const nc = nivelCores[n];
+                  return (
+                    <button key={n} onClick={()=>setNivel(n)}
+                      style={{ padding:"6px 12px", borderRadius:"20px", border:`1.5px solid ${nivel===n?nc.color:"rgba(0,0,0,0.09)"}`, background:nivel===n?nc.bg:"transparent", color:nivel===n?nc.color:C3.muted, fontSize:"12px", fontWeight:nivel===n?800:500, cursor:"pointer", fontFamily:"Nunito, sans-serif", textTransform:"capitalize" as const }}>
+                      {n}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── MODO DITADO ─────────────────────────────────────────────────── */}
+        {modo === "ditado" && (
+          <>
+            <button onClick={gerarDitado} disabled={loadingDitado}
+              style={{ width:"100%", padding:"14px", borderRadius:"14px", border:"none", background:loadingDitado?"rgba(0,0,0,0.07)":"linear-gradient(135deg,#1A4A8A,#2A6ACC)", color:loadingDitado?"#AEAEB2":"#fff", fontSize:"15px", fontWeight:800, cursor:loadingDitado?"not-allowed":"pointer", fontFamily:"Nunito, sans-serif", marginBottom:"16px", boxShadow:loadingDitado?"none":"0 3px 14px rgba(26,74,138,0.25)" }}>
+              {loadingDitado ? "Gerando..." : ditado ? "Nova frase →" : "Gerar frase →"}
+            </button>
+
+            {ditado && (
+              <>
+                {/* Card de áudio */}
+                <div style={{ background:"linear-gradient(135deg,#1A4A8A,#2A6ACC)", borderRadius:"18px", padding:"22px", marginBottom:"12px", boxShadow:"0 4px 20px rgba(26,74,138,0.25)" }}>
+                  <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.65)", fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase" as const, marginBottom:"12px" }}>
+                    Ouça e escreva o que ouvir
+                  </div>
+                  {/* Botões de velocidade + play */}
+                  <div style={{ display:"flex", gap:"8px", alignItems:"center", flexWrap:"wrap" as const }}>
+                    <button onClick={ouvirFrase}
+                      style={{ display:"flex", alignItems:"center", gap:"8px", padding:"10px 20px", borderRadius:"12px", border:"none", background:"rgba(255,255,255,0.20)", color:"#fff", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="white"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                      Ouvir
+                    </button>
+                    <div style={{ display:"flex", gap:"4px" }}>
+                      {([0.7, 1.0, 1.3] as const).map(s => (
+                        <button key={s} onClick={()=>setPlaySpeed(s)}
+                          style={{ padding:"6px 10px", borderRadius:"8px", border:"none", background:playSpeed===s?"rgba(255,255,255,0.30)":"rgba(255,255,255,0.12)", color:"#fff", fontSize:"12px", fontWeight:playSpeed===s?800:500, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}>
+                          {s === 0.7 ? "🐢 Lento" : s === 1.0 ? "Normal" : "🐇 Rápido"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Campo de resposta */}
+                {!resultDitado ? (
+                  <div style={{ background:"#fff", borderRadius:"18px", padding:"20px", marginBottom:"12px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+                    <div style={{ fontSize:"12px", fontWeight:700, color:C3.muted, marginBottom:"10px", textTransform:"uppercase" as const, letterSpacing:"0.06em" }}>
+                      Escreva o que ouviu
+                    </div>
+                    <textarea
+                      value={respDitado}
+                      onChange={e => setRespDitado(e.target.value)}
+                      placeholder={"Escreva em " + lingua + "..."}
+                      rows={3}
+                      style={{ width:"100%", padding:"12px 14px", borderRadius:"12px", border:"1.5px solid rgba(26,74,138,0.20)", fontSize:"15px", fontFamily:"Nunito, sans-serif", color:C3.text, resize:"none" as const, boxSizing:"border-box" as const }}
+                    />
+                    <button onClick={verificarDitado} disabled={!respDitado.trim()}
+                      style={{ width:"100%", marginTop:"10px", padding:"13px", borderRadius:"12px", border:"none", background:!respDitado.trim()?"rgba(0,0,0,0.06)":"linear-gradient(135deg,#E07820,#F09030)", color:!respDitado.trim()?"#AEAEB2":"#fff", fontSize:"14px", fontWeight:800, cursor:!respDitado.trim()?"not-allowed":"pointer", fontFamily:"Nunito, sans-serif" }}>
+                      Verificar →
+                    </button>
+                  </div>
+                ) : (
+                  /* Resultado do ditado */
+                  <div style={{ background:"#fff", borderRadius:"18px", padding:"20px", marginBottom:"12px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+                    {/* Pontuação */}
+                    <div style={{ display:"flex", alignItems:"center", gap:"16px", marginBottom:"16px", padding:"14px 16px", borderRadius:"12px", background:resultDitado.acertos===resultDitado.total?"rgba(42,154,96,0.08)":"rgba(224,120,32,0.08)" }}>
+                      <div style={{ fontSize:"32px" }}>{resultDitado.acertos===resultDitado.total?"🎉":resultDitado.acertos>=resultDitado.total*0.7?"👍":"💪"}</div>
+                      <div>
+                        <div style={{ fontSize:"20px", fontWeight:800, color:resultDitado.acertos===resultDitado.total?C3.green:C3.orange, fontFamily:"Nunito, sans-serif" }}>
+                          {resultDitado.acertos}/{resultDitado.total} palavras
+                        </div>
+                        <div style={{ fontSize:"13px", color:C3.muted }}>
+                          {resultDitado.acertos===resultDitado.total?"Perfeito!":resultDitado.acertos>=resultDitado.total*0.7?"Muito bem!":"Continue praticando!"}
+                        </div>
+                      </div>
+                    </div>
+                    {/* Diff palavra por palavra */}
+                    <div style={{ fontSize:"12px", fontWeight:700, color:C3.muted, textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"8px" }}>
+                      Comparação (verde = correto · vermelho = errado)
+                    </div>
+                    <div style={{ fontSize:"16px", lineHeight:2, flexWrap:"wrap" as const, display:"flex" }}>
+                      {resultDitado.diff}
+                    </div>
+                    {/* Frase correta */}
+                    <div style={{ marginTop:"12px", padding:"10px 14px", borderRadius:"10px", background:"rgba(42,154,96,0.07)", fontSize:"14px", color:C3.green, fontWeight:600 }}>
+                      ✓ {ditado.frase}
+                    </div>
+                    {/* Tradução */}
+                    {ditado.traducao_pt && (
+                      <div style={{ marginTop:"6px", fontSize:"13px", color:C3.muted, fontStyle:"italic" }}>
+                        🇧🇷 {ditado.traducao_pt}
+                      </div>
+                    )}
+                    {/* Dica */}
+                    {ditado.dica && (
+                      <div style={{ marginTop:"8px", padding:"8px 12px", borderRadius:"8px", background:"rgba(26,74,138,0.06)", fontSize:"12px", color:C3.blue }}>
+                        💡 {ditado.dica}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
+            {!ditado && !loadingDitado && (
+              <div style={{ textAlign:"center" as const, padding:"40px 24px", color:C3.muted }}>
+                <div style={{ fontSize:"48px", marginBottom:"12px" }}>🎧</div>
+                <div style={{ fontSize:"15px", fontWeight:700, color:"#5A6A80", fontFamily:"Nunito, sans-serif" }}>Pronto para ouvir?</div>
+                <div style={{ fontSize:"13px", marginTop:"6px", lineHeight:1.5 }}>O Chico vai falar uma frase em {lingua}.<br/>Ouça e escreva o que ouviu.</div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── MODO CONVERSA GUIADA ────────────────────────────────────────── */}
+        {modo === "conversa" && (
+          <>
+            {!situacao && !loadingSit && !sessaoDone && (
+              <>
+                <div style={{ background:"#fff", borderRadius:"18px", padding:"20px", marginBottom:"16px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+                  <div style={{ fontSize:"15px", fontWeight:700, color:C3.text, fontFamily:"Nunito, sans-serif", marginBottom:"6px" }}>Como funciona</div>
+                  <div style={{ fontSize:"13px", color:C3.muted, lineHeight:1.6 }}>
+                    O Chico vai te colocar em 5 situações reais — restaurante, hotel, transporte, loja e perguntar direções. Você responde em {lingua} e o Chico avalia e corrige.
+                  </div>
+                </div>
+                <button onClick={()=>{ setSitNum(1); gerarSituacao(1); }}
+                  style={{ width:"100%", padding:"14px", borderRadius:"14px", border:"none", background:"linear-gradient(135deg,#2A9A60,#1A7A48)", color:"#fff", fontSize:"15px", fontWeight:800, cursor:"pointer", fontFamily:"Nunito, sans-serif", boxShadow:"0 3px 14px rgba(42,154,96,0.28)" }}>
+                  Começar sessão →
+                </button>
+              </>
+            )}
+
+            {loadingSit && (
+              <div style={{ textAlign:"center" as const, padding:"40px", color:C3.muted, fontSize:"14px" }}>
+                Preparando situação {sitNum} de 5...
+              </div>
+            )}
+
+            {sessaoDone && (
+              <div style={{ background:"#fff", borderRadius:"18px", padding:"28px", textAlign:"center" as const, boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+                <div style={{ fontSize:"48px", marginBottom:"12px" }}>{placar.acertos>=4?"🎉":placar.acertos>=3?"👍":"💪"}</div>
+                <div style={{ fontSize:"22px", fontWeight:800, color:C3.blue, fontFamily:"Nunito, sans-serif", marginBottom:"6px" }}>Sessão concluída!</div>
+                <div style={{ fontSize:"15px", color:C3.muted, marginBottom:"20px" }}>{placar.acertos}/5 situações respondidas corretamente</div>
+                <div style={{ display:"flex", gap:"12px", justifyContent:"center" as const }}>
+                  <button onClick={reiniciarConversa}
+                    style={{ padding:"12px 24px", borderRadius:"14px", border:"none", background:"linear-gradient(135deg,#2A9A60,#1A7A48)", color:"#fff", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}>
+                    Nova sessão
+                  </button>
+                  <button onClick={()=>{ setSituacao(null); setSessaoDone(false); }}
+                    style={{ padding:"12px 24px", borderRadius:"14px", border:"1.5px solid rgba(26,74,138,0.20)", background:"transparent", color:C3.blue, fontSize:"14px", fontWeight:700, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}>
+                    Mudar configurações
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {situacao && !sessaoDone && (
+              <>
+                {/* Progresso */}
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"12px" }}>
+                  <span style={{ fontSize:"13px", color:C3.muted, fontFamily:"Nunito, sans-serif" }}>Situação {sitNum} de 5</span>
+                  <span style={{ fontSize:"13px", fontWeight:700, color:C3.green }}>✓ {placar.acertos} corretas</span>
+                </div>
+                <div style={{ height:5, borderRadius:5, background:"rgba(0,0,0,0.07)", marginBottom:"16px", overflow:"hidden" }}>
+                  <div style={{ height:"100%", borderRadius:5, background:"linear-gradient(90deg,#2A9A60,#34C759)", width:`${((sitNum-1)/5)*100}%`, transition:"width 0.4s ease" }}/>
+                </div>
+
+                {/* Card da situação */}
+                <div style={{ background:"linear-gradient(135deg,#2A9A60,#1A7A48)", borderRadius:"18px", padding:"22px", marginBottom:"12px", boxShadow:"0 4px 20px rgba(42,154,96,0.25)" }}>
+                  <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.65)", fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase" as const, marginBottom:"10px" }}>
+                    Situação
+                  </div>
+                  <div style={{ fontSize:"15px", color:"#fff", lineHeight:1.6, marginBottom:"12px" }}>{situacao.situacao}</div>
+                  <div style={{ padding:"10px 14px", borderRadius:"10px", background:"rgba(255,255,255,0.15)", fontSize:"14px", color:"#fff", fontWeight:700 }}>
+                    👉 {situacao.instrucao}
+                  </div>
+                  {/* Palavras úteis */}
+                  {situacao.palavras_uteis?.length > 0 && (
+                    <div style={{ marginTop:"12px", display:"flex", gap:"6px", flexWrap:"wrap" as const }}>
+                      <span style={{ fontSize:"11px", color:"rgba(255,255,255,0.65)", alignSelf:"center" }}>Útil:</span>
+                      {(situacao.palavras_uteis||[]).map((p:string, i:number) => (
+                        <span key={i} style={{ padding:"3px 10px", borderRadius:"20px", background:"rgba(255,255,255,0.18)", fontSize:"12px", color:"#fff", fontWeight:600 }}>{p}</span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Campo de resposta ou avaliação */}
+                {!avaliacao ? (
+                  <div style={{ background:"#fff", borderRadius:"18px", padding:"20px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+                    <div style={{ fontSize:"12px", fontWeight:700, color:C3.muted, textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"10px" }}>
+                      Sua resposta em {lingua}
+                    </div>
+                    <textarea
+                      value={respSit}
+                      onChange={e => setRespSit(e.target.value)}
+                      placeholder={"Responda em " + lingua + "..."}
+                      rows={3}
+                      style={{ width:"100%", padding:"12px 14px", borderRadius:"12px", border:"1.5px solid rgba(42,154,96,0.25)", fontSize:"15px", fontFamily:"Nunito, sans-serif", color:C3.text, resize:"none" as const, boxSizing:"border-box" as const }}
+                    />
+                    <button onClick={avaliarResposta} disabled={!respSit.trim() || loadingAval}
+                      style={{ width:"100%", marginTop:"10px", padding:"13px", borderRadius:"12px", border:"none", background:!respSit.trim()||loadingAval?"rgba(0,0,0,0.06)":"linear-gradient(135deg,#2A9A60,#1A7A48)", color:!respSit.trim()||loadingAval?"#AEAEB2":"#fff", fontSize:"14px", fontWeight:800, cursor:!respSit.trim()||loadingAval?"not-allowed":"pointer", fontFamily:"Nunito, sans-serif" }}>
+                      {loadingAval ? "Avaliando..." : "Enviar →"}
+                    </button>
+                  </div>
+                ) : (
+                  /* Avaliação */
+                  <div style={{ background:"#fff", borderRadius:"18px", padding:"20px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+                    {/* Nota */}
+                    <div style={{ display:"flex", alignItems:"center", gap:"14px", marginBottom:"14px", padding:"14px 16px", borderRadius:"12px", background:(avaliacao.correto||avaliacao.nota>=6)?"rgba(42,154,96,0.08)":"rgba(224,120,32,0.08)" }}>
+                      <div style={{ fontSize:"32px" }}>{avaliacao.nota>=8?"🎉":avaliacao.nota>=6?"👍":"💪"}</div>
+                      <div>
+                        <div style={{ fontSize:"22px", fontWeight:800, color:(avaliacao.correto||avaliacao.nota>=6)?C3.green:C3.orange, fontFamily:"Nunito, sans-serif" }}>
+                          {avaliacao.nota}/10
+                        </div>
+                        <div style={{ fontSize:"13px", color:C3.muted }}>{avaliacao.explicacao}</div>
+                      </div>
+                    </div>
+                    {/* Correção */}
+                    {avaliacao.correcao && avaliacao.correcao.trim().length > 0 && (
+                      <div style={{ marginBottom:"10px", padding:"10px 14px", borderRadius:"10px", background:"rgba(26,74,138,0.06)", fontSize:"14px", color:C3.blue }}>
+                        <span style={{ fontWeight:700 }}>✓ Como ficaria: </span>{avaliacao.correcao}
+                      </div>
+                    )}
+                    {/* Dica */}
+                    {avaliacao.dica && (
+                      <div style={{ marginBottom:"14px", padding:"10px 14px", borderRadius:"10px", background:"rgba(224,120,32,0.07)", fontSize:"13px", color:"#8A4A10" }}>
+                        💡 {avaliacao.dica}
+                      </div>
+                    )}
+                    <button onClick={proximaSituacao}
+                      style={{ width:"100%", padding:"13px", borderRadius:"12px", border:"none", background:"linear-gradient(135deg,#1A4A8A,#2A6ACC)", color:"#fff", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}>
+                      {sitNum >= 5 ? "Ver resultado final →" : "Próxima situação →"}
+                    </button>
+                  </div>
+                )}
+              </>
+            )}
+          </>
+        )}
+
       </div>
     </div>
   );
@@ -2144,6 +2586,7 @@ function ChicoDashboard() {
     { id:"flashcards", label:"Revisar",    icon:(a)=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?"#1A4A8A":"#9AAABB"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg> },
     { id:"progresso",  label:"Progresso",  icon:(a)=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?"#1A4A8A":"#9AAABB"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
     { id:"viagem",     label:"Viagem",     icon:(a)=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?"#1A4A8A":"#9AAABB"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg> },
+    { id:"praticar",  label:"Praticar",   icon:(a)=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?"#1A4A8A":"#9AAABB"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> },
     { id:"musica",     label:"Música",     icon:(a)=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?"#1A4A8A":"#9AAABB"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> },
     { id:"historias",  label:"Histórias",  icon:(a)=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?"#1A4A8A":"#9AAABB"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> },
     { id:"perfil",     label:"Perfil",     icon:(a)=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?"#1A4A8A":"#9AAABB"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
@@ -2321,6 +2764,7 @@ function ChicoDashboard() {
 
             {activeTab==="flashcards" && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><FlashcardsTab cards={cards} audio={audio}/></div>}
             {activeTab==="progresso"  && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><ProgressoTab cards={cards}/></div>}
+            {activeTab==="praticar"   && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><PraticarTab profile={profile} cards={cards} audio={audio}/></div>}
             {activeTab==="viagem"     && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><ViagemTab profile={profile} audio={audio}/></div>}
             {activeTab==="musica"     && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><MusicaTab profile={profile}/></div>}
             {activeTab==="historias"  && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><HistoriasTab profile={profile} cards={cards} onAddCard={(c)=>setCards(prev=>[c,...prev])}/></div>}
