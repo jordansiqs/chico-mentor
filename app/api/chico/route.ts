@@ -1017,8 +1017,7 @@ ${letra}`;
         '  "bcp47": "' + bcp472 + '",',
         '  "palavras_chave": ["palavra1", "palavra2"]',
         "}",
-      ].join("
-");
+      ].join("\n");
       const compDitado = await groq.chat.completions.create({
         model:"llama-3.3-70b-versatile", temperature:0.55, max_tokens:300,
         messages:[
@@ -1054,8 +1053,7 @@ ${letra}`;
         '  "exemplo_resposta": "exemplo correto em ' + linguaNome3 + '",',
         '  "palavras_uteis": ["palavra1 em ' + linguaNome3 + '", "palavra2"]',
         "}",
-      ].join("
-");
+      ].join("\n");
       const compSit = await groq.chat.completions.create({
         model:"llama-3.3-70b-versatile", temperature:0.65, max_tokens:400,
         messages:[
@@ -1085,8 +1083,7 @@ ${letra}`;
         '  "explicacao": "elogio ou explicacao dos erros em portugues (max 2 frases)",',
         '  "dica": "1 dica pratica em portugues"',
         "}",
-      ].join("
-");
+      ].join("\n");
       const compAval = await groq.chat.completions.create({
         model:"llama-3.3-70b-versatile", temperature:0.3, max_tokens:300,
         messages:[
