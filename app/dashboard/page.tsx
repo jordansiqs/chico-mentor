@@ -815,6 +815,209 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
 
 
 
+// ── Progresso ────────────────────────────────────────────────────────────────
+
+function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
+  const total    = cards.length;
+  const revisados = cards.filter(c => (c.quiz_acertos||0) + (c.quiz_erros||0) > 0).length;
+  const urgentes  = cards.filter(c => Math.floor((Date.now()-new Date(c.criado_em||"").getTime())/86400000) >= 3).length;
+  const acertos   = cards.reduce((s,c) => s+(c.quiz_acertos||0), 0);
+  const erros     = cards.reduce((s,c) => s+(c.quiz_erros||0), 0);
+  const taxa      = acertos+erros > 0 ? Math.round((acertos/(acertos+erros))*100) : 0;
+
+  // Distribuição por tronco
+  const romanico  = cards.filter(c => c.tronco === "românico").length;
+  const germanico = cards.filter(c => c.tronco === "germânico").length;
+
+  // Últimos 7 dias
+  const hoje = new Date();
+  const porDia = Array.from({length:7}, (_,i) => {
+    const d = new Date(hoje); d.setDate(hoje.getDate()-6+i);
+    const label = d.toLocaleDateString("pt-BR",{weekday:"short"}).replace(".","");
+    const count = cards.filter(c => {
+      const cd = new Date(c.criado_em||"");
+      return cd.toDateString() === d.toDateString();
+    }).length;
+    return { label, count };
+  });
+  const maxDia = Math.max(...porDia.map(d=>d.count), 1);
+
+  const C2 = { blue:"#1A4A8A", orange:"#E07820", green:"#2A9A60", bg:"#F7F8FC", text:"#1A2A40", muted:"#8A9AB8" };
+
+  return (
+    <div style={{ height:"100%", overflowY:"auto" as const, background:C2.bg }}>
+      <div style={{ maxWidth:"640px", margin:"0 auto", padding:"24px 20px 48px" }}>
+        <div style={{ fontSize:"22px", fontWeight:800, color:C2.blue, fontFamily:"Nunito, sans-serif", marginBottom:"20px" }}>Meu Progresso</div>
+
+        {/* Cards de estatísticas */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:"10px", marginBottom:"20px" }}>
+          {[
+            { label:"Nexos totais", value:total, color:C2.blue, emoji:"📚" },
+            { label:"Taxa de acerto", value:taxa+"%", color:C2.green, emoji:"🎯" },
+            { label:"Para revisar", value:urgentes, color:C2.orange, emoji:"🔥" },
+          ].map((s,i) => (
+            <div key={i} style={{ background:"#fff", borderRadius:"16px", padding:"16px 14px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)", textAlign:"center" as const }}>
+              <div style={{ fontSize:"22px", marginBottom:"4px" }}>{s.emoji}</div>
+              <div style={{ fontSize:"24px", fontWeight:800, color:s.color, fontFamily:"Nunito, sans-serif" }}>{s.value}</div>
+              <div style={{ fontSize:"11px", color:C2.muted, fontWeight:600 }}>{s.label}</div>
+            </div>
+          ))}
+        </div>
+
+        {/* Gráfico 7 dias */}
+        <div style={{ background:"#fff", borderRadius:"18px", padding:"20px", marginBottom:"16px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+          <div style={{ fontSize:"13px", fontWeight:700, color:C2.muted, letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"16px" }}>Nexos criados — últimos 7 dias</div>
+          <div style={{ display:"flex", alignItems:"flex-end", gap:"8px", height:"80px" }}>
+            {porDia.map((d,i) => (
+              <div key={i} style={{ flex:1, display:"flex", flexDirection:"column" as const, alignItems:"center", gap:"4px" }}>
+                <div style={{ width:"100%", background:d.count>0?"rgba(26,74,138,0.15)":"#F0F4FA", borderRadius:"6px 6px 0 0", height:`${Math.max(4,(d.count/maxDia)*68)}px`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                  {d.count > 0 && <span style={{ fontSize:"10px", fontWeight:700, color:C2.blue }}>{d.count}</span>}
+                </div>
+                <span style={{ fontSize:"10px", color:C2.muted, fontWeight:600 }}>{d.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Distribuição por tronco */}
+        {total > 0 && (
+          <div style={{ background:"#fff", borderRadius:"18px", padding:"20px", marginBottom:"16px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+            <div style={{ fontSize:"13px", fontWeight:700, color:C2.muted, letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"14px" }}>Distribuição por tronco</div>
+            {[
+              { label:"Tear Românico", count:romanico, color:C2.blue, langs:"Espanhol · Francês · Italiano" },
+              { label:"Tear Germânico", count:germanico, color:C2.orange, langs:"Inglês · Alemão · Holandês" },
+            ].map((t,i) => (
+              <div key={i} style={{ marginBottom:"12px" }}>
+                <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"5px" }}>
+                  <div>
+                    <span style={{ fontSize:"13px", fontWeight:700, color:C2.text }}>{t.label}</span>
+                    <span style={{ fontSize:"11px", color:C2.muted, marginLeft:"8px" }}>{t.langs}</span>
+                  </div>
+                  <span style={{ fontSize:"13px", fontWeight:700, color:t.color }}>{t.count}</span>
+                </div>
+                <div style={{ height:"6px", borderRadius:"6px", background:"#F0F4FA", overflow:"hidden" }}>
+                  <div style={{ height:"100%", borderRadius:"6px", background:t.color, width:`${total>0?(t.count/total)*100:0}%`, transition:"width 0.4s ease" }}/>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Quiz stats */}
+        {acertos+erros > 0 && (
+          <div style={{ background:"#fff", borderRadius:"18px", padding:"20px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+            <div style={{ fontSize:"13px", fontWeight:700, color:C2.muted, letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"14px" }}>Desempenho no Quiz</div>
+            <div style={{ display:"flex", gap:"20px" }}>
+              <div style={{ textAlign:"center" as const }}>
+                <div style={{ fontSize:"28px", fontWeight:800, color:C2.green }}>{acertos}</div>
+                <div style={{ fontSize:"11px", color:C2.muted }}>Acertos</div>
+              </div>
+              <div style={{ textAlign:"center" as const }}>
+                <div style={{ fontSize:"28px", fontWeight:800, color:"#CC2A20" }}>{erros}</div>
+                <div style={{ fontSize:"11px", color:C2.muted }}>Erros</div>
+              </div>
+              <div style={{ flex:1, display:"flex", alignItems:"center" }}>
+                <div style={{ width:"100%", height:"10px", borderRadius:"10px", background:"#F0F4FA", overflow:"hidden" }}>
+                  <div style={{ height:"100%", background:`linear-gradient(90deg,${C2.green},#34C759)`, width:`${taxa}%`, borderRadius:"10px", transition:"width 0.4s ease" }}/>
+                </div>
+              </div>
+              <div style={{ textAlign:"center" as const }}>
+                <div style={{ fontSize:"28px", fontWeight:800, color:C2.blue }}>{taxa}%</div>
+                <div style={{ fontSize:"11px", color:C2.muted }}>Taxa</div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {total === 0 && (
+          <div style={{ textAlign:"center" as const, padding:"48px 24px", color:C2.muted }}>
+            <div style={{ fontSize:"48px", marginBottom:"12px" }}>📊</div>
+            <div style={{ fontSize:"15px", fontWeight:700, color:C2.text, fontFamily:"Nunito, sans-serif" }}>Nenhum dado ainda</div>
+            <div style={{ fontSize:"13px", marginTop:"6px" }}>Converse com o Chico e crie nexos para ver seu progresso aqui.</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Viagem ────────────────────────────────────────────────────────────────────
+
+function ViagemTab({ profile, audio }: { profile: UserProfile | null; audio: ReturnType<typeof useAudio> }) {
+  const [destino, setDestino]     = useState("");
+  const [loading, setLoading]     = useState(false);
+  const [resultado, setResultado] = useState<any>(null);
+  const [error, setError]         = useState("");
+
+  async function gerarGuia() {
+    if (!destino.trim() || !profile) return;
+    setLoading(true); setResultado(null); setError("");
+    try {
+      const res = await fetch("/api/chico", {
+        method:"PATCH", headers:{"Content-Type":"application/json"},
+        body:JSON.stringify({ acao:"viagem", destino:destino.trim(), tronco:profile.tronco, interesses:profile.interesses??[] }),
+      });
+      const data = await res.json();
+      if (res.ok && data.viagem) setResultado(data.viagem);
+      else setError(data.error || "Erro ao gerar guia.");
+    } catch { setError("Erro de conexão."); }
+    setLoading(false);
+  }
+
+  return (
+    <div style={{ height:"100%", overflowY:"auto" as const, background:"#F7F8FC" }}>
+      <div style={{ maxWidth:"640px", margin:"0 auto", padding:"24px 20px 48px" }}>
+        <div style={{ fontSize:"22px", fontWeight:800, color:"#1A4A8A", fontFamily:"Nunito, sans-serif", marginBottom:"6px" }}>Modo Viagem ✈️</div>
+        <div style={{ fontSize:"14px", color:"#8A9AB8", marginBottom:"20px" }}>Digite o destino e o Chico cria um guia de sobrevivência linguística personalizado.</div>
+
+        <div style={{ display:"flex", gap:"10px", marginBottom:"20px" }}>
+          <input value={destino} onChange={e=>setDestino(e.target.value)}
+            onKeyDown={e=>e.key==="Enter"&&gerarGuia()}
+            placeholder="Ex: Barcelona, Paris, Berlim..."
+            style={{ flex:1, padding:"12px 16px", borderRadius:"14px", border:"1.5px solid rgba(26,74,138,0.20)", fontSize:"14px", fontFamily:"Nunito, sans-serif", color:"#1A2A40", outline:"none", background:"#fff" }}/>
+          <button onClick={gerarGuia} disabled={!destino.trim()||loading}
+            style={{ padding:"12px 22px", borderRadius:"14px", border:"none", background:loading||!destino.trim()?"rgba(0,0,0,0.07)":"linear-gradient(135deg,#1A4A8A,#2A6ACC)", color:loading||!destino.trim()?"#AEAEB2":"#fff", fontSize:"14px", fontWeight:800, cursor:loading||!destino.trim()?"not-allowed":"pointer", fontFamily:"Nunito, sans-serif" }}>
+            {loading?"...":"Gerar →"}
+          </button>
+        </div>
+
+        {error && <div style={{ padding:"12px 16px", borderRadius:"12px", background:"rgba(204,42,32,0.08)", color:"#CC2A20", fontSize:"13px", marginBottom:"16px" }}>{error}</div>}
+
+        {resultado && (
+          <div style={{ display:"flex", flexDirection:"column" as const, gap:"10px" }}>
+            {(resultado.palavras||resultado).map && (resultado.palavras||resultado).map((item: any, i: number) => (
+              <div key={i} style={{ background:"#fff", borderRadius:"16px", padding:"16px 18px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"6px" }}>
+                  <div style={{ fontSize:"17px", fontWeight:800, color:"#1A4A8A", fontFamily:"Nunito, sans-serif" }}>{item.expressao||item.palavra||item.txt||""}</div>
+                  {item.bcp47 && (
+                    <button onClick={()=>audio.speak(item.expressao||item.palavra||"", item.bcp47, "v"+i)}
+                      style={{ width:30, height:30, borderRadius:"50%", border:"none", background:"rgba(26,74,138,0.10)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1A4A8A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                    </button>
+                  )}
+                </div>
+                {item.fonetica && <div style={{ fontSize:"12px", color:"#8A9AB8", fontStyle:"italic", marginBottom:"4px" }}>{item.fonetica}</div>}
+                {item.traducao_pt && <div style={{ fontSize:"14px", color:"#1A2A40", marginBottom:"4px" }}>🇧🇷 {item.traducao_pt}</div>}
+                {item.contexto && <div style={{ fontSize:"13px", color:"#5A6A80", lineHeight:1.5 }}>💡 {item.contexto}</div>}
+                {item.dica_cultural && <div style={{ fontSize:"12px", color:"#8A9AB8", marginTop:"6px", fontStyle:"italic" }}>🌍 {item.dica_cultural}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+
+        {!resultado && !loading && !error && (
+          <div style={{ textAlign:"center" as const, padding:"48px 24px", color:"#8A9AB8" }}>
+            <div style={{ fontSize:"48px", marginBottom:"12px" }}>✈️</div>
+            <div style={{ fontSize:"15px", fontWeight:700, color:"#5A6A80", fontFamily:"Nunito, sans-serif" }}>Para onde você vai?</div>
+            <div style={{ fontSize:"13px", marginTop:"6px" }}>O Chico cria um guia com as expressões essenciais para se virar no destino.</div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
 // ── Histórias ────────────────────────────────────────────────────────────────
 
 interface Historia {
