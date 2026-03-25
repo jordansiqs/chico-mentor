@@ -778,7 +778,7 @@ ${letra}`;
       ];
 
       const userPrompt   = lines.join("\n");
-      const systemPrompt = "Sei uno scrittore madrelingua specializzato in testi pedagogici. " +
+      let systemPrompt = "Sei uno scrittore madrelingua specializzato in testi pedagogici. " +
         "Scrivi SEMPRE e SOLO in " + linguaNome + ". " +
         "NON usare mai il portoghese nel testo della storia. " +
         "Rispondi SOLO con JSON valido, senza testo prima o dopo.";
