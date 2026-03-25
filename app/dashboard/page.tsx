@@ -1849,13 +1849,6 @@ export default function ChicoDashboard() {
   const troncoLabel = profile?.tronco === "românico" ? "Tear Românico" : "Tear Germânico";
 
   // Nav items
-  const TRONCOS_LINGUAS: Record<string,string[]> = {
-    "romanico":  ["Espanhol","Francês","Italiano"],
-    "romantico": ["Espanhol","Francês","Italiano"],
-    "germânico": ["Inglês","Alemão","Holandês"],
-    "germanico": ["Inglês","Alemão","Holandês"],
-  };
-  const troncoLinguas = TRONCOS_LINGUAS[profile?.tronco?.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()??""??]?? ["Espanhol","Francês","Italiano"];
 
   const navItems: {id:MainTab; label:string; icon:(active:boolean)=>React.ReactElement}[] = [
     { id:"chat",       label:"Conversar",  icon:(a)=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?"#1A4A8A":"#9AAABB"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
