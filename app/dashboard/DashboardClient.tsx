@@ -562,10 +562,12 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
     setFlipped(false);
   }
 
-  function advanceQuiz() {
+  function advanceQuiz(correct: boolean) {
+    setScore(s => ({ acertos: s.acertos+(correct?1:0), erros: s.erros+(correct?0:1) }));
     if (index + 1 >= shuffled.current.length) { setDone(true); return; }
     setIndex(i => i+1);
     setQuizOpts([]);
+    setShowFon(false);
   }
 
   const urgentesCount = cards.filter(c => {
@@ -779,7 +781,7 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
                         if (isCorrect) {
                           setTimeout(() => audio.speak(opt.txt, quizLangInfo?.bcp47 ?? "es-ES", qkey), 350);
                         }
-                        setTimeout(() => advanceQuiz(), 1400);
+                        setTimeout(() => advanceQuiz(isCorrect), 1400);
                       }}
                       style={{ width:"100%", padding:"14px 18px", borderRadius:"14px", border, background:bg, color, fontSize:"15px", fontWeight:fw, cursor:answered?"default":"pointer", fontFamily:"Nunito, sans-serif", textAlign:"left" as const, transition:"all 0.22s", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px" }}>
                       <span>{opt.txt}</span>
