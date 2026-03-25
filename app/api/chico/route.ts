@@ -988,6 +988,118 @@ ${letra}`;
       }
     }
 
+        // ── Ditado: gerar frase para o aluno ouvir e escrever ───────────────────
+    if (acao === "gerar_ditado") {
+      const { tronco, lingua, nivel, nexos_recentes, interesses } = body;
+      const troncoInfo2 = TRONCOS[tronco as "romanico"|"germanico"] || TRONCOS["romanico"];
+      const linguaInfo2 = troncoInfo2.linguas.find((l:any) => l.nome === lingua) || troncoInfo2.linguas[0];
+      const linguaNome2 = linguaInfo2.nome as string;
+      const bcp472      = linguaInfo2.bcp47 as string;
+      const nexosStr2   = (nexos_recentes||[]).slice(0,8).join(", ") || "vocabulario basico";
+      const interessesStr2 = (interesses||[]).join(", ") || "cotidiano";
+      const nivelKey2 = ((nivel as string)||"iniciante").normalize("NFD").replace(/[̀-ͯ]/g,"").toLowerCase();
+      const nivelGuia2: Record<string,string> = {
+        "iniciante":    "frases curtas de 4 a 7 palavras, vocabulario simples, presente do indicativo",
+        "intermediario":"frases de 8 a 12 palavras, um ou dois verbos conjugados, vocabulario variado",
+        "avancado":     "frases complexas de 12 a 18 palavras, expressoes idiomaticas, tempos verbais variados",
+      };
+      const guia2 = nivelGuia2[nivelKey2] || nivelGuia2["iniciante"];
+      const promptDitado = [
+        "Crie UMA frase para ditado em " + linguaNome2 + ".",
+        "Nivel: " + guia2,
+        "Use palavras relacionadas a: " + nexosStr2,
+        "Tema: " + interessesStr2,
+        "Responda APENAS com JSON valido:",
+        "{",
+        '  "frase": "a frase em ' + linguaNome2 + '",',
+        '  "traducao_pt": "traducao em portugues",',
+        '  "dica": "1 dica sobre a gramatica ou vocabulario",',
+        '  "bcp47": "' + bcp472 + '",',
+        '  "palavras_chave": ["palavra1", "palavra2"]',
+        "}",
+      ].join("
+");
+      const compDitado = await groq.chat.completions.create({
+        model:"llama-3.3-70b-versatile", temperature:0.55, max_tokens:300,
+        messages:[
+          { role:"system", content:"Voce cria frases pedagogicas para pratica de idiomas. Responda apenas com JSON valido." },
+          { role:"user", content:promptDitado },
+        ],
+      });
+      try {
+        const result = parseJSON(compDitado.choices[0]?.message?.content ?? "");
+        return NextResponse.json({ ditado: result });
+      } catch { return NextResponse.json({ error:"Erro ao gerar ditado." },{ status:500 }); }
+    }
+
+    // ── Conversa Guiada: gerar situacao ──────────────────────────────────────
+    if (acao === "gerar_situacao") {
+      const { tronco, lingua, interesses, nivel, situacao_num } = body;
+      const troncoInfo3 = TRONCOS[tronco as "romanico"|"germanico"] || TRONCOS["romanico"];
+      const linguaInfo3 = troncoInfo3.linguas.find((l:any) => l.nome === lingua) || troncoInfo3.linguas[0];
+      const linguaNome3 = linguaInfo3.nome as string;
+      const interessesStr3 = (interesses||[]).join(", ") || "cotidiano";
+      const num3 = (situacao_num as number) || 1;
+      const contextos3 = ["restaurante ou cafe","hotel ou hospedagem","transporte","loja ou mercado","pedir direcoes"];
+      const contexto3 = contextos3[(num3-1) % contextos3.length];
+      const promptSit = [
+        "Crie uma situacao de dialogo para pratica de " + linguaNome3 + ".",
+        "Situacao " + num3 + " de 5. Contexto: " + contexto3 + ".",
+        "Interesses do aluno: " + interessesStr3,
+        "Nivel: " + ((nivel as string)||"iniciante"),
+        "Responda APENAS com JSON valido:",
+        "{",
+        '  "situacao": "descricao em portugues (2 frases)",',
+        '  "instrucao": "o que o aluno deve dizer em portugues",',
+        '  "exemplo_resposta": "exemplo correto em ' + linguaNome3 + '",',
+        '  "palavras_uteis": ["palavra1 em ' + linguaNome3 + '", "palavra2"]',
+        "}",
+      ].join("
+");
+      const compSit = await groq.chat.completions.create({
+        model:"llama-3.3-70b-versatile", temperature:0.65, max_tokens:400,
+        messages:[
+          { role:"system", content:"Voce cria situacoes de dialogo para aprendizes de idiomas. Responda apenas com JSON valido." },
+          { role:"user", content:promptSit },
+        ],
+      });
+      try {
+        const result = parseJSON(compSit.choices[0]?.message?.content ?? "");
+        return NextResponse.json({ situacao: result });
+      } catch { return NextResponse.json({ error:"Erro ao gerar situacao." },{ status:500 }); }
+    }
+
+    // ── Conversa Guiada: avaliar resposta do aluno ───────────────────────────
+    if (acao === "avaliar_resposta") {
+      const { resposta, exemplo_resposta, situacao, lingua } = body;
+      const promptAval = [
+        "Avalie a resposta de um aprendiz de " + (lingua as string) + ".",
+        "Situacao: " + (situacao as string),
+        "Resposta do aluno: " + (resposta as string),
+        "Exemplo correto: " + (exemplo_resposta as string),
+        "Responda APENAS com JSON valido:",
+        "{",
+        '  "nota": 0,',
+        '  "correto": false,',
+        '  "correcao": "versao corrigida em ' + (lingua as string) + ' se houver erros, senao string vazia",',
+        '  "explicacao": "elogio ou explicacao dos erros em portugues (max 2 frases)",',
+        '  "dica": "1 dica pratica em portugues"',
+        "}",
+      ].join("
+");
+      const compAval = await groq.chat.completions.create({
+        model:"llama-3.3-70b-versatile", temperature:0.3, max_tokens:300,
+        messages:[
+          { role:"system", content:"Voce e um professor de idiomas que avalia respostas. Seja encorajador e preciso. Responda apenas com JSON valido." },
+          { role:"user", content:promptAval },
+        ],
+      });
+      try {
+        const result = parseJSON(compAval.choices[0]?.message?.content ?? "");
+        return NextResponse.json({ avaliacao: result });
+      } catch { return NextResponse.json({ error:"Erro ao avaliar resposta." },{ status:500 }); }
+    }
+
         return NextResponse.json({ error:"Ação desconhecida." },{ status:400 });
   } catch (err) {
     console.error("Erro PATCH:", err);
