@@ -1865,7 +1865,7 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
-export default // ── Exportar Nexos para Anki ─────────────────────────────────────────────────
+// ── Exportar Nexos para Anki ─────────────────────────────────────────────────
 function exportAnki(cards: MentoriaCard[]) {
   const header = "#separator:tab\n#html:false\n#notetype:Basic\n#deck:Chico Mentor\n";
   const rows = cards.map(c => {
@@ -2389,3 +2389,5 @@ function ChicoDashboard() {
     </>
   );
 }
+
+export default ChicoDashboard;
