@@ -1084,7 +1084,10 @@ function HistoriasTab({ profile, cards, onAddCard }: {
   useEffect(() => {
     try {
       const raw = localStorage.getItem("chico_historias_salvas");
-      if (raw) setHistoriasSalvas(JSON.parse(raw));
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed)) setHistoriasSalvas(parsed);
+      }
     } catch {}
   }, []);
 
@@ -1197,7 +1200,8 @@ function HistoriasTab({ profile, cards, onAddCard }: {
   const acertos = historia ? quizAnswers.filter((a,i)=>a===historia.perguntas[i]?.correta).length : 0;
 
   // Render texto com palavras clicáveis
-  function renderTexto(texto:string, h:Historia) {
+  function renderTexto(texto:string|undefined, h:Historia|null) {
+    if (!texto || !h) return null;
     const parafs = texto.split("\n\n").filter((p:string) => p.trim().length > 0);
     const ptParafs = paragrafosPt;
     return parafs.map((para, pi) => (
@@ -1389,15 +1393,15 @@ function HistoriasTab({ profile, cards, onAddCard }: {
                   <div style={{fontSize:"12px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"16px"}}>
                     Toque em qualquer palavra para traduzir
                   </div>
-                  {renderTexto(textoAtual?.texto, textoAtual)}
+                  {textoAtual && renderTexto(textoAtual?.texto, textoAtual)}
                 </div>
 
                 {/* Glossário */}
-                {textoAtual.palavras_chave.length>0 && (
+                {(textoAtual?.palavras_chave||[]).length>0 && (
                   <div style={{background:"#fff", borderRadius:"18px", padding:"20px", marginBottom:"12px", boxShadow:"0 2px 12px rgba(26,74,138,0.07)"}}>
                     <div style={{fontSize:"13px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"14px"}}>Glossário da história</div>
                     <div style={{display:"flex", flexDirection:"column" as const, gap:"8px"}}>
-                      {textoAtual.palavras_chave.map((p,i)=>{
+                      {(textoAtual?.palavras_chave||[]).map((p,i)=>{
                         const saved=savedWords.has(p.palavra);
                         return(
                           <div key={i} style={{display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", borderRadius:"12px", background:saved?"rgba(42,154,96,0.06)":"#F7F8FC", border:`1px solid ${saved?"rgba(42,154,96,0.20)":"rgba(0,0,0,0.07)"}`}}>
@@ -2122,7 +2126,7 @@ function ChicoDashboard() {
     { id:"perfil",     label:"Perfil",     icon:(a)=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?"#1A4A8A":"#9AAABB"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
   ];
 
-  // Guard: não renderiza nada durante SSR/prerender ou antes do perfil carregar
+  // Guard: SSR/prerender safety + loading state
   if (typeof window === "undefined") return null;
   if (!profile) return (
     <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", background:"#F7F8FC" }}>
