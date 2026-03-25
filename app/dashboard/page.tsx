@@ -2,14 +2,11 @@
 // Server Component — sem "use client"
 export const dynamic = "force-dynamic";
 
-import dynamic from "next/dynamic";
+import nextDynamic from "next/dynamic";
 
-const DashboardClient = dynamic(
+const DashboardClient = nextDynamic(
   () => import("./DashboardClient"),
-  {
-    ssr: false,
-    loading: () => null,
-  }
+  { ssr: false, loading: () => null }
 );
 
 export default function DashboardPage() {
