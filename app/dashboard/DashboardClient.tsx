@@ -505,7 +505,7 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
       { txt:c.lang_3_txt||"", fon:c.lang_3_fon||"", bcp47:c.lang_3_bcp47||"", idx:2 as const },
     ].filter(l => l.txt && l.txt !== "--" && l.txt.trim().length > 1);
 
-    if (validLangs.length === 0) { advanceQuiz(); return; }
+    if (validLangs.length === 0) { advanceQuiz(false); return; }
 
     const chosen = validLangs[Math.floor(Math.random() * validLangs.length)];
     setQuizLang(chosen.idx);
