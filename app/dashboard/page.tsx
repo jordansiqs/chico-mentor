@@ -844,7 +844,7 @@ function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
     }).length;
     return { label, count };
   });
-  const maxDia = Math.max(...porDia.map(d=>d.count), 1);
+  const maxDia = Math.max(...(porDia||[]).map(d=>d.count), 1);
 
   const C2 = { blue:"#1A4A8A", orange:"#E07820", green:"#2A9A60", bg:"#F7F8FC", text:"#1A2A40", muted:"#8A9AB8" };
 
@@ -989,7 +989,7 @@ function ViagemTab({ profile, audio }: { profile: UserProfile | null; audio: Ret
 
         {resultado && (
           <div style={{ display:"flex", flexDirection:"column" as const, gap:"10px" }}>
-            {(resultado.palavras||resultado).map && (resultado.palavras||resultado).map((item: any, i: number) => (
+            {Array.isArray(resultado.palavras||resultado) && (resultado.palavras||resultado).map((item: any, i: number) => (
               <div key={i} style={{ background:"#fff", borderRadius:"16px", padding:"16px 18px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"6px" }}>
                   <div style={{ fontSize:"17px", fontWeight:800, color:"#1A4A8A", fontFamily:"Nunito, sans-serif" }}>{item.expressao||item.palavra||item.txt||""}</div>
@@ -1306,12 +1306,12 @@ function HistoriasTab({ profile, cards, onAddCard }: {
                 {/* Header da história */}
                 <div style={{background:"linear-gradient(135deg,#1A4A8A,#2A6ACC)", borderRadius:"18px", padding:"22px 24px", marginBottom:"12px", boxShadow:"0 4px 20px rgba(26,74,138,0.25)"}}>
                   <div style={{display:"flex", alignItems:"center", gap:"8px", marginBottom:"10px"}}>
-                    <span style={{padding:"4px 12px", borderRadius:"20px", background:"rgba(255,255,255,0.15)", fontSize:"12px", fontWeight:700, color:"#fff"}}>{textoAtual.lingua}</span>
-                    <span style={{padding:"4px 12px", borderRadius:"20px", background:"rgba(255,255,255,0.12)", fontSize:"12px", fontWeight:700, color:"rgba(255,255,255,0.85)", textTransform:"capitalize" as const}}>{textoAtual.nivel}</span>
+                    <span style={{padding:"4px 12px", borderRadius:"20px", background:"rgba(255,255,255,0.15)", fontSize:"12px", fontWeight:700, color:"#fff"}}>{textoAtual?.lingua}</span>
+                    <span style={{padding:"4px 12px", borderRadius:"20px", background:"rgba(255,255,255,0.12)", fontSize:"12px", fontWeight:700, color:"rgba(255,255,255,0.85)", textTransform:"capitalize" as const}}>{textoAtual?.nivel}</span>
                     <span style={{marginLeft:"auto", fontSize:"12px", color:"rgba(255,255,255,0.65)"}}>🔖</span>
                   </div>
-                  <div style={{fontSize:"22px", fontWeight:800, color:"#fff", fontFamily:"Nunito, sans-serif", lineHeight:1.2, marginBottom:"4px"}}>{textoAtual.titulo}</div>
-                  <div style={{fontSize:"14px", color:"rgba(255,255,255,0.70)", fontStyle:"italic"}}>{textoAtual.titulo_pt}</div>
+                  <div style={{fontSize:"22px", fontWeight:800, color:"#fff", fontFamily:"Nunito, sans-serif", lineHeight:1.2, marginBottom:"4px"}}>{textoAtual?.titulo}</div>
+                  <div style={{fontSize:"14px", color:"rgba(255,255,255,0.70)", fontStyle:"italic"}}>{textoAtual?.titulo_pt}</div>
                 </div>
 
                 {/* Barra de ferramentas */}
@@ -1389,7 +1389,7 @@ function HistoriasTab({ profile, cards, onAddCard }: {
                   <div style={{fontSize:"12px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"16px"}}>
                     Toque em qualquer palavra para traduzir
                   </div>
-                  {renderTexto(textoAtual.texto, textoAtual)}
+                  {renderTexto(textoAtual?.texto, textoAtual)}
                 </div>
 
                 {/* Glossário */}
@@ -1427,11 +1427,11 @@ function HistoriasTab({ profile, cards, onAddCard }: {
                     <div style={{background:"#fff", borderRadius:"18px", padding:"22px", boxShadow:"0 2px 12px rgba(26,74,138,0.07)"}}>
                       <div style={{fontSize:"13px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"16px"}}>Perguntas de compreensão</div>
                       <div style={{display:"flex", flexDirection:"column" as const, gap:"20px"}}>
-                        {textoAtual.perguntas.map((q,qi)=>(
+                        {(textoAtual.perguntas||[]).map((q,qi)=>(
                           <div key={qi}>
                             <div style={{fontSize:"15px", fontWeight:700, color:"#1A2A40", marginBottom:"10px", fontFamily:"Nunito, sans-serif"}}>{qi+1}. {q.pergunta}</div>
                             <div style={{display:"flex", flexDirection:"column" as const, gap:"7px"}}>
-                              {q.opcoes.map((op,oi)=>{
+                              {(q.opcoes||[]).map((op,oi)=>{
                                 const answered=quizAnswers[qi]!==null;
                                 const isSelected=quizAnswers[qi]===oi;
                                 const isCorrect=oi===q.correta;
@@ -1957,8 +1957,9 @@ function ChicoDashboard() {
         ? cards.reduce((oldest, c) => new Date(c.criado_em) < new Date(oldest.criado_em) ? c : oldest)
         : null;
 
-      const interesse  = profile.interesses?.[seed % (profile.interesses?.length || 1)] ?? "amigo";
-      const interesse2 = profile.interesses?.[(seed+1) % (profile.interesses?.length || 1)] ?? "trabalho";
+      const interesseArr = profile.interesses || [];
+      const interesse  = interesseArr[seed % (interesseArr.length || 1)] ?? "amigo";
+      const interesse2 = interesseArr[(seed+1) % (interesseArr.length || 1)] ?? "trabalho";
 
       const desafios = [
         // Baseado no card mais antigo (reativa memória)
@@ -2070,7 +2071,7 @@ function ChicoDashboard() {
       const data = await res.json();
       if (res.ok && data.roteiro) {
         const r = data.roteiro;
-        const content = `${r.titulo}\n${r.descricao}\n\n${r.nexos.map((n:any,i:number)=>`${i+1}. ${n.palavra} -- ${n.motivo}`).join("\n")}\n\nQuer começar? Pergunte sobre "${r.nexos[0]?.palavra}".`;
+        const content = `${r.titulo}\n${r.descricao}\n\n${(r.nexos||[]).map((n:any,i:number)=>`${i+1}. ${n.palavra} -- ${n.motivo}`).join("\n")}\n\nQuer começar? Pergunte sobre "${r.nexos[0]?.palavra}".`;
         setMessages(prev=>[...prev, { id:`r-${Date.now()}`, role:"chico" as const, content, isRoteiro:true }]);
       }
     } catch {}
@@ -2120,6 +2121,17 @@ function ChicoDashboard() {
     { id:"historias",  label:"Histórias",  icon:(a)=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?"#1A4A8A":"#9AAABB"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> },
     { id:"perfil",     label:"Perfil",     icon:(a)=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?"#1A4A8A":"#9AAABB"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
   ];
+
+  // Guard: não renderiza nada durante SSR/prerender ou antes do perfil carregar
+  if (typeof window === "undefined") return null;
+  if (!profile) return (
+    <div style={{ display:"flex", alignItems:"center", justifyContent:"center", height:"100vh", background:"#F7F8FC" }}>
+      <div style={{ textAlign:"center" as const }}>
+        <div style={{ fontSize:"48px", marginBottom:"16px" }}>🐾</div>
+        <div style={{ fontSize:"18px", fontWeight:700, color:"#1A4A8A", fontFamily:"Nunito, sans-serif" }}>Carregando...</div>
+      </div>
+    </div>
+  );
 
   return (
     <>
