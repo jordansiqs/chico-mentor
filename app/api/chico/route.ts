@@ -374,46 +374,85 @@ export async function POST(request: NextRequest) {
       content: m.content,
     }));
 
-    const completion = await groq.chat.completions.create({
-      model:       "llama-3.3-70b-versatile",
-      temperature: 0.50,
-      max_tokens:  1400,
-      messages: [
-        { role:"system", content: buildSystemPrompt(tronco, interesses||[], nexos_recentes, memoria, modo_especial) },
-        ...historicoLimitado,
-        { role:"user", content: tema_gerador },
-      ],
-    });
-
-    const rawContent = completion.choices[0]?.message?.content ?? "";
-
-    let parsed: {
-      titulo_card: string;
-      aula_chico: string;
-      pergunta_verificacao?: string;
+    // ── Helper: tenta parsear com retry ─────────────────────────────────────────
+    async function tryParseWithRetry(raw: string, attempt: number = 1): Promise<{
+      titulo_card: string; aula_chico: string; pergunta_verificacao?: string;
       lang_1: { txt:string; fon:string; exemplo:string };
       lang_2: { txt:string; fon:string; exemplo:string };
       lang_3: { txt:string; fon:string; exemplo:string };
-    };
-
-    try {
-      parsed = parseJSON(rawContent);
-      // Normalize field names — model might return different structures
-      const p: any = parsed;
-      if (p && !p.lang_1 && p.lang_1_txt) {
-        parsed.lang_1 = { txt: p.lang_1_txt, fon: p.lang_1_fon||"", exemplo: p.lang_1_exemplo||"" };
-        parsed.lang_2 = { txt: p.lang_2_txt, fon: p.lang_2_fon||"", exemplo: p.lang_2_exemplo||"" };
-        parsed.lang_3 = { txt: p.lang_3_txt, fon: p.lang_3_fon||"", exemplo: p.lang_3_exemplo||"" };
+    } | null> {
+      try {
+        const p: any = parseJSON(raw);
+        // Normaliza campos alternativos
+        if (p && !p.lang_1 && p.lang_1_txt) {
+          p.lang_1 = { txt: p.lang_1_txt||"", fon: p.lang_1_fon||"", exemplo: p.lang_1_exemplo||"" };
+          p.lang_2 = { txt: p.lang_2_txt||"", fon: p.lang_2_fon||"", exemplo: p.lang_2_exemplo||"" };
+          p.lang_3 = { txt: p.lang_3_txt||"", fon: p.lang_3_fon||"", exemplo: p.lang_3_exemplo||"" };
+        }
+        if (!p.lang_1) p.lang_1 = { txt:"", fon:"", exemplo:"" };
+        if (!p.lang_2) p.lang_2 = { txt:"", fon:"", exemplo:"" };
+        if (!p.lang_3) p.lang_3 = { txt:"", fon:"", exemplo:"" };
+        // Valida que as línguas têm tradução real
+        const hasLangs = [p.lang_1, p.lang_2, p.lang_3].every(
+          (l: any) => l?.txt && l.txt !== "--" && l.txt.trim().length > 0
+        );
+        if (!p.aula_chico || !hasLangs) throw new Error("Campos insuficientes");
+        return p;
+      } catch {
+        return null;
       }
-      // Fill missing lang objects
-      if (!parsed.lang_1) parsed.lang_1 = { txt:"", fon:"", exemplo:"" };
-      if (!parsed.lang_2) parsed.lang_2 = { txt:"", fon:"", exemplo:"" };
-      if (!parsed.lang_3) parsed.lang_3 = { txt:"", fon:"", exemplo:"" };
-      if (!parsed.aula_chico) throw new Error("Sem aula_chico");
-    } catch {
-      console.error("[POST] Parse error. Raw:", rawContent.slice(0, 300));
-      // Try to extract just the text response as aula_chico
-      const cleanText = rawContent.replace(/```[\s\S]*?```/g,"").trim();
+    }
+
+    // ── Chamada principal ─────────────────────────────────────────────────────
+    const systemPromptStr = buildSystemPrompt(tronco, interesses||[], nexos_recentes, memoria, modo_especial);
+
+    async function callGroq(temp: number) {
+      const r = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        temperature: temp,
+        max_tokens: 1400,
+        messages: [
+          { role:"system", content: systemPromptStr },
+          ...historicoLimitado,
+          { role:"user", content: tema_gerador },
+        ],
+      });
+      return r.choices[0]?.message?.content ?? "";
+    }
+
+    let rawContent = await callGroq(0.50);
+    let parsed = await tryParseWithRetry(rawContent);
+
+    // ── Retry automático se JSON inválido ou línguas vazias ───────────────────
+    if (!parsed) {
+      console.warn("[POST] Tentativa 1 falhou. Retrying com temp=0.30...");
+      rawContent = await callGroq(0.30);
+      parsed = await tryParseWithRetry(rawContent, 2);
+    }
+
+    // ── Retry final: modelo mais simples, prompt direto ───────────────────────
+    if (!parsed) {
+      console.warn("[POST] Tentativa 2 falhou. Retry final com prompt direto...");
+      const troncoInfo2 = TRONCOS[tronco];
+      const directPrompt = "Responda em JSON puro sobre: " + tema_gerador + "\n\n" +
+        "{ \"titulo_card\": \"...\"," +
+        " \"aula_chico\": \"Explique brevemente.\"," +
+        " \"lang_1\": { \"txt\": \"" + troncoInfo2.linguas[0].nome + " translation\", \"fon\": \"[fo-NE-ti-ca]\", \"exemplo\": \"exemplo\" }," +
+        " \"lang_2\": { \"txt\": \"" + troncoInfo2.linguas[1].nome + " translation\", \"fon\": \"[fo-NE-ti-ca]\", \"exemplo\": \"exemplo\" }," +
+        " \"lang_3\": { \"txt\": \"" + troncoInfo2.linguas[2].nome + " translation\", \"fon\": \"[fo-NE-ti-ca]\", \"exemplo\": \"exemplo\" } }";
+      const r3 = await groq.chat.completions.create({
+        model: "llama-3.3-70b-versatile", temperature: 0.20, max_tokens: 600,
+        messages: [{ role:"user", content: directPrompt }],
+      });
+      rawContent = r3.choices[0]?.message?.content ?? "";
+      parsed = await tryParseWithRetry(rawContent, 3);
+      if (parsed) console.log("[POST] Retry final bem-sucedido.");
+      else console.error("[POST] Todas as tentativas falharam. Raw:", rawContent.slice(0, 200));
+    }
+
+    // ── Fallback absoluto (nunca retorna --)  ─────────────────────────────────
+    if (!parsed) {
+      const cleanText = rawContent.replace(/```[\s\S]*?```/g, "").trim();
       parsed = {
         titulo_card:          tema_gerador.slice(0, 30),
         aula_chico:           cleanText || "Tente reformular sua pergunta.",
@@ -423,6 +462,7 @@ export async function POST(request: NextRequest) {
         lang_3: { txt:"", fon:"", exemplo:"" },
       };
     }
+
 
     const troncoInfo = TRONCOS[tronco];
     const card: ChicoCard = {
