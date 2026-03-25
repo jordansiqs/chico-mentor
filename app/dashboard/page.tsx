@@ -476,97 +476,132 @@ function ChatBubble({ message, audio }: { message: ChatMessage; audio: ReturnTyp
 // ── Flashcards ────────────────────────────────────────────────────────────────
 
 function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnType<typeof useAudio> }) {
-  const [mode, setMode]             = useState<"flip" | "quiz">("flip");
-  const [index, setIndex]           = useState(0);
-  const [flipped, setFlipped]       = useState(false);
-  const [score, setScore]           = useState({ acertos:0, erros:0 });
-  const [done, setDone]             = useState(false);
-  const [quizAnswer, setQuizAnswer] = useState<number | null>(null);
-  const [quizOpts, setQuizOpts]     = useState<string[]>([]);
-  const [quizLang, setQuizLang]     = useState<0|1|2>(0); // índice da língua aleatória do quiz
-  const shuffled                    = useRef<MentoriaCard[]>([]);
+  const [mode, setMode]         = useState<"flip"|"quiz">("flip");
+  const [index, setIndex]       = useState(0);
+  const [flipped, setFlipped]   = useState(false);
+  const [score, setScore]       = useState({ acertos:0, erros:0 });
+  const [done, setDone]         = useState(false);
+  const [quizAnswer, setQuizAnswer] = useState<number|null>(null);
+  const [quizOpts, setQuizOpts] = useState<{txt:string;correct:boolean}[]>([]);
+  const [quizLang, setQuizLang] = useState<0|1|2>(0);
+  const [showFon, setShowFon]   = useState(false);
+  const shuffled = useRef<MentoriaCard[]>([]);
 
   useEffect(() => { doRestart(); }, [cards.length]);
 
+  // Gera opções do quiz sempre que o card ou modo muda
   useEffect(() => {
-    if (mode !== "quiz" || quizAnswer !== null || shuffled.current.length === 0) return;
+    if (mode !== "quiz" || shuffled.current.length === 0) return;
     const c = shuffled.current[index];
     if (!c) return;
 
-    // Escolhe língua aleatória (só dentre as que têm tradução real)
-    const allLangs: {txt:string; fon:string; bcp47:string; idx:0|1|2}[] = [
-      {txt:c.lang_1_txt, fon:c.lang_1_fon, bcp47:c.lang_1_bcp47, idx:0 as const},
-      {txt:c.lang_2_txt, fon:c.lang_2_fon, bcp47:c.lang_2_bcp47, idx:1 as const},
-      {txt:c.lang_3_txt, fon:c.lang_3_fon, bcp47:c.lang_3_bcp47, idx:2 as const},
-    ].filter(l => l.txt && l.txt !== "--" && l.txt.length > 1);
+    // Escolhe língua aleatória com tradução real
+    const validLangs: {txt:string; fon:string; bcp47:string; idx:0|1|2}[] = [
+      { txt:c.lang_1_txt||"", fon:c.lang_1_fon||"", bcp47:c.lang_1_bcp47||"", idx:0 },
+      { txt:c.lang_2_txt||"", fon:c.lang_2_fon||"", bcp47:c.lang_2_bcp47||"", idx:1 },
+      { txt:c.lang_3_txt||"", fon:c.lang_3_fon||"", bcp47:c.lang_3_bcp47||"", idx:2 },
+    ].filter(l => l.txt && l.txt !== "--" && l.txt.trim().length > 1);
 
-    if (allLangs.length === 0) { setQuizOpts([]); return; }
-    const chosen = allLangs[Math.floor(Math.random() * allLangs.length)];
+    if (validLangs.length === 0) { advanceQuiz(); return; }
+
+    const chosen = validLangs[Math.floor(Math.random() * validLangs.length)];
     setQuizLang(chosen.idx);
-    const correct = chosen.txt;
+    setShowFon(false);
 
-    // Recolhe opções erradas: APENAS da mesma língua (mesmo índice) de outros cards
-    // Assim as opções são comparáveis (todos espanhol, ou todos francês, etc.)
-    const sameSlot = (chosen.idx === 0 ? "lang_1_txt" : chosen.idx === 1 ? "lang_2_txt" : "lang_3_txt") as keyof MentoriaCard;
-    const wrongPool = cards
-      .filter(x => x.id !== c.id)
-      .map(x => x[sameSlot] as string)
-      .filter(t => t && t !== "--" && t !== correct && t.length > 1);
-    
-    const uniqueWrongs = [...new Set(wrongPool)].sort(() => Math.random() - 0.5);
-    const wrongs = uniqueWrongs.slice(0, 3);
+    const correct = chosen.txt.trim();
+    const slotKey = (chosen.idx === 0 ? "lang_1_txt" : chosen.idx === 1 ? "lang_2_txt" : "lang_3_txt") as keyof MentoriaCard;
 
-    // Se não há errados suficientes (poucos cards), usa outras línguas do mesmo card
+    // Distratores da mesma posição de outros cards
+    const wrongPool = [...new Set(
+      cards
+        .filter(x => x.id !== c.id)
+        .map(x => (x[slotKey] as string)?.trim())
+        .filter(t => t && t !== "--" && t !== correct && t.length > 1)
+    )].sort(() => Math.random() - 0.5);
+
+    const wrongs = wrongPool.slice(0, 3);
+
+    // Fallback: outras línguas do mesmo card
     if (wrongs.length < 3) {
-      allLangs
-        .filter(l => l.idx !== chosen.idx && l.txt !== correct)
-        .forEach(l => { if (wrongs.length < 3 && !wrongs.includes(l.txt)) wrongs.push(l.txt); });
+      validLangs
+        .filter(l => l.idx !== chosen.idx && l.txt.trim() !== correct)
+        .forEach(l => { if (wrongs.length < 3) wrongs.push(l.txt.trim()); });
     }
-    // Último fallback com variações inventadas
-    const fakeOpts = ["--", "n/a", "outro"];
-    let fi = 0;
-    while (wrongs.length < 3) { wrongs.push(fakeOpts[fi++ % fakeOpts.length] + fi); }
 
-    setQuizOpts([...wrongs.slice(0,3), correct].sort(() => Math.random() - 0.5));
-  }, [index, mode, quizAnswer, cards.length]);
+    // Preenche com variações numéricas se ainda faltar
+    let fi = 1;
+    while (wrongs.length < 3) { wrongs.push(correct + fi++); }
+
+    const opts = [...wrongs.slice(0,3).map(t=>({txt:t,correct:false})), {txt:correct,correct:true}]
+      .sort(() => Math.random() - 0.5);
+
+    setQuizOpts(opts);
+    setQuizAnswer(null);
+  }, [index, mode, cards.length]);
 
   function doRestart() {
-    const urgentes = cards.filter(c => Math.floor((Date.now()-new Date(c.criado_em).getTime())/86400000)>=3);
+    const urgentes = cards.filter(c => {
+      const dias = Math.floor((Date.now() - new Date(c.criado_em||"").getTime()) / 86400000);
+      return dias >= 3;
+    });
     const pool = urgentes.length > 0
-      ? [...urgentes, ...cards.filter(c=>!urgentes.includes(c))].slice(0,10)
-      : [...cards].sort(()=>Math.random()-0.5).slice(0,10);
+      ? [...urgentes, ...cards.filter(c => !urgentes.includes(c))].slice(0, 15)
+      : [...cards].sort(() => Math.random() - 0.5).slice(0, 15);
     shuffled.current = pool;
-    setIndex(0); setFlipped(false); setScore({acertos:0,erros:0});
-    setDone(false); setQuizAnswer(null); setQuizOpts([]); setQuizLang(0);
+    setIndex(0); setFlipped(false); setScore({acertos:0, erros:0});
+    setDone(false); setQuizAnswer(null); setQuizOpts([]); setQuizLang(0); setShowFon(false);
   }
 
-  function next(ok: boolean) {
-    setScore(s=>({acertos:s.acertos+(ok?1:0),erros:s.erros+(ok?0:1)}));
-    if (index+1>=shuffled.current.length){setDone(true);return;}
-    setIndex(i=>i+1); setFlipped(false); setQuizAnswer(null); setQuizOpts([]); setQuizLang(0);
+  function advanceFlip(ok: boolean) {
+    setScore(s => ({ acertos: s.acertos+(ok?1:0), erros: s.erros+(ok?0:1) }));
+    if (index + 1 >= shuffled.current.length) { setDone(true); return; }
+    setIndex(i => i+1);
+    setFlipped(false);
   }
 
-  const urgentesCount = cards.filter(c=>Math.floor((Date.now()-new Date(c.criado_em).getTime())/86400000)>=3).length;
+  function advanceQuiz() {
+    if (index + 1 >= shuffled.current.length) { setDone(true); return; }
+    setIndex(i => i+1);
+    setQuizOpts([]);
+  }
 
-  if (cards.length===0) return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", gap:"12px", padding:"40px", textAlign:"center" }}>
-      <Icon.Search size={32}/><p style={{ fontSize:"15px", fontWeight:600, color:"#1D1D1F", margin:0 }}>Nenhum nexo para revisar</p>
-      <p style={{ fontSize:"13px", color:"#86868B", margin:0 }}>Converse com o Chico primeiro.</p>
+  const urgentesCount = cards.filter(c => {
+    const dias = Math.floor((Date.now() - new Date(c.criado_em||"").getTime()) / 86400000);
+    return dias >= 3;
+  }).length;
+
+  // ── Sem cards ──────────────────────────────────────────────────────────────
+  if (cards.length === 0) return (
+    <div style={{ display:"flex", flexDirection:"column" as const, alignItems:"center", justifyContent:"center", height:"100%", gap:"12px", padding:"40px", textAlign:"center" as const }}>
+      <div style={{ fontSize:"48px" }}>📚</div>
+      <p style={{ fontSize:"16px", fontWeight:700, color:"#1A2A40", margin:0, fontFamily:"Nunito, sans-serif" }}>Nenhum nexo para revisar</p>
+      <p style={{ fontSize:"13px", color:"#8A9AB8", margin:0 }}>Converse com o Chico primeiro para criar nexos.</p>
     </div>
   );
 
+  // ── Sessão concluída ────────────────────────────────────────────────────────
   if (done) return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", height:"100%", gap:"20px", padding:"40px", textAlign:"center" }}>
-      <div style={{ width:56, height:56, borderRadius:"18px", background:"linear-gradient(135deg,#0071E3,#34AADC)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    <div style={{ display:"flex", flexDirection:"column" as const, alignItems:"center", justifyContent:"center", height:"100%", gap:"20px", padding:"40px", textAlign:"center" as const }}>
+      <div style={{ fontSize:"52px" }}>{score.acertos >= shuffled.current.length * 0.7 ? "🎉" : "💪"}</div>
+      <div>
+        <h3 style={{ fontSize:"22px", fontWeight:800, color:"#1A4A8A", margin:"0 0 6px", fontFamily:"Nunito, sans-serif" }}>Sessão concluída!</h3>
+        <p style={{ fontSize:"14px", color:"#8A9AB8", margin:0 }}>{shuffled.current.length} cards revisados</p>
       </div>
-      <div><h3 style={{ fontSize:"20px", fontWeight:700, color:"#1D1D1F", margin:"0 0 6px" }}>Sessão concluída</h3><p style={{ fontSize:"13px", color:"#86868B", margin:0 }}>{shuffled.current.length} cards</p></div>
-      <div style={{ display:"flex", gap:"28px" }}>
-        <div style={{ textAlign:"center" }}><div style={{ fontSize:"32px", fontWeight:700, color:"#34C759" }}>{score.acertos}</div><div style={{ fontSize:"12px", color:"#86868B" }}>Acertos</div></div>
+      <div style={{ display:"flex", gap:"32px" }}>
+        <div style={{ textAlign:"center" as const }}>
+          <div style={{ fontSize:"36px", fontWeight:800, color:"#2A9A60" }}>{score.acertos}</div>
+          <div style={{ fontSize:"12px", color:"#8A9AB8" }}>Acertos</div>
+        </div>
         <div style={{ width:1, background:"rgba(0,0,0,0.08)" }}/>
-        <div style={{ textAlign:"center" }}><div style={{ fontSize:"32px", fontWeight:700, color:"#FF3B30" }}>{score.erros}</div><div style={{ fontSize:"12px", color:"#86868B" }}>Erros</div></div>
+        <div style={{ textAlign:"center" as const }}>
+          <div style={{ fontSize:"36px", fontWeight:800, color:"#CC2A20" }}>{score.erros}</div>
+          <div style={{ fontSize:"12px", color:"#8A9AB8" }}>Erros</div>
+        </div>
       </div>
-      <button onClick={doRestart} style={{ padding:"12px 28px", borderRadius:"12px", border:"none", background:"linear-gradient(135deg,#0071E3,#0077ED)", color:"#fff", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}>Revisar novamente</button>
+      <button onClick={doRestart}
+        style={{ padding:"13px 32px", borderRadius:"14px", border:"none", background:"linear-gradient(135deg,#1A4A8A,#2A6ACC)", color:"#fff", fontSize:"15px", fontWeight:800, cursor:"pointer", fontFamily:"Nunito, sans-serif", boxShadow:"0 3px 14px rgba(26,74,138,0.28)" }}>
+        Revisar novamente
+      </button>
     </div>
   );
 
@@ -574,77 +609,97 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
   if (!card) return null;
 
   const langs = [
-    { nome:card.lang_1_nome, txt:card.lang_1_txt, fon:card.lang_1_fon, bcp47:card.lang_1_bcp47, exemplo:card.lang_1_exemplo },
-    { nome:card.lang_2_nome, txt:card.lang_2_txt, fon:card.lang_2_fon, bcp47:card.lang_2_bcp47, exemplo:card.lang_2_exemplo },
-    { nome:card.lang_3_nome, txt:card.lang_3_txt, fon:card.lang_3_fon, bcp47:card.lang_3_bcp47, exemplo:card.lang_3_exemplo },
-  ];
-  const quizLangNome = langs[quizLang]?.nome ?? langs[0].nome;
-  const quizCorrect  = langs[quizLang]?.txt  ?? langs[0].txt;
+    { nome:card.lang_1_nome||"", txt:card.lang_1_txt||"", fon:card.lang_1_fon||"", bcp47:card.lang_1_bcp47||"", exemplo:card.lang_1_exemplo||"" },
+    { nome:card.lang_2_nome||"", txt:card.lang_2_txt||"", fon:card.lang_2_fon||"", bcp47:card.lang_2_bcp47||"", exemplo:card.lang_2_exemplo||"" },
+    { nome:card.lang_3_nome||"", txt:card.lang_3_txt||"", fon:card.lang_3_fon||"", bcp47:card.lang_3_bcp47||"", exemplo:card.lang_3_exemplo||"" },
+  ].filter(l => l.txt && l.txt !== "--" && l.txt.trim().length > 0);
+
+  const quizLangInfo  = langs[quizLang] ?? langs[0];
+  const quizCorrectTxt = quizLangInfo?.txt ?? "";
 
   return (
-    <div style={{ display:"flex", flexDirection:"column", alignItems:"center", padding:"16px", gap:"14px", height:"100%", overflowY:"auto" }}>
-      {urgentesCount>0&&(
-        <div style={{ width:"100%", maxWidth:"500px", padding:"10px 14px", borderRadius:"10px", background:"rgba(255,149,0,0.08)", border:"1px solid rgba(255,149,0,0.25)", display:"flex", alignItems:"center", gap:"8px" }}>
-          <Icon.Fire/><span style={{ fontSize:"12px", color:"#FF9500", fontWeight:600 }}>{urgentesCount} card{urgentesCount>1?"s":""} priorizados nesta sessão</span>
+    <div style={{ display:"flex", flexDirection:"column" as const, alignItems:"center", padding:"20px 16px 40px", gap:"14px", height:"100%", overflowY:"auto" as const, background:"#F7F8FC" }}>
+
+      {/* Urgentes badge */}
+      {urgentesCount > 0 && (
+        <div style={{ width:"100%", maxWidth:"520px", padding:"8px 14px", borderRadius:"10px", background:"rgba(224,120,32,0.08)", border:"1px solid rgba(224,120,32,0.22)", display:"flex", alignItems:"center", gap:"8px" }}>
+          <span style={{ fontSize:"16px" }}>🔥</span>
+          <span style={{ fontSize:"12px", color:"#C06010", fontWeight:700, fontFamily:"Nunito, sans-serif" }}>
+            {urgentesCount} card{urgentesCount > 1 ? "s" : ""} sem revisão há 3+ dias — priorizados
+          </span>
         </div>
       )}
-      <div style={{ display:"flex", gap:"6px", padding:"3px", borderRadius:"10px", background:"rgba(0,0,0,0.06)", width:"100%", maxWidth:"500px" }}>
-        {(["flip","quiz"] as const).map(m=>(
-          <button key={m} onClick={()=>{setMode(m);doRestart();}} style={{ flex:1, padding:"6px", borderRadius:"8px", border:"none", cursor:"pointer", fontSize:"12px", fontWeight:mode===m?600:500, background:mode===m?"#fff":"transparent", color:mode===m?"#1D1D1F":"#86868B", boxShadow:mode===m?"0 1px 4px rgba(0,0,0,0.10)":"none", fontFamily:"Nunito, sans-serif" }}>
-            {m==="flip"?"Virar Card":"Quiz"}
+
+      {/* Seletor de modo */}
+      <div style={{ display:"flex", gap:"6px", padding:"4px", borderRadius:"12px", background:"rgba(0,0,0,0.06)", width:"100%", maxWidth:"520px" }}>
+        {(["flip","quiz"] as const).map(m => (
+          <button key={m} onClick={() => { setMode(m); doRestart(); }}
+            style={{ flex:1, padding:"8px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"13px", fontWeight:mode===m?800:500, background:mode===m?"#fff":"transparent", color:mode===m?"#1A4A8A":"#6A7A9A", boxShadow:mode===m?"0 1px 6px rgba(0,0,0,0.10)":"none", fontFamily:"Nunito, sans-serif", transition:"all 0.2s" }}>
+            {m === "flip" ? "🃏 Virar Card" : "🎯 Quiz"}
           </button>
         ))}
       </div>
-      <div style={{ width:"100%", maxWidth:"500px" }}>
+
+      {/* Progresso */}
+      <div style={{ width:"100%", maxWidth:"520px" }}>
         <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"6px" }}>
-          <span style={{ fontSize:"12px", color:"#86868B" }}>{index+1} de {shuffled.current.length}</span>
-          <div style={{ display:"flex", gap:"12px" }}>
-            <span style={{ fontSize:"12px", color:"#34C759", fontWeight:600, display:"flex", alignItems:"center", gap:"3px" }}><Icon.Check/>{score.acertos}</span>
-            <span style={{ fontSize:"12px", color:"#FF3B30", fontWeight:600, display:"flex", alignItems:"center", gap:"3px" }}><Icon.X/>{score.erros}</span>
+          <span style={{ fontSize:"12px", color:"#8A9AB8", fontFamily:"Nunito, sans-serif" }}>{index+1} / {shuffled.current.length}</span>
+          <div style={{ display:"flex", gap:"14px" }}>
+            <span style={{ fontSize:"12px", color:"#2A9A60", fontWeight:700 }}>✓ {score.acertos}</span>
+            <span style={{ fontSize:"12px", color:"#CC2A20", fontWeight:700 }}>✗ {score.erros}</span>
           </div>
         </div>
-        <div style={{ height:4, borderRadius:4, background:"rgba(0,0,0,0.06)", overflow:"hidden" }}>
-          <div style={{ height:"100%", borderRadius:4, background:"linear-gradient(90deg,#0071E3,#34AADC)", width:`${(index/shuffled.current.length)*100}%`, transition:"width 0.3s ease" }}/>
+        <div style={{ height:5, borderRadius:5, background:"rgba(0,0,0,0.07)", overflow:"hidden" }}>
+          <div style={{ height:"100%", borderRadius:5, background:"linear-gradient(90deg,#1A4A8A,#2A6ACC)", width:`${((index)/shuffled.current.length)*100}%`, transition:"width 0.35s ease" }}/>
         </div>
       </div>
-      {mode==="flip"&&(
+
+      {/* ── MODO FLIP ─────────────────────────────────────────────────────── */}
+      {mode === "flip" && (
         <>
-          {/* Frente -- clique vira o card */}
           {!flipped ? (
-            <div onClick={()=>setFlipped(true)}
-              style={{ width:"100%", maxWidth:"500px", minHeight:"190px", borderRadius:"20px", background:"#FFFFFF", boxShadow:"0 4px 24px rgba(0,0,0,0.40)", padding:"24px", cursor:"pointer", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"12px", border:"1.5px solid rgba(0,0,0,0.06)", transition:"transform 0.15s" }}
-              onMouseEnter={e=>(e.currentTarget as HTMLElement).style.transform="scale(1.01)"}
-              onMouseLeave={e=>(e.currentTarget as HTMLElement).style.transform="scale(1)"}>
-              <span style={{ fontSize:"10px", color:"#86868B", fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.06em" }}>Em Português</span>
-              <p style={{ fontSize:"22px", fontWeight:700, color:"#1D1D1F", textAlign:"center", margin:0 }}>{card.titulo_card||card.tema_gerador}</p>
-              <span style={{ fontSize:"11px", color:"#AEAEB2" }}>Toque para ver as traduções</span>
+            /* Frente */
+            <div onClick={() => setFlipped(true)}
+              style={{ width:"100%", maxWidth:"520px", minHeight:"200px", borderRadius:"22px", background:"linear-gradient(135deg,#1A4A8A,#2A6ACC)", boxShadow:"0 6px 28px rgba(26,74,138,0.30)", padding:"28px 24px", cursor:"pointer", display:"flex", flexDirection:"column" as const, alignItems:"center", justifyContent:"center", gap:"14px", transition:"transform 0.15s, box-shadow 0.15s", userSelect:"none" as const }}
+              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform="scale(1.015)"; (e.currentTarget as HTMLElement).style.boxShadow="0 10px 36px rgba(26,74,138,0.38)"; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform="scale(1)"; (e.currentTarget as HTMLElement).style.boxShadow="0 6px 28px rgba(26,74,138,0.30)"; }}>
+              <span style={{ fontSize:"11px", color:"rgba(255,255,255,0.65)", fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", fontFamily:"Nunito, sans-serif" }}>Em Português</span>
+              <p style={{ fontSize:"26px", fontWeight:800, color:"#fff", textAlign:"center" as const, margin:0, fontFamily:"Nunito, sans-serif", lineHeight:1.2 }}>
+                {card.titulo_card || card.tema_gerador}
+              </p>
+              <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.50)", fontFamily:"Nunito, sans-serif" }}>Toque para ver as traduções →</span>
             </div>
           ) : (
-            /* Verso -- cada língua é clicável para ouvir */
-            <div style={{ width:"100%", maxWidth:"500px", borderRadius:"20px", background:"#FFFFFF", boxShadow:"0 4px 24px rgba(0,0,0,0.40)", padding:"20px", border:"1.5px solid rgba(0,0,0,0.06)" }}>
-              <span style={{ fontSize:"10px", color:"#1A4A8A", fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.06em", display:"block", marginBottom:"12px", textAlign:"center" as const }}>
-                Toque numa língua para ouvir
-              </span>
-              <div style={{ display:"flex", flexDirection:"column", gap:"8px" }}>
-                {langs.map(l => {
-                  const fkey = "fl-" + l.bcp47 + l.txt.slice(0,8);
+            /* Verso */
+            <div style={{ width:"100%", maxWidth:"520px", borderRadius:"22px", background:"#fff", boxShadow:"0 4px 20px rgba(0,0,0,0.10)", padding:"20px", border:"1.5px solid rgba(26,74,138,0.12)" }}>
+              <div style={{ fontSize:"11px", color:"#1A4A8A", fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", textAlign:"center" as const, marginBottom:"14px", fontFamily:"Nunito, sans-serif" }}>
+                Toque para ouvir
+              </div>
+              <div style={{ display:"flex", flexDirection:"column" as const, gap:"8px" }}>
+                {langs.map((l, li) => {
+                  const fkey  = `fl-${li}-${l.bcp47}-${l.txt.slice(0,6)}`;
                   const isPlay = audio.isSpeaking && audio.speakingKey === fkey;
                   return (
-                    <button key={l.bcp47}
-                      onClick={e => { e.stopPropagation(); isPlay ? audio.stopSpeaking() : audio.speak(l.txt, l.bcp47, fkey); }}
-                      style={{ width:"100%", borderRadius:"12px", background:isPlay?"rgba(26,74,138,0.08)":"#F5F7FF", border:isPlay?"1.5px solid rgba(0,113,227,0.25)":"1.5px solid transparent", cursor:"pointer", padding:0, overflow:"hidden", fontFamily:"Nunito, sans-serif", transition:"all 0.2s", textAlign:"left" as const }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:"10px", padding:"10px 14px" }}>
-                        <div style={{ width:34, height:34, borderRadius:"50%", background:isPlay?"#1A4A8A":"rgba(26,74,138,0.08)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:isPlay?"#fff":"#1A4A8A", transition:"all 0.2s" }}>
-                          {isPlay ? <Icon.Wave/> : <Icon.Volume/>}
+                    <button key={li}
+                      onClick={() => isPlay ? audio.stopSpeaking() : audio.speak(l.txt, l.bcp47, fkey)}
+                      style={{ width:"100%", borderRadius:"14px", background:isPlay?"rgba(26,74,138,0.08)":"#F7F8FC", border:`1.5px solid ${isPlay?"rgba(26,74,138,0.30)":"transparent"}`, cursor:"pointer", padding:0, overflow:"hidden", textAlign:"left" as const, transition:"all 0.2s", fontFamily:"Nunito, sans-serif" }}>
+                      <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px 14px" }}>
+                        <div style={{ width:36, height:36, borderRadius:"50%", background:isPlay?"#1A4A8A":"rgba(26,74,138,0.10)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.2s" }}>
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={isPlay?"#fff":"#1A4A8A"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                            {isPlay
+                              ? <><line x1="8" y1="6" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="18"/></>
+                              : <polygon points="5 3 19 12 5 21 5 3"/>
+                            }
+                          </svg>
                         </div>
                         <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:"10px", fontWeight:600, color:isPlay?"#1A4A8A":"#86868B", textTransform:"uppercase" as const, letterSpacing:"0.05em", marginBottom:"2px" }}>{l.nome}</div>
-                          <div style={{ fontSize:"16px", fontWeight:700, color:isPlay?"#1A4A8A":"#1D1D1F" }}>{l.txt}</div>
-                          <div style={{ fontSize:"12px", color:"#86868B", fontStyle:"italic", marginTop:"2px" }}>{l.fon}</div>
+                          <div style={{ fontSize:"10px", fontWeight:700, color:isPlay?"#1A4A8A":"#8A9AB8", textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"2px" }}>{l.nome}</div>
+                          <div style={{ fontSize:"17px", fontWeight:800, color:isPlay?"#1A4A8A":"#1A2A40" }}>{l.txt}</div>
+                          {l.fon && <div style={{ fontSize:"12px", color:"#8A9AB8", fontStyle:"italic", marginTop:"2px" }}>{l.fon}</div>}
                         </div>
                       </div>
-                      {l.exemplo&&(
-                        <div style={{ padding:"5px 14px 9px 58px", borderTop:"1px solid rgba(0,0,0,0.05)", fontSize:"11px", color:"#86868B", fontStyle:"italic", lineHeight:1.5 }}>
+                      {l.exemplo && (
+                        <div style={{ padding:"5px 14px 10px 62px", borderTop:"1px solid rgba(0,0,0,0.05)", fontSize:"11px", color:"#8A9AB8", fontStyle:"italic", lineHeight:1.55 }}>
                           {l.exemplo}
                         </div>
                       )}
@@ -652,257 +707,113 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
                   );
                 })}
               </div>
-              <button onClick={()=>setFlipped(false)}
-                style={{ width:"100%", marginTop:"10px", padding:"6px", background:"none", border:"none", cursor:"pointer", fontSize:"11px", color:"#AEAEB2", fontFamily:"Nunito, sans-serif" }}>
-                Virar de volta
+            </div>
+          )}
+
+          {/* Botões de avaliação — só aparecem quando virado */}
+          {flipped && (
+            <div style={{ display:"flex", gap:"12px", width:"100%", maxWidth:"520px" }}>
+              <button onClick={() => advanceFlip(false)}
+                style={{ flex:1, padding:"13px", borderRadius:"14px", border:"1.5px solid rgba(204,42,32,0.25)", background:"rgba(204,42,32,0.06)", color:"#CC2A20", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"Nunito, sans-serif", transition:"all 0.2s" }}>
+                ✗ Errei
+              </button>
+              <button onClick={() => advanceFlip(true)}
+                style={{ flex:1, padding:"13px", borderRadius:"14px", border:"1.5px solid rgba(42,154,96,0.25)", background:"rgba(42,154,96,0.06)", color:"#2A9A60", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"Nunito, sans-serif", transition:"all 0.2s" }}>
+                ✓ Acertei
               </button>
             </div>
           )}
-          {/* Botões Acertei/Errei só aparecem quando virado */}
-          {flipped
-            ? <div style={{ display:"flex", gap:"12px", width:"100%", maxWidth:"500px" }}>
-                <button onClick={()=>next(false)} style={{ flex:1, padding:"12px", borderRadius:"12px", border:"1.5px solid rgba(255,59,48,0.25)", background:"rgba(255,59,48,0.05)", color:"#FF3B30", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"Nunito, sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"6px" }}><Icon.X/>Errei</button>
-                <button onClick={()=>next(true)}  style={{ flex:1, padding:"12px", borderRadius:"12px", border:"1.5px solid rgba(52,199,89,0.25)", background:"rgba(52,199,89,0.05)", color:"#34C759", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"Nunito, sans-serif", display:"flex", alignItems:"center", justifyContent:"center", gap:"6px" }}><Icon.Check/>Acertei</button>
-              </div>
-            : <p style={{ fontSize:"12px", color:"#AEAEB2", margin:0 }}>Tente lembrar antes de tocar no card</p>
-          }
+
+          {/* Botão virar de volta */}
+          {flipped && (
+            <button onClick={() => setFlipped(false)}
+              style={{ background:"none", border:"none", cursor:"pointer", fontSize:"12px", color:"#AEAEB2", fontFamily:"Nunito, sans-serif", padding:"4px" }}>
+              ← Ver pergunta novamente
+            </button>
+          )}
         </>
       )}
-      {mode==="quiz"&&(
+
+      {/* ── MODO QUIZ ─────────────────────────────────────────────────────── */}
+      {mode === "quiz" && (
         <>
           {/* Pergunta */}
-          <div style={{ width:"100%", maxWidth:"500px", borderRadius:"20px", background:"#FFFFFF", boxShadow:"0 4px 24px rgba(0,0,0,0.40)", padding:"24px", border:"1px solid rgba(255,255,255,0.06)" }}>
-            <p style={{ margin:"0 0 6px", fontSize:"11px", color:"#86868B", fontWeight:600, textTransform:"uppercase" as const, letterSpacing:"0.06em" }}>Como se diz em {quizLangNome}?</p>
-            <p style={{ margin:0, fontSize:"20px", fontWeight:700, color:"#1D1D1F" }}>{card.titulo_card||card.tema_gerador}</p>
+          <div style={{ width:"100%", maxWidth:"520px", borderRadius:"22px", background:"linear-gradient(135deg,#1A4A8A,#2A6ACC)", boxShadow:"0 6px 28px rgba(26,74,138,0.28)", padding:"24px" }}>
+            <p style={{ margin:"0 0 8px", fontSize:"12px", color:"rgba(255,255,255,0.65)", fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", fontFamily:"Nunito, sans-serif" }}>
+              Como se diz em {quizLangInfo?.nome}?
+            </p>
+            <p style={{ margin:0, fontSize:"22px", fontWeight:800, color:"#fff", fontFamily:"Nunito, sans-serif", lineHeight:1.2 }}>
+              {card.titulo_card || card.tema_gerador}
+            </p>
           </div>
 
-          {/* Opções -- após responder, a correta ganha botão de áudio */}
-          <div style={{ display:"flex", flexDirection:"column", gap:"10px", width:"100%", maxWidth:"500px" }}>
-            {quizOpts.length===0
-              ? <p style={{ textAlign:"center", color:"#86868B", fontSize:"13px" }}>Carregando...</p>
-              : quizOpts.map((opt,i)=>{
-                  const isCorrect  = opt === quizCorrect;
-                  const isSelected = quizAnswer === i;
+          {/* Opções */}
+          <div style={{ display:"flex", flexDirection:"column" as const, gap:"10px", width:"100%", maxWidth:"520px" }}>
+            {quizOpts.length === 0
+              ? <p style={{ textAlign:"center" as const, color:"#8A9AB8", fontSize:"14px" }}>Carregando opções...</p>
+              : quizOpts.map((opt, i) => {
                   const answered   = quizAnswer !== null;
+                  const isSelected = quizAnswer === i;
+                  const isCorrect  = opt.correct;
 
-                  let bg = "#fff", borderColor = "rgba(0,0,0,0.10)", textColor = "#1D1D1F";
+                  let bg = "#fff", border = "1.5px solid rgba(0,0,0,0.09)", color = "#1A2A40", fw = 500;
                   if (answered) {
-                    if (isCorrect)       { bg="rgba(52,199,89,0.08)"; borderColor="#34C759"; textColor="#34C759"; }
-                    else if (isSelected) { bg="rgba(255,59,48,0.08)"; borderColor="#FF3B30"; textColor="#FF3B30"; }
+                    if (isCorrect)       { bg="rgba(42,154,96,0.09)";  border="1.5px solid #2A9A60"; color="#2A9A60"; fw=800; }
+                    else if (isSelected) { bg="rgba(204,42,32,0.08)";  border="1.5px solid #CC2A20"; color="#CC2A20"; fw=700; }
+                    else                 { bg="#F7F8FC"; color="#AEAEB2"; }
                   }
 
-                  // Fonética da opção correta (busca no langs)
-                  const langFon = isCorrect ? (langs[quizLang]?.fon ?? "") : "";
-                  const qkey    = "quiz-" + i + opt.slice(0,8);
-                  const isPlay  = audio.isSpeaking && audio.speakingKey === qkey;
+                  const qkey   = `qz-${index}-${i}`;
+                  const isPlay = audio.isSpeaking && audio.speakingKey === qkey;
 
                   return (
-                    <button key={i} disabled={answered && !isCorrect}
+                    <button key={i}
+                      disabled={answered}
                       onClick={() => {
-                        if (!answered) {
-                          setQuizAnswer(i);
-                          // Pronuncia automaticamente a resposta correta após 400ms
-                          if (isCorrect) setTimeout(() => audio.speak(opt, langs[quizLang]?.bcp47 ?? "pt-BR", qkey), 400);
-                          setTimeout(() => next(isCorrect), 1200);
-                        } else if (isCorrect) {
-                          // Permite ouvir de novo clicando na correta
-                          isPlay ? audio.stopSpeaking() : audio.speak(opt, langs[quizLang]?.bcp47 ?? "pt-BR", qkey);
+                        if (answered) return;
+                        setQuizAnswer(i);
+                        setShowFon(true);
+                        if (isCorrect) {
+                          setTimeout(() => audio.speak(opt.txt, quizLangInfo?.bcp47 ?? "es-ES", qkey), 350);
                         }
+                        setTimeout(() => advanceQuiz(), 1400);
                       }}
-                      style={{ width:"100%", padding:"14px 16px", borderRadius:"12px", border:`1.5px solid ${borderColor}`, background:bg, color:textColor, fontSize:"14px", fontWeight:isCorrect&&answered?700:500, cursor:answered&&!isCorrect?"default":"pointer", fontFamily:"Nunito, sans-serif", textAlign:"left" as const, transition:"all 0.2s", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px" }}>
-                      <div>
-                        <div>{opt}</div>
-                        {/* Mostra fonética da correta após responder */}
-                        {isCorrect && answered && langFon && (
-                          <div style={{ fontSize:"11px", fontStyle:"italic", color:"#34C759", marginTop:"3px", fontWeight:400 }}>{langFon}</div>
-                        )}
-                      </div>
-                      {/* Ícone de áudio na opção correta após responder */}
-                      {isCorrect && answered && (
-                        <div style={{ width:30, height:30, borderRadius:"50%", background:"rgba(52,199,89,0.15)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:"#34C759" }}>
-                          {isPlay ? <Icon.Wave/> : <Icon.Volume/>}
-                        </div>
+                      style={{ width:"100%", padding:"14px 18px", borderRadius:"14px", border, background:bg, color, fontSize:"15px", fontWeight:fw, cursor:answered?"default":"pointer", fontFamily:"Nunito, sans-serif", textAlign:"left" as const, transition:"all 0.22s", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px" }}>
+                      <span>{opt.txt}</span>
+                      {answered && isCorrect && (
+                        <span style={{ fontSize:"16px" }}>✓</span>
+                      )}
+                      {answered && isSelected && !isCorrect && (
+                        <span style={{ fontSize:"16px" }}>✗</span>
                       )}
                     </button>
                   );
                 })
             }
           </div>
+
+          {/* Fonética da resposta correta */}
+          {showFon && quizLangInfo?.fon && (
+            <div style={{ width:"100%", maxWidth:"520px", padding:"10px 16px", borderRadius:"12px", background:"rgba(42,154,96,0.08)", border:"1px solid rgba(42,154,96,0.20)", display:"flex", alignItems:"center", gap:"10px", animation:"fadeIn 0.2s ease forwards" }}>
+              <span style={{ fontSize:"16px" }}>🔊</span>
+              <div>
+                <div style={{ fontSize:"11px", color:"#2A9A60", fontWeight:700, fontFamily:"Nunito, sans-serif" }}>{quizLangInfo.nome}</div>
+                <div style={{ fontSize:"14px", color:"#2A6A48", fontStyle:"italic", fontFamily:"Nunito, sans-serif" }}>{quizLangInfo.fon}</div>
+              </div>
+              <button onClick={() => audio.speak(quizCorrectTxt, quizLangInfo?.bcp47 ?? "es-ES", `qz-replay-${index}`)}
+                style={{ marginLeft:"auto", padding:"6px 12px", borderRadius:"8px", border:"none", background:"rgba(42,154,96,0.15)", color:"#2A9A60", fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}>
+                Ouvir de novo
+              </button>
+            </div>
+          )}
         </>
       )}
+
     </div>
   );
 }
 
-// ── Progresso ─────────────────────────────────────────────────────────────────
 
-function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
-  const total=cards.length, romanicos=cards.filter(c=>c.tronco==="românico").length, germanicos=cards.filter(c=>c.tronco==="germânico").length;
-  const hoje=new Date();hoje.setHours(0,0,0,0);
-  let streak=0,checkDay=new Date(hoje);
-  while(true){const d=checkDay.toDateString();const h=cards.some(c=>new Date(c.criado_em).toDateString()===d);if(!h)break;streak++;checkDay.setDate(checkDay.getDate()-1);}
-  const paraRevisar=cards.filter(c=>Math.floor((Date.now()-new Date(c.criado_em).getTime())/86400000)>=3).length;
-  const diasUnicos=[...new Set(cards.map(c=>new Date(c.criado_em).toDateString()))].length;
-  const ultimos7=Array.from({length:7},(_,i)=>{const d=new Date();d.setDate(d.getDate()-(6-i));return{label:d.toLocaleDateString("pt-BR",{weekday:"short"}).replace(".",""),count:cards.filter(c=>new Date(c.criado_em).toDateString()===d.toDateString()).length,isToday:i===6};});
-  const maxCount=Math.max(...ultimos7.map(d=>d.count),1);
-  const langCount:Record<string,number>={};
-  cards.forEach(c=>{[c.lang_1_nome,c.lang_2_nome,c.lang_3_nome].forEach(l=>{langCount[l]=(langCount[l]||0)+1;});});
-  const topLangs=Object.entries(langCount).sort((a,b)=>b[1]-a[1]),maxLang=topLangs[0]?.[1]||1;
-  const badges=[
-    {label:"Primeiro Nexo",unlocked:total>=1,desc:"1º nexo"},
-    {label:"10 Nexos",unlocked:total>=10,desc:"10 nexos"},
-    {label:"50 Nexos",unlocked:total>=50,desc:"50 nexos"},
-    {label:"3 Dias",unlocked:streak>=3,desc:"3 consecutivos"},
-    {label:"7 Dias",unlocked:streak>=7,desc:"7 consecutivos"},
-    {label:"Bilíngue",unlocked:romanicos>0&&germanicos>0,desc:"2 troncos"},
-  ];
-  function exportTxt(){const l=cards.map(c=>`${c.titulo_card||c.tema_gerador}\n${c.lang_1_nome}: ${c.lang_1_txt} [${c.lang_1_fon}]\n${c.lang_2_nome}: ${c.lang_2_txt} [${c.lang_2_fon}]\n${c.lang_3_nome}: ${c.lang_3_txt} [${c.lang_3_fon}]\n---`).join("\n\n");const b=new Blob([`CHICO MENTOR\n\n${l}`],{type:"text/plain;charset=utf-8"});const a=document.createElement("a");a.href=URL.createObjectURL(b);a.download="chico-nexos.txt";a.click();}
-  return(
-    <div style={{padding:"20px 16px",overflowY:"auto",height:"100%",display:"flex",flexDirection:"column",gap:"14px"}}>
-      {streak>0&&<div style={{background:"linear-gradient(135deg,#FF9500,#FF6B00)",borderRadius:"16px",padding:"16px 20px",display:"flex",alignItems:"center",justifyContent:"space-between"}}><div><div style={{fontSize:"12px",fontWeight:600,color:"rgba(255,255,255,0.8)",marginBottom:"2px"}}>Sequência atual</div><div style={{fontSize:"28px",fontWeight:700,color:"#fff"}}>{streak} {streak===1?"dia":"dias"} seguidos</div></div><Icon.Fire/></div>}
-      {paraRevisar>0&&<div style={{background:"rgba(255,149,0,0.08)",borderRadius:"14px",padding:"14px 16px",border:"1px solid rgba(255,149,0,0.25)",display:"flex",alignItems:"center",justifyContent:"space-between"}}><div><div style={{fontSize:"12px",fontWeight:700,color:"#FF9500"}}>{paraRevisar} card{paraRevisar>1?"s":""} para revisar</div><div style={{fontSize:"11px",color:"#86868B",marginTop:"2px"}}>Não vistos há 3+ dias</div></div><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#FF9500" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg></div>}
-      <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"10px"}}>
-        {[{value:total,label:"Nexos",color:"#1A4A8A"},{value:diasUnicos,label:"Dias ativos",color:"#FF9500"},{value:total*3,label:"Traduções",color:"#34C759"}].map(s=>(
-          <div key={s.label} style={{background:"#fff",borderRadius:"14px",padding:"14px",boxShadow:"0 1px 4px rgba(0,0,0,0.06)",textAlign:"center"}}><div style={{fontSize:"26px",fontWeight:700,color:s.color}}>{s.value}</div><div style={{fontSize:"11px",color:"#86868B",fontWeight:500,marginTop:"2px"}}>{s.label}</div></div>
-        ))}
-      </div>
-      <div style={{background:"#fff",borderRadius:"16px",padding:"18px",boxShadow:"0 1px 4px rgba(0,0,0,0.06)"}}>
-        <h3 style={{margin:"0 0 14px",fontSize:"13px",fontWeight:700,color:"#1D1D1F"}}>Últimos 7 dias</h3>
-        <div style={{display:"flex",alignItems:"flex-end",gap:"8px",height:"64px"}}>
-          {ultimos7.map(d=>(
-            <div key={d.label} style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",gap:"5px",height:"100%",justifyContent:"flex-end"}}>
-              <div style={{width:"100%",borderRadius:"4px 4px 0 0",background:d.count>0?(d.isToday?"linear-gradient(180deg,#FF9500,#FF6B00)":"linear-gradient(180deg,#0071E3,#34AADC)"):"#F0F0F0",height:`${Math.max((d.count/maxCount)*44,d.count>0?6:3)}px`,transition:"height 0.4s ease"}}/>
-              <span style={{fontSize:"9px",color:d.isToday?"#1A4A8A":"#86868B",fontWeight:d.isToday?700:400,textTransform:"capitalize" as const}}>{d.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div style={{background:"#fff",borderRadius:"16px",padding:"18px",boxShadow:"0 1px 4px rgba(0,0,0,0.06)"}}>
-        <h3 style={{margin:"0 0 12px",fontSize:"13px",fontWeight:700,color:"#1D1D1F"}}>Por tronco</h3>
-        {[{label:"Tear Românico",count:romanicos,color:"#FF3B30"},{label:"Tear Germânico",count:germanicos,color:"#1A4A8A"}].map(t=>(
-          <div key={t.label} style={{marginBottom:"10px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:"5px"}}><span style={{fontSize:"12px",fontWeight:500,color:"#3A3A3C"}}>{t.label}</span><span style={{fontSize:"12px",fontWeight:600,color:t.color}}>{t.count}</span></div>
-            <div style={{height:5,borderRadius:5,background:"rgba(0,0,0,0.06)",overflow:"hidden"}}><div style={{height:"100%",borderRadius:5,background:t.color,width:`${total>0?(t.count/total)*100:0}%`,transition:"width 0.5s ease"}}/></div>
-          </div>
-        ))}
-      </div>
-      <div style={{background:"#fff",borderRadius:"16px",padding:"18px",boxShadow:"0 1px 4px rgba(0,0,0,0.06)"}}>
-        <h3 style={{margin:"0 0 14px",fontSize:"13px",fontWeight:700,color:"#1D1D1F"}}>Conquistas</h3>
-        <div style={{display:"grid",gridTemplateColumns:"repeat(3,1fr)",gap:"8px"}}>
-          {badges.map(b=>(
-            <div key={b.label} style={{padding:"12px 8px",borderRadius:"12px",background:b.unlocked?"rgba(26,74,138,0.06)":"rgba(255,255,255,0.03)",border:`1px solid ${b.unlocked?"rgba(212,175,55,0.25)":"rgba(0,0,0,0.05)"}`,textAlign:"center",opacity:b.unlocked?1:0.5}}>
-              <div style={{fontSize:"18px",marginBottom:"5px"}}>{b.unlocked?"⭐":"🔒"}</div>
-              <div style={{fontSize:"11px",fontWeight:600,color:b.unlocked?"#1A4A8A":"#86868B",lineHeight:1.3}}>{b.label}</div>
-              <div style={{fontSize:"10px",color:"#AEAEB2",marginTop:"2px"}}>{b.desc}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-      {topLangs.length>0&&<div style={{background:"#fff",borderRadius:"16px",padding:"18px",boxShadow:"0 1px 4px rgba(0,0,0,0.06)"}}>
-        <h3 style={{margin:"0 0 12px",fontSize:"13px",fontWeight:700,color:"#1D1D1F"}}>Top línguas</h3>
-        {topLangs.map(([lang,count])=>(
-          <div key={lang} style={{marginBottom:"10px"}}>
-            <div style={{display:"flex",justifyContent:"space-between",marginBottom:"5px"}}><span style={{fontSize:"12px",fontWeight:500,color:"#3A3A3C"}}>{lang}</span><span style={{fontSize:"12px",fontWeight:600,color:"#1A4A8A"}}>{count}x</span></div>
-            <div style={{height:5,borderRadius:5,background:"rgba(0,0,0,0.06)",overflow:"hidden"}}><div style={{height:"100%",borderRadius:5,background:"linear-gradient(90deg,#0071E3,#34AADC)",width:`${(count/maxLang)*100}%`,transition:"width 0.5s ease"}}/></div>
-          </div>
-        ))}
-      </div>}
-      <button onClick={exportTxt} style={{display:"flex",alignItems:"center",justifyContent:"center",gap:"8px",padding:"13px",borderRadius:"12px",border:"1.5px solid rgba(0,113,227,0.25)",background:"rgba(0,113,227,0.05)",color:"#1A4A8A",fontSize:"14px",fontWeight:600,cursor:"pointer",fontFamily:"Nunito, sans-serif"}}>
-        <Icon.Download/>Exportar ({total} nexos)
-      </button>
-    </div>
-  );
-}
-
-// ── Imersão ───────────────────────────────────────────────────────────────────
-
-// ── Viagem ────────────────────────────────────────────────────────────────────
-
-function ViagemTab({ profile, audio }: { profile: UserProfile | null; audio: ReturnType<typeof useAudio> }) {
-  const [destino, setDestino]     = useState("");
-  const [guia, setGuia]           = useState<any>(null);
-  const [troncoInfo, setTroncoInfo] = useState<any[]>([]);
-  const [loading, setLoading]     = useState(false);
-
-  async function handleGerar() {
-    if (!destino.trim() || !profile) return;
-    setLoading(true); setGuia(null);
-    try {
-      const res  = await fetch("/api/chico", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ acao:"viagem", tronco:profile.tronco, destino:destino.trim() }) });
-      const data = await res.json();
-      if (res.ok) { setGuia(data.viagem); setTroncoInfo(data.troncoInfo||[]); }
-    } catch {}
-    setLoading(false);
-  }
-
-  const langNomes = troncoInfo.map((l:any) => l.nome);
-
-  return (
-    <div style={{ display:"flex", flexDirection:"column", height:"100%", padding:"20px 16px", gap:"14px", overflowY:"auto" }}>
-      <div>
-        <h2 style={{ margin:"0 0 4px", fontSize:"17px", fontWeight:700, color:"#1D1D1F" }}>Modo Viagem</h2>
-        <p style={{ margin:0, fontSize:"13px", color:"#86868B", lineHeight:1.5 }}>Digite um destino e o Chico cria um guia de sobrevivência linguística para a sua viagem.</p>
-      </div>
-
-      <div style={{ display:"flex", gap:"8px" }}>
-        <input value={destino} onChange={e=>setDestino(e.target.value)} placeholder="Ex: Buenos Aires, Paris, Roma..."
-          style={{ flex:1, padding:"12px 14px", borderRadius:"12px", border:"1.5px solid rgba(0,0,0,0.10)", fontSize:"14px", color:"#1D1D1F", fontFamily:"Nunito, sans-serif", background:"#fff", outline:"none" }}
-          onFocus={e=>(e.target.style.borderColor="#1A4A8A")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}
-          onKeyDown={e=>e.key==="Enter"&&handleGerar()}/>
-        <button onClick={handleGerar} disabled={!destino.trim()||loading}
-          style={{ padding:"12px 20px", borderRadius:"12px", border:"none", background:!destino.trim()||loading?"rgba(0,0,0,0.08)":"linear-gradient(135deg,#0071E3,#0077ED)", color:!destino.trim()||loading?"#86868B":"#fff", fontSize:"14px", fontWeight:600, cursor:!destino.trim()||loading?"not-allowed":"pointer", fontFamily:"Nunito, sans-serif", whiteSpace:"nowrap" as const }}>
-          {loading?"Gerando...":"Gerar guia"}
-        </button>
-      </div>
-
-      {guia && (
-        <div style={{ display:"flex", flexDirection:"column", gap:"12px" }}>
-          {/* Dica cultural */}
-          <div style={{ padding:"14px 16px", borderRadius:"14px", background:"rgba(0,113,227,0.04)", border:"1px solid rgba(212,175,55,0.20)" }}>
-            <div style={{ fontSize:"10px", fontWeight:700, color:"#1A4A8A", textTransform:"uppercase" as const, letterSpacing:"0.05em", marginBottom:"5px" }}>Dica cultural</div>
-            <p style={{ margin:0, fontSize:"13px", color:"#1D1D1F", lineHeight:1.6 }}>{guia.dica_cultural}</p>
-          </div>
-
-          {/* Palavras essenciais */}
-          <h3 style={{ margin:"4px 0 0", fontSize:"14px", fontWeight:700, color:"#1D1D1F" }}>Palavras essenciais para {guia.destino}</h3>
-          {(guia.palavras||[]).map((p: any, i: number) => (
-            <div key={i} style={{ background:"#fff", borderRadius:"14px", padding:"14px", boxShadow:"0 1px 4px rgba(0,0,0,0.06)" }}>
-              <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"10px" }}>
-                <div>
-                  <div style={{ fontSize:"15px", fontWeight:700, color:"#1D1D1F" }}>{p.pt}</div>
-                  <div style={{ fontSize:"11px", color:"#86868B", marginTop:"2px" }}>{p.contexto}</div>
-                </div>
-              </div>
-              <div style={{ display:"flex", flexDirection:"column", gap:"7px" }}>
-                {[
-                  { txt:p.lang_1, fon:p.fon_1, nome:langNomes[0]||"Língua 1", bcp47:troncoInfo[0]?.bcp47||"es-ES" },
-                  { txt:p.lang_2, fon:p.fon_2, nome:langNomes[1]||"Língua 2", bcp47:troncoInfo[1]?.bcp47||"fr-FR" },
-                  { txt:p.lang_3, fon:p.fon_3, nome:langNomes[2]||"Língua 3", bcp47:troncoInfo[2]?.bcp47||"it-IT" },
-                ].map((l, li) => {
-                  const vkey = "v-" + i + "-" + li + l.txt.slice(0,5);
-                  const isPlay = audio.isSpeaking && audio.speakingKey === vkey;
-                  return (
-                    <button key={li} onClick={() => isPlay ? audio.stopSpeaking() : audio.speak(l.txt, l.bcp47, vkey)}
-                      style={{ display:"flex", alignItems:"center", gap:"10px", padding:"8px 12px", borderRadius:"10px", background:isPlay?"rgba(26,74,138,0.08)":"#F5F7FF", border:isPlay?"1.5px solid rgba(0,113,227,0.20)":"1.5px solid transparent", cursor:"pointer", textAlign:"left" as const, fontFamily:"Nunito, sans-serif", transition:"all 0.2s" }}>
-                      <div style={{ width:28, height:28, borderRadius:"50%", background:isPlay?"#1A4A8A":"rgba(26,74,138,0.08)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, color:isPlay?"#fff":"#1A4A8A" }}>
-                        {isPlay ? <Icon.Wave/> : <Icon.Volume/>}
-                      </div>
-                      <div>
-                        <div style={{ fontSize:"11px", fontWeight:600, color:isPlay?"#1A4A8A":"#86868B", textTransform:"uppercase" as const, letterSpacing:"0.04em" }}>{l.nome}</div>
-                        <div style={{ fontSize:"14px", fontWeight:600, color:isPlay?"#1A4A8A":"#1D1D1F" }}>{l.txt}</div>
-                        <div style={{ fontSize:"11px", color:"#86868B", fontStyle:"italic" }}>{l.fon}</div>
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
 
 // ── Histórias ────────────────────────────────────────────────────────────────
 
@@ -1766,7 +1677,6 @@ export default function ChicoDashboard() {
   const [showRoteiroInput, setShowRoteiroInput] = useState(false);
   const [modoConversa, setModoConversa]         = useState(false);
   const [linguaConversa, setLinguaConversa]     = useState("Espanhol");
-  const [showLinguaPicker, setShowLinguaPicker] = useState(false);
 
   const chatEndRef     = useRef<HTMLDivElement>(null);
   const textareaRef    = useRef<HTMLTextAreaElement>(null);
@@ -1939,7 +1849,13 @@ export default function ChicoDashboard() {
   const troncoLabel = profile?.tronco === "românico" ? "Tear Românico" : "Tear Germânico";
 
   // Nav items
-  const TODAS_LINGUAS = ["Espanhol","Francês","Italiano","Inglês","Alemão","Holandês","Mandarim","Japonês","Coreano","Árabe","Russo","Português (PT)"];
+  const TRONCOS_LINGUAS: Record<string,string[]> = {
+    "romanico":  ["Espanhol","Francês","Italiano"],
+    "romantico": ["Espanhol","Francês","Italiano"],
+    "germânico": ["Inglês","Alemão","Holandês"],
+    "germanico": ["Inglês","Alemão","Holandês"],
+  };
+  const troncoLinguas = TRONCOS_LINGUAS[profile?.tronco?.normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase()??""??]?? ["Espanhol","Francês","Italiano"];
 
   const navItems: {id:MainTab; label:string; icon:(active:boolean)=>React.ReactElement}[] = [
     { id:"chat",       label:"Conversar",  icon:(a)=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?"#1A4A8A":"#9AAABB"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> },
@@ -2026,7 +1942,7 @@ export default function ChicoDashboard() {
               <>
                 {/* Toolbar roteiro */}
                 <div style={{ padding:"8px 20px", background:"rgba(255,255,255,0.9)", backdropFilter:"blur(12px)", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:"8px", flexShrink:0 }}>
-                  {!showRoteiroInput ? (<><button onClick={()=>setShowRoteiroInput(true)} style={{ display:"flex", alignItems:"center", gap:"6px", padding:"6px 14px", borderRadius:"20px", border:`1.5px solid ${C.orange}`, background:C.orangeLight, color:C.orange, fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>Gerar roteiro</button><div style={{ display:"flex", alignItems:"center", gap:"6px" }}><button onClick={()=>{ setModoConversa(v=>!v); setShowLinguaPicker(false); }} style={{ display:"flex", alignItems:"center", gap:"6px", padding:"6px 14px", borderRadius:"20px", border:`1.5px solid ${modoConversa?"rgba(42,154,96,0.40)":"rgba(0,0,0,0.10)"}`, background:modoConversa?"rgba(42,154,96,0.10)":"transparent", color:modoConversa?"#2A9A60":"#6A7A9A", fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>{modoConversa?"Conversa livre ON":"Conversa livre"}</button>{modoConversa&&(<div style={{ position:"relative" as const }}><button onClick={()=>setShowLinguaPicker(v=>!v)} style={{ padding:"6px 12px", borderRadius:"20px", border:"1.5px solid rgba(42,154,96,0.30)", background:"rgba(42,154,96,0.07)", color:"#2A9A60", fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"Nunito, sans-serif", display:"flex", alignItems:"center", gap:"5px" }}>🌍 {linguaConversa} ▾</button>{showLinguaPicker&&(<div style={{ position:"absolute" as const, top:"100%", left:0, marginTop:"4px", background:"#fff", borderRadius:"14px", boxShadow:"0 4px 20px rgba(0,0,0,0.12)", border:"1px solid rgba(0,0,0,0.08)", zIndex:200, minWidth:"160px", overflow:"hidden" }}>{TODAS_LINGUAS.map(l=>(<button key={l} onClick={()=>{ setLinguaConversa(l); setShowLinguaPicker(false); }} style={{ width:"100%", padding:"10px 16px", border:"none", background:linguaConversa===l?"rgba(42,154,96,0.08)":"transparent", color:linguaConversa===l?"#2A9A60":"#1A2A40", fontSize:"13px", fontWeight:linguaConversa===l?800:500, cursor:"pointer", fontFamily:"Nunito, sans-serif", textAlign:"left" as const }}>{l}</button>))}</div>)}</div>)}</div></>) : (
+                  {!showRoteiroInput ? (<><button onClick={()=>setShowRoteiroInput(true)} style={{ display:"flex", alignItems:"center", gap:"6px", padding:"6px 14px", borderRadius:"20px", border:`1.5px solid ${C.orange}`, background:C.orangeLight, color:C.orange, fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>Gerar roteiro</button><div style={{ display:"flex", alignItems:"center", gap:"6px" }}><button onClick={()=>{ setModoConversa(v=>!v); }} style={{ display:"flex", alignItems:"center", gap:"6px", padding:"6px 14px", borderRadius:"20px", border:`1.5px solid ${modoConversa?"rgba(42,154,96,0.40)":"rgba(0,0,0,0.10)"}`, background:modoConversa?"rgba(42,154,96,0.10)":"transparent", color:modoConversa?"#2A9A60":"#6A7A9A", fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>{modoConversa?"Conversa livre ON":"Conversa livre"}</button>{modoConversa&&profile&&(<div style={{ display:"flex", gap:"4px" }}>{(profile.tronco==="germânico"?["Inglês","Alemão","Holandês"]:["Espanhol","Francês","Italiano"]).map((l:string)=>(<button key={l} onClick={()=>setLinguaConversa(l)} style={{ padding:"5px 11px", borderRadius:"20px", border:`1.5px solid ${linguaConversa===l?"rgba(42,154,96,0.40)":"rgba(0,0,0,0.09)"}`, background:linguaConversa===l?"rgba(42,154,96,0.10)":"transparent", color:linguaConversa===l?"#2A9A60":"#6A7A9A", fontSize:"12px", fontWeight:linguaConversa===l?800:500, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}>{l}</button>))}</div>)}</div></>) : (
                     <>
                       <input value={temaRoteiro} onChange={e=>setTemaRoteiro(e.target.value)} placeholder="Tema do roteiro..."
                         style={{ flex:1, padding:"6px 14px", borderRadius:"20px", border:`1.5px solid ${C.orange}`, fontSize:"13px", color:C.text, fontFamily:"Nunito, sans-serif", background:"#fff", outline:"none" }}
