@@ -1655,7 +1655,33 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
 
-export default function ChicoDashboard() {
+export default // ── Exportar Nexos para Anki ─────────────────────────────────────────────────
+function exportAnki(cards: MentoriaCard[]) {
+  const header = "#separator:tab\n#html:false\n#notetype:Basic\n#deck:Chico Mentor\n";
+  const rows = cards.map(c => {
+    const frente = (c.titulo_card || c.tema_gerador || "").replace(/\t|\n/g, " ");
+    const verso = [
+      c.lang_1_nome && c.lang_1_txt && c.lang_1_txt !== "--"
+        ? c.lang_1_nome + ": " + c.lang_1_txt + (c.lang_1_fon ? " [" + c.lang_1_fon + "]" : "") : "",
+      c.lang_2_nome && c.lang_2_txt && c.lang_2_txt !== "--"
+        ? c.lang_2_nome + ": " + c.lang_2_txt + (c.lang_2_fon ? " [" + c.lang_2_fon + "]" : "") : "",
+      c.lang_3_nome && c.lang_3_txt && c.lang_3_txt !== "--"
+        ? c.lang_3_nome + ": " + c.lang_3_txt + (c.lang_3_fon ? " [" + c.lang_3_fon + "]" : "") : "",
+    ].filter(Boolean).join(" | ").replace(/\t|\n/g, " ");
+    const notas = (c.aula_chico || "").slice(0, 200).replace(/\t|\n/g, " ");
+    return [frente, verso, notas].join("\t");
+  }).filter(r => r.trim()).join("\n");
+
+  const blob = new Blob([header + rows], { type: "text/plain;charset=utf-8" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href     = url;
+  a.download = "chico_nexos_" + new Date().toISOString().slice(0, 10) + ".txt";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function ChicoDashboard() {
   const supabase = createSupabase();
   const audio    = useAudio();
 
@@ -1711,18 +1737,46 @@ export default function ChicoDashboard() {
       const troncoLabel = profile.tronco==="românico"?"Tear Românico":"Tear Germânico";
       const hoje = new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
       const paraRevisar = cards.filter(c=>Math.floor((Date.now()-new Date(c.criado_em).getTime())/86400000)>=3).length;
+      // ── Desafio diário ───────────────────────────────────────────────────────
+      // Usa a data + cards mais antigos para sempre ser diferente e relevante
+      const hoje_dia   = new Date().getDate();
+      const hoje_mes   = new Date().getMonth();
+      const seed       = hoje_dia + hoje_mes * 31;
+      const lingua1    = profile.tronco === "germânico" ? "inglês" : "espanhol";
+      const lingua2    = profile.tronco === "germânico" ? "alemão" : "francês";
+
+      // Card mais antigo sem revisão recente — base do desafio
+      const cardAntigo = cards.length > 0
+        ? cards.reduce((oldest, c) => new Date(c.criado_em) < new Date(oldest.criado_em) ? c : oldest)
+        : null;
+
+      const interesse  = profile.interesses?.[seed % (profile.interesses?.length || 1)] ?? "amigo";
+      const interesse2 = profile.interesses?.[(seed+1) % (profile.interesses?.length || 1)] ?? "trabalho";
+
       const desafios = [
-        `Como se diz "${profile.interesses?.[0]??"amigo"}" nas línguas do ${troncoLabel}?`,
-        `Qual a origem da palavra "${profile.interesses?.[0]??"trabalho"}" no ${troncoLabel}?`,
-        `Me conta o que você quer aprender hoje.`,
-        `Tem alguma palavra em português que sempre quis saber como diz em ${troncoLabel === "Tear Românico" ? "espanhol" : "inglês"}?`,
+        // Baseado no card mais antigo (reativa memória)
+        ...(cardAntigo ? [
+          `Você se lembra de "${cardAntigo.titulo_card}"? Como se usa em uma frase em ${lingua1}?`,
+          `Qual é a origem da palavra "${cardAntigo.titulo_card}"? Tem algo surpreendente nela?`,
+        ] : []),
+        // Baseado nos interesses + pilares do Método Chico
+        `Tem uma palavra de ${interesse} em ${lingua1} que você acha difícil de pronunciar?`,
+        `Como ${interesse} se conecta com o vocabulário de ${lingua2}? Tem raízes em comum?`,
+        `Qual a palavra mais estranha que você já aprendeu sobre ${interesse2}?`,
+        `Diz uma palavra em ${lingua1} que você ouviu recentemente e quer entender melhor.`,
+        `O Chico quer te surpreender: pergunte a origem de qualquer palavra de ${interesse}.`,
+        `Me conta: você usou alguma palavra que aprendeu aqui em uma situação real?`,
       ];
-      const desafio = desafios[new Date().getDate() % desafios.length];
+
+      const desafio = desafios[seed % desafios.length];
       // Busca sugestão proativa em background
       fetch("/api/chico", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ acao:"sugestao_proativa", tronco:profile.tronco, interesses:profile.interesses??[], nexos:cards.slice(0,10).map(c=>c.titulo_card||c.tema_gerador), memoria }) })
         .then(r=>r.json()).then(d=>{ if(d.sugestao) setSugestao(d.sugestao); }).catch(()=>{});
 
-      let welcomeContent = `Bom dia, ${profile.display_name?.split(" ")[0]??""}. Hoje é ${hoje}.\n\n${desafio}`;
+      // Saudação baseada no horário
+      const hora = new Date().getHours();
+      const saudacao = hora < 12 ? "Bom dia" : hora < 18 ? "Boa tarde" : "Boa noite";
+      let welcomeContent = `${saudacao}, ${profile.display_name?.split(" ")[0]??""}! Hoje é ${hoje}.\n\n🎯 Desafio do dia:\n${desafio}`;
       if (paraRevisar > 0) welcomeContent += `\n\nTem ${paraRevisar} card${paraRevisar>1?"s":""} aguardando revisão. Vale abrir os Flashcards.`;
       setMessages([{ id:"welcome", role:"chico", content:welcomeContent }]);
       chatHistoryRef.current = [{ role:"assistant", content:welcomeContent }];
@@ -2033,7 +2087,15 @@ export default function ChicoDashboard() {
               <div style={{ padding:"16px 16px 10px", borderBottom:`1px solid ${C.border}` }}>
                 <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"10px" }}>
                   <span style={{ fontSize:"16px", fontWeight:800, color:C.blue, fontFamily:"Nunito, sans-serif" }}>Meus Nexos</span>
-                  <span style={{ padding:"2px 10px", borderRadius:"20px", background:C.blueLight, color:C.blue, fontSize:"12px", fontWeight:800 }}>{filteredCards.length}</span>
+                  <div style={{ display:"flex", alignItems:"center", gap:"6px" }}>
+                    <span style={{ padding:"2px 10px", borderRadius:"20px", background:C.blueLight, color:C.blue, fontSize:"12px", fontWeight:800 }}>{filteredCards.length}</span>
+                    {cards.length > 0 && (
+                      <button onClick={()=>exportAnki(cards)} title="Exportar para Anki"
+                        style={{ width:28, height:28, borderRadius:"8px", border:"1px solid rgba(26,74,138,0.20)", background:"rgba(26,74,138,0.06)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1A4A8A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div style={{ display:"flex", alignItems:"center", gap:"8px", padding:"8px 12px", background:"#F0F4FA", borderRadius:"12px", border:`1px solid ${C.border}`, marginBottom:"8px" }}>
                   <Icon.Search size={13} color={C.textMuted}/>
