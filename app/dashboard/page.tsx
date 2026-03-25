@@ -18,6 +18,10 @@ interface MentoriaCard extends ChicoCard {
   lang_2_exemplo?: string;
   lang_3_exemplo?: string;
   pergunta_verificacao?: string;
+  quiz_acertos?: number;
+  quiz_erros?: number;
+  modo?: string;
+  nivel?: string;
 }
 
 interface ChatMessage {
