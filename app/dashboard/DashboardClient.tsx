@@ -990,21 +990,43 @@ function ViagemTab({ profile, audio }: { profile: UserProfile | null; audio: Ret
 
         {resultado && (
           <div style={{ display:"flex", flexDirection:"column" as const, gap:"10px" }}>
-            {Array.isArray(resultado.palavras||resultado) && (resultado.palavras||resultado).map((item: any, i: number) => (
+            {/* Dica cultural do destino */}
+            {resultado.dica_cultural && (
+              <div style={{ padding:"12px 16px", borderRadius:"14px", background:"rgba(26,74,138,0.07)", border:"1px solid rgba(26,74,138,0.15)", fontSize:"13px", color:"#1A4A8A", lineHeight:1.6 }}>
+                🌍 {resultado.dica_cultural}
+              </div>
+            )}
+            {/* Cards de palavras/expressoes */}
+            {Array.isArray(resultado.palavras) && resultado.palavras.map((item: any, i: number) => (
               <div key={i} style={{ background:"#fff", borderRadius:"16px", padding:"16px 18px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
-                <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"6px" }}>
-                  <div style={{ fontSize:"17px", fontWeight:800, color:"#1A4A8A", fontFamily:"Nunito, sans-serif" }}>{item.expressao||item.palavra||item.txt||""}</div>
-                  {item.bcp47 && (
-                    <button onClick={()=>audio.speak(item.expressao||item.palavra||"", item.bcp47, "v"+i)}
-                      style={{ width:30, height:30, borderRadius:"50%", border:"none", background:"rgba(26,74,138,0.10)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1A4A8A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-                    </button>
+                {/* Palavra em PT + contexto */}
+                <div style={{ marginBottom:"8px" }}>
+                  <div style={{ fontSize:"17px", fontWeight:800, color:"#1A4A8A", fontFamily:"Nunito, sans-serif" }}>
+                    {item.pt || item.expressao || item.palavra || ""}
+                  </div>
+                  {item.contexto && (
+                    <div style={{ fontSize:"12px", color:"#8A9AB8", marginTop:"2px" }}>💡 {item.contexto}</div>
                   )}
                 </div>
-                {item.fonetica && <div style={{ fontSize:"12px", color:"#8A9AB8", fontStyle:"italic", marginBottom:"4px" }}>{item.fonetica}</div>}
-                {item.traducao_pt && <div style={{ fontSize:"14px", color:"#1A2A40", marginBottom:"4px" }}>🇧🇷 {item.traducao_pt}</div>}
-                {item.contexto && <div style={{ fontSize:"13px", color:"#5A6A80", lineHeight:1.5 }}>💡 {item.contexto}</div>}
-                {item.dica_cultural && <div style={{ fontSize:"12px", color:"#8A9AB8", marginTop:"6px", fontStyle:"italic" }}>🌍 {item.dica_cultural}</div>}
+                {/* Traducoes nas linguas do tronco */}
+                <div style={{ display:"flex", flexDirection:"column" as const, gap:"6px" }}>
+                  {[
+                    { label:"lang_1", txt: item.lang_1, fon: item.fon_1 },
+                    { label:"lang_2", txt: item.lang_2, fon: item.fon_2 },
+                    { label:"lang_3", txt: item.lang_3, fon: item.fon_3 },
+                  ].filter(l => l.txt && l.txt.trim().length > 0).map((l, li) => (
+                    <div key={li} style={{ display:"flex", alignItems:"center", gap:"10px", padding:"8px 12px", borderRadius:"10px", background:"#F7F8FC" }}>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:"15px", fontWeight:700, color:"#1A2A40" }}>{l.txt}</div>
+                        {l.fon && <div style={{ fontSize:"12px", color:"#8A9AB8", fontStyle:"italic" }}>{l.fon}</div>}
+                      </div>
+                      <button onClick={()=>audio.speak(l.txt, "es-ES", "v"+i+li)}
+                        style={{ width:28, height:28, borderRadius:"50%", border:"none", background:"rgba(26,74,138,0.10)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1A4A8A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                      </button>
+                    </div>
+                  ))}
+                </div>
               </div>
             ))}
           </div>
