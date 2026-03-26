@@ -624,7 +624,7 @@ export async function PATCH(request: NextRequest) {
     // ── Sugestão proativa ──────────────────────────────────────────────────
     if (acao === "sugestao_proativa") {
       const { tronco, interesses, nexos, memoria } = body;
-      const troncoInfo = TRONCOS[tronco as "românico"|"germânico"];
+      const troncoInfo = ((TRONCOS as any)[tronco] ?? TRONCOS["românico"]);
       if (!troncoInfo) return NextResponse.json({ error:"Tronco inválido." },{ status:400 });
 
       const interessesStr = (interesses||[]).join(", ") || "cotidiano";
@@ -662,7 +662,7 @@ Responda com JSON:
     // ── Roteiro de aprendizado ─────────────────────────────────────────────
     if (acao === "roteiro") {
       const { tronco, interesses, tema } = body;
-      const troncoInfo = TRONCOS[tronco as "românico"|"germânico"];
+      const troncoInfo = ((TRONCOS as any)[tronco] ?? TRONCOS["românico"]);
       if (!troncoInfo) return NextResponse.json({ error:"Tronco inválido." },{ status:400 });
 
       const completion = await groq.chat.completions.create({
@@ -689,7 +689,7 @@ Responda com JSON:
     // ── Modo Viagem ────────────────────────────────────────────────────────
     if (acao === "viagem") {
       const { tronco, destino } = body;
-      const troncoInfo = TRONCOS[tronco as "românico"|"germânico"];
+      const troncoInfo = ((TRONCOS as any)[tronco] ?? TRONCOS["românico"]);
       if (!troncoInfo) return NextResponse.json({ error:"Tronco inválido." },{ status:400 });
 
       const linguas = troncoInfo.linguas.map(l=>l.nome).join(", ");
@@ -727,7 +727,7 @@ Responda APENAS com JSON:
     // ── Analisar música (texto livre, sem JSON) ───────────────────────────────
     if (acao === "analisar_musica") {
       const { tronco, interesses, artista, letra } = body;
-      const troncoInfo = TRONCOS[tronco as "românico"|"germânico"];
+      const troncoInfo = ((TRONCOS as any)[tronco] ?? TRONCOS["românico"]);
       if (!troncoInfo) return NextResponse.json({ error:"Tronco inválido." },{ status:400 });
 
       const linguas = troncoInfo.linguas.map(l=>l.nome).join(", ");
@@ -764,7 +764,7 @@ ${letra}`;
     // ── Gerar história ────────────────────────────────────────────────────────
     if (acao === "gerar_historia") {
       const { tronco, interesses, lingua, nivel } = body;
-      const troncoInfo = TRONCOS[tronco as "românico"|"germânico"];
+      const troncoInfo = ((TRONCOS as any)[tronco] ?? TRONCOS["românico"]);
       if (!troncoInfo) return NextResponse.json({ error:"Tronco inválido." },{ status:400 });
 
       const interessesStr = (interesses||[]).join(", ") || "cotidiano";
@@ -875,7 +875,7 @@ ${letra}`;
 
     if (acao === "salvar_palavra_historia") {
       const { palavra, traducao_pt, fonetica, tronco, lingua_origem } = body;
-      const troncoInfo = TRONCOS[tronco as "românico"|"germânico"];
+      const troncoInfo = ((TRONCOS as any)[tronco] ?? TRONCOS["românico"]);
       if (!troncoInfo) return NextResponse.json({ error:"Tronco inválido." },{ status:400 });
 
       const supabase = await createSupabaseServer();
@@ -929,7 +929,7 @@ ${letra}`;
     // ── Traduzir palavra avulsa (Ultra-Aprendizado) ─────────────────────────
     if (acao === "traduzir_palavra") {
       const { palavra, lingua_origem, tronco, interesses } = body;
-      const troncoInfo    = TRONCOS[tronco as "românico"|"germânico"];
+      const troncoInfo    = ((TRONCOS as any)[tronco] ?? TRONCOS["românico"]);
       const interessesStr = (interesses||[]).join(", ") || "cotidiano";
       const outraLinguas  = troncoInfo ? troncoInfo.linguas.map((l:any)=>l.nome).join(", ") : lingua_origem;
 
@@ -989,9 +989,10 @@ ${letra}`;
     }
 
         // ── Ditado: gerar frase para o aluno ouvir e escrever ───────────────────
+    // gerar_ditado v2
     if (acao === "gerar_ditado") {
       const { tronco, lingua, nivel, nexos_recentes, interesses } = body;
-      const troncoInfo2 = TRONCOS[tronco as "romanico"|"germanico"] || TRONCOS["romanico"];
+      const troncoInfo2 = ((TRONCOS as any)[tronco] ?? TRONCOS["românico"]);
       const linguaInfo2 = troncoInfo2.linguas.find((l:any) => l.nome === lingua) || troncoInfo2.linguas[0];
       const linguaNome2 = linguaInfo2.nome as string;
       const bcp472      = linguaInfo2.bcp47 as string;
@@ -1034,7 +1035,7 @@ ${letra}`;
     // ── Conversa Guiada: gerar situacao ──────────────────────────────────────
     if (acao === "gerar_situacao") {
       const { tronco, lingua, interesses, nivel, situacao_num } = body;
-      const troncoInfo3 = TRONCOS[tronco as "romanico"|"germanico"] || TRONCOS["romanico"];
+      const troncoInfo3 = ((TRONCOS as any)[tronco] ?? TRONCOS["românico"]);
       const linguaInfo3 = troncoInfo3.linguas.find((l:any) => l.nome === lingua) || troncoInfo3.linguas[0];
       const linguaNome3 = linguaInfo3.nome as string;
       const interessesStr3 = (interesses||[]).join(", ") || "cotidiano";
