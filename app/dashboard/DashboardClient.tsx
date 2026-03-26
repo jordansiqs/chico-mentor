@@ -1121,7 +1121,7 @@ function PraticarTab({ profile, cards, audio }: {
     const palavrasE = esperado.split(/\s+/);
     const palavrasD = dado.split(/\s+/);
     let acertos = 0;
-    const diff: React.ReactNode[] = palavrasE.map((p, i) => {
+    const diff: React.ReactNode[] = palavrasE.map((p: string, i: number) => {
       const ok = palavrasD[i]?.replace(/[^a-záéíóúüñàâêîôûäëïöùçœæ]/gi,"") === p.replace(/[^a-záéíóúüñàâêîôûäëïöùçœæ]/gi,"");
       if (ok) acertos++;
       return (
