@@ -692,7 +692,7 @@ Responda com JSON:
       const troncoInfo = ((TRONCOS as any)[tronco] ?? TRONCOS["românico"]);
       if (!troncoInfo) return NextResponse.json({ error:"Tronco inválido." },{ status:400 });
 
-      const linguas = troncoInfo.linguas.map(l=>l.nome).join(", ");
+      const linguas = troncoInfo.linguas.map((l:any)=>l.nome).join(", ");
       const prompt = `Crie um guia de sobrevivência linguística para viagem a ${destino}.
 Línguas do tronco: ${linguas} (base: Português).
 Inclua 8 palavras/expressões essenciais para esta cidade/país.
@@ -730,7 +730,7 @@ Responda APENAS com JSON:
       const troncoInfo = ((TRONCOS as any)[tronco] ?? TRONCOS["românico"]);
       if (!troncoInfo) return NextResponse.json({ error:"Tronco inválido." },{ status:400 });
 
-      const linguas = troncoInfo.linguas.map(l=>l.nome).join(", ");
+      const linguas = troncoInfo.linguas.map((l:any)=>l.nome).join(", ");
       const artistaStr = artista ? `de ${artista} ` : "";
       const interessesStr = (interesses||[]).join(", ") || "cotidiano";
 
