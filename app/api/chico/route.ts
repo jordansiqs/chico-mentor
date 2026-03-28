@@ -123,7 +123,7 @@ function buildSystemPrompt(
   modo_especial: string
 ): string {
   const troncoInfo    = TRONCOS[tronco];
-  const linguas       = troncoInfo.linguas.map(l => l.nome).join(", ");
+  const linguas       = troncoInfo.linguas.map((l: any) => l.nome).join(", ");
   const interessesStr = interesses.length > 0 ? interesses.join(", ") : "cotidiano";
   const nexosStr      = nexos_recentes.length > 0
     ? `O aluno já internalizou: ${nexos_recentes.slice(0, 12).join(", ")}.`
@@ -240,7 +240,7 @@ function buildMemoriaPrompt(
   memoriaAtual: ChicoMemoria,
   historico: { role: string; content: string }[]
 ): string {
-  const userMsgs = historico.filter(m => m.role === "user").map(m => m.content).join(" | ");
+  const userMsgs = historico.filter((m: any) => m.role === "user").map((m: any) => m.content).join(" | ");
   return `Analise o progresso deste aluno de línguas e atualize o perfil de aprendizado.
 
 Palavras aprendidas: ${nexos.slice(0, 20).join(", ")}
@@ -346,7 +346,7 @@ export async function POST(request: NextRequest) {
       if (!["românico","germânico"].includes(tronco)) return NextResponse.json({ error: "Tronco inválido." }, { status: 400 });
 
       const groq2 = new Groq({ apiKey: process.env.GROQ_API_KEY });
-      const historicoConv = historico.slice(-10).map(m => ({
+      const historicoConv = historico.slice(-10).map((m: any) => ({
         role: m.role as "user"|"assistant",
         content: m.content,
       }));
@@ -383,7 +383,7 @@ export async function POST(request: NextRequest) {
 
     const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-    const historicoLimitado = historico.slice(-8).map(m => ({
+    const historicoLimitado = historico.slice(-8).map((m: any) => ({
       role:    m.role as "user"|"assistant",
       content: m.content,
     }));
