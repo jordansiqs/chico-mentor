@@ -216,7 +216,7 @@ Não troque a ordem. lang_1 NÃO pode conter texto em ${troncoInfo.linguas[1].no
   "pergunta_verificacao": "Pergunta nova, prática, diferente das do histórico.",
   "lang_1": {
     "txt": "OBRIGATÓRIO: Tradução SOMENTE para ${troncoInfo.linguas[0].nome} (não para outra língua)",
-    "fon": "Fonética para ${troncoInfo.linguas[0].nome} com nota biológica se difícil",
+    "fon": "OBRIGATÓRIO: transcrição fonética entre colchetes ex: [zhuh swee]. Nunca deixar vazio.",
     "exemplo": "Frase em ${troncoInfo.linguas[0].nome} ligada a ${interessesStr}."
   },
   "lang_2": {
@@ -488,20 +488,20 @@ export async function POST(request: NextRequest) {
 
       lang_1_nome:    troncoInfo.linguas[0].nome,
       lang_1_txt:     parsed.lang_1.txt,
-      lang_1_fon:     parsed.lang_1.fon,
-      lang_1_exemplo: parsed.lang_1.exemplo,
+      lang_1_fon:     parsed.lang_1.fon || "",
+      lang_1_exemplo: parsed.lang_1.exemplo || "",
       lang_1_bcp47:   troncoInfo.linguas[0].bcp47,
 
       lang_2_nome:    troncoInfo.linguas[1].nome,
       lang_2_txt:     parsed.lang_2.txt,
-      lang_2_fon:     parsed.lang_2.fon,
-      lang_2_exemplo: parsed.lang_2.exemplo,
+      lang_2_fon:     parsed.lang_2.fon || "",
+      lang_2_exemplo: parsed.lang_2.exemplo || "",
       lang_2_bcp47:   troncoInfo.linguas[1].bcp47,
 
       lang_3_nome:    troncoInfo.linguas[2].nome,
       lang_3_txt:     parsed.lang_3.txt,
-      lang_3_fon:     parsed.lang_3.fon,
-      lang_3_exemplo: parsed.lang_3.exemplo,
+      lang_3_fon:     parsed.lang_3.fon || "",
+      lang_3_exemplo: parsed.lang_3.exemplo || "",
       lang_3_bcp47:   troncoInfo.linguas[2].bcp47,
     };
 
