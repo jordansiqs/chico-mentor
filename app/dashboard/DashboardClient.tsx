@@ -250,7 +250,7 @@ function InlineCard({ card, audio }: { card: MentoriaCard; audio: ReturnType<typ
     { nome:card.lang_2_nome, txt:card.lang_2_txt, fon:card.lang_2_fon, bcp47:card.lang_2_bcp47, exemplo:card.lang_2_exemplo },
     { nome:card.lang_3_nome, txt:card.lang_3_txt, fon:card.lang_3_fon, bcp47:card.lang_3_bcp47, exemplo:card.lang_3_exemplo },
   ];
-  const isRom = card.tronco === "romanico" || card.tronco === "romântico" || card.tronco === "românico";
+  const isRom = card.tronco === "românico";
   const titulo = card.titulo_card || card.tema_gerador;
   const flags: Record<string,string> = { "Espanhol":"🇪🇸","Francês":"🇫🇷","Italiano":"🇮🇹","Inglês":"🇬🇧","Alemão":"🇩🇪","Holandês":"🇳🇱" };
   return (
@@ -335,7 +335,7 @@ function NexoCard({ card, audio, onDelete }: {
     { nome:card.lang_2_nome, txt:card.lang_2_txt, fon:card.lang_2_fon, bcp47:card.lang_2_bcp47, exemplo:card.lang_2_exemplo },
     { nome:card.lang_3_nome, txt:card.lang_3_txt, fon:card.lang_3_fon, bcp47:card.lang_3_bcp47, exemplo:card.lang_3_exemplo },
   ];
-  const isRom = card.tronco === "romântico" || card.tronco === "romântico" || card.tronco?.includes("rom");
+  const isRom = card.tronco === "românico";
   const titulo = card.titulo_card || card.tema_gerador;
   const diasDesde = Math.floor((Date.now() - new Date(card.criado_em).getTime()) / 86400000);
   const nextRev = card.sr_due_date;
@@ -1096,12 +1096,9 @@ function PraticarTab({ profile, cards, audio }: {
   cards: MentoriaCard[];
   audio: ReturnType<typeof useAudio>;
 }) {
-  const LINGUAS_TRONCO: Record<string,string[]> = {
-    "romanico":  ["Espanhol","Francês","Italiano"],
-    "germanico": ["Inglês","Alemão","Holandês"],
-  };
-  const troncoKey = (profile?.tronco||"romanico").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase();
-  const linguas   = LINGUAS_TRONCO[troncoKey] ?? ["Espanhol","Francês","Italiano"];
+  const linguas = profile?.tronco === "germânico"
+    ? ["Inglês","Alemão","Holandês"]
+    : ["Espanhol","Francês","Italiano"];
 
   // ── estado compartilhado ──────────────────────────────────────────────────
   const [modo, setModo]       = useState<"ditado"|"conversa">("ditado");
