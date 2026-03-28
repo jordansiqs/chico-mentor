@@ -597,24 +597,50 @@ function FlashcardsTab({ cards, audio }: {
     if (!hasAny) return;
 
     const normalize = (s: string) =>
-      s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g,"").trim();
+      s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9 ]/g,"").trim();
 
     const card = sessionCards.current[index];
     const refLangs = langs.filter((l: any) => l.txt && l.txt !== "--" && l.txt.trim().length > 0);
+
+    // Associa cada input do aluno à língua mais próxima (evita problema de swap no DB)
+    // Cada campo do aluno (partes[i]) é comparado com cada refLang
+    // e atribuído ao refLang com maior score de similaridade
+    const assignments: number[] = partes.map((_: string, pi: number) => pi); // default: posição
+    if (partes.length >= 2 && refLangs.length >= 2) {
+      const usedLangs = new Set<number>();
+      partes.forEach((parte: string, pi: number) => {
+        if (!parte.trim()) return;
+        const dadoNorm = normalize(parte).split(" ").filter((x:string)=>x);
+        let bestIdx = pi < refLangs.length ? pi : 0;
+        let bestScore = -1;
+        refLangs.forEach((l: any, li: number) => {
+          if (usedLangs.has(li)) return;
+          const espNorm = normalize(l.txt).split(" ").filter((x:string)=>x);
+          const score = dadoNorm.filter((w:string, i:number) => w === espNorm[i]).length
+                      + dadoNorm.filter((w:string) => espNorm.includes(w)).length * 0.5;
+          if (score > bestScore) { bestScore = score; bestIdx = li; }
+        });
+        assignments[pi] = bestIdx;
+        usedLangs.add(bestIdx);
+      });
+    }
 
     let totalAcertos = 0;
     let totalPalavras = 0;
     const allDiffs: React.ReactNode[] = [];
 
-    refLangs.forEach((l: any, li: number) => {
-      const dado = partes[li] ? normalize(partes[li]).split(" ").filter((x:string)=>x) : [];
-      if (!dado.length) return;
+    partes.forEach((parte: string, pi: number) => {
+      if (!parte.trim()) return;
+      const li = assignments[pi] < refLangs.length ? assignments[pi] : pi % refLangs.length;
+      const l  = refLangs[li];
+      if (!l) return;
 
+      const dado     = normalize(parte).split(" ").filter((x:string)=>x);
       const esperado = normalize(l.txt).split(" ").filter((x:string)=>x);
       totalPalavras += esperado.length;
 
       allDiffs.push(
-        <div key={li} style={{ marginBottom:"8px" }}>
+        <div key={pi} style={{ marginBottom:"8px" }}>
           <div style={{ fontSize:"10px", fontWeight:700, color:"#8A9AB8", textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"4px" }}>
             {l.nome}
           </div>
@@ -624,11 +650,7 @@ function FlashcardsTab({ cards, audio }: {
               if (ok) totalAcertos++;
               return (
                 <span key={i} style={{ display:"inline-block", padding:"2px 8px", borderRadius:"6px", background:ok?"rgba(42,154,96,0.12)":"rgba(204,42,32,0.10)", color:ok?"#2A9A60":"#CC2A20", fontWeight:ok?600:700, fontSize:"14px" }}>
-                  {ok ? p : (
-                    <>{dado[i]||"___"}<br/>
-                    <span style={{fontSize:"10px",color:"#2A9A60",fontWeight:500}}>{p}</span>
-                    </>
-                  )}
+                  {ok ? p : (<>{dado[i]||"___"}<br/><span style={{fontSize:"10px",color:"#2A9A60",fontWeight:500}}>{p}</span></>)}
                 </span>
               );
             })}
@@ -637,7 +659,7 @@ function FlashcardsTab({ cards, audio }: {
       );
 
       if (l.bcp47 && l.txt) {
-        setTimeout(() => audio.speak(l.txt, l.bcp47, `verify-${li}-${card?.id}`), 400 + li * 700);
+        setTimeout(() => audio.speak(l.txt, l.bcp47, `verify-${pi}-${card?.id}`), 400 + pi * 700);
       }
     });
 
@@ -822,9 +844,13 @@ function FlashcardsTab({ cards, audio }: {
               <div style={{ display:"flex", flexWrap:"wrap" as const, gap:"4px" }}>
                 {diffResult.diff}
               </div>
-              {!diffResult.ok && tentativa.trim() && (
+              {!diffResult.ok && tentativa.split("|||").some((p:string)=>p.trim()) && (
                 <div style={{ marginTop:"8px", fontSize:"12px", color:C.muted }}>
-                  Você digitou: <em>{tentativa}</em>
+                  {tentativa.split("|||").map((p:string, i:number) => p.trim() ? (
+                    <span key={i} style={{ display:"block" }}>
+                      {langs[i]?.nome || ""}: <em>{p.trim()}</em>
+                    </span>
+                  ) : null)}
                 </div>
               )}
             </div>
