@@ -21,6 +21,10 @@ interface MentoriaCard extends ChicoCard {
   quiz_erros?: number;
   modo?: string;
   nivel?: string;
+  sr_interval?: number;
+  sr_easiness?: number;
+  sr_due_date?: string;
+  sr_reviews?: number;
 }
 
 interface ChatMessage {
@@ -476,141 +480,146 @@ function ChatBubble({ message, audio }: { message: ChatMessage; audio: ReturnTyp
   );
 }
 
-// ── Flashcards ────────────────────────────────────────────────────────────────
+// ── Flashcards (SM-2 / Anki-style) ───────────────────────────────────────────
 
-function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnType<typeof useAudio> }) {
-  const [mode, setMode]         = useState<"flip"|"quiz">("flip");
-  const [index, setIndex]       = useState(0);
-  const [flipped, setFlipped]   = useState(false);
-  const [score, setScore]       = useState({ acertos:0, erros:0 });
-  const [done, setDone]         = useState(false);
-  const [quizAnswer, setQuizAnswer] = useState<number|null>(null);
-  const [quizOpts, setQuizOpts] = useState<{txt:string;correct:boolean}[]>([]);
-  const [quizLang, setQuizLang] = useState<0|1|2>(0);
-  const [showFon, setShowFon]   = useState(false);
-  const shuffled = useRef<MentoriaCard[]>([]);
+function FlashcardsTab({ cards, audio }: {
+  cards: MentoriaCard[];
+  audio: ReturnType<typeof useAudio>;
+}) {
+  const [flipped, setFlipped]     = useState(false);
+  const [index, setIndex]         = useState(0);
+  const [done, setDone]           = useState(false);
+  const [score, setScore]         = useState({ facil:0, bom:0, dificil:0, errei:0 });
+  const [saving, setSaving]       = useState(false);
+  const [nextInfo, setNextInfo]   = useState<string | null>(null);
+  const sessionCards = useRef<MentoriaCard[]>([]);
 
-  useEffect(() => { doRestart(); }, [cards.length]);
-
-  // Gera opções do quiz sempre que o card ou modo muda
-  useEffect(() => {
-    if (mode !== "quiz" || shuffled.current.length === 0) return;
-    const c = shuffled.current[index];
-    if (!c) return;
-
-    // Escolhe língua aleatória com tradução real
-    const validLangs: {txt:string; fon:string; bcp47:string; idx:0|1|2}[] = [
-      { txt:c.lang_1_txt||"", fon:c.lang_1_fon||"", bcp47:c.lang_1_bcp47||"", idx:0 as const },
-      { txt:c.lang_2_txt||"", fon:c.lang_2_fon||"", bcp47:c.lang_2_bcp47||"", idx:1 as const },
-      { txt:c.lang_3_txt||"", fon:c.lang_3_fon||"", bcp47:c.lang_3_bcp47||"", idx:2 as const },
-    ].filter(l => l.txt && l.txt !== "--" && l.txt.trim().length > 1);
-
-    if (validLangs.length === 0) { advanceQuiz(false); return; }
-
-    const chosen = validLangs[Math.floor(Math.random() * validLangs.length)];
-    setQuizLang(chosen.idx);
-    setShowFon(false);
-
-    const correct = chosen.txt.trim();
-    const slotKey = (chosen.idx === 0 ? "lang_1_txt" : chosen.idx === 1 ? "lang_2_txt" : "lang_3_txt") as keyof MentoriaCard;
-
-    // Distratores da mesma posição de outros cards
-    const wrongPool = [...new Set(
-      cards
-        .filter(x => x.id !== c.id)
-        .map(x => (x[slotKey] as string)?.trim())
-        .filter(t => t && t !== "--" && t !== correct && t.length > 1)
-    )].sort(() => Math.random() - 0.5);
-
-    const wrongs = wrongPool.slice(0, 3);
-
-    // Fallback: outras línguas do mesmo card
-    if (wrongs.length < 3) {
-      validLangs
-        .filter(l => l.idx !== chosen.idx && l.txt.trim() !== correct)
-        .forEach(l => { if (wrongs.length < 3) wrongs.push(l.txt.trim()); });
+  // Calcula próximo intervalo para preview nos botões (sem salvar)
+  function previewInterval(card: MentoriaCard, q: number): string {
+    const interval = card.sr_interval || 1;
+    const easiness = card.sr_easiness || 2.5;
+    const reviews  = card.sr_reviews  || 0;
+    let next: number;
+    if (q < 3) {
+      next = 1;
+    } else {
+      if (reviews === 0)      next = 1;
+      else if (reviews === 1) next = 3;
+      else                    next = Math.round(interval * easiness);
     }
-
-    // Preenche com variações numéricas se ainda faltar
-    let fi = 1;
-    while (wrongs.length < 3) { wrongs.push(correct + fi++); }
-
-    const opts = [...wrongs.slice(0,3).map(t=>({txt:t,correct:false})), {txt:correct,correct:true}]
-      .sort(() => Math.random() - 0.5);
-
-    setQuizOpts(opts);
-    setQuizAnswer(null);
-  }, [index, mode, cards.length]);
-
-  function doRestart() {
-    const urgentes = cards.filter(c => {
-      const dias = Math.floor((Date.now() - new Date(c.criado_em||"").getTime()) / 86400000);
-      return dias >= 3;
-    });
-    const pool = urgentes.length > 0
-      ? [...urgentes, ...cards.filter(c => !urgentes.includes(c))].slice(0, 15)
-      : [...cards].sort(() => Math.random() - 0.5).slice(0, 15);
-    shuffled.current = pool;
-    setIndex(0); setFlipped(false); setScore({acertos:0, erros:0});
-    setDone(false); setQuizAnswer(null); setQuizOpts([]); setQuizLang(0); setShowFon(false);
+    if (next === 1) return "amanhã";
+    if (next < 7)   return `${next} dias`;
+    if (next < 30)  return `${Math.round(next/7)}sem`;
+    return `${Math.round(next/30)}mês`;
   }
 
-  function advanceFlip(ok: boolean) {
-    setScore(s => ({ acertos: s.acertos+(ok?1:0), erros: s.erros+(ok?0:1) }));
-    if (index + 1 >= shuffled.current.length) { setDone(true); return; }
-    setIndex(i => i+1);
-    setFlipped(false);
+  useEffect(() => {
+    if (cards.length === 0) return;
+    const today = new Date().toISOString().split("T")[0];
+    // Prioriza cards com revisão vencida (sr_due_date <= hoje) ou nunca revisados
+    const vencidos = cards.filter(c => !c.sr_due_date || c.sr_due_date <= today);
+    const pool = vencidos.length > 0
+      ? [...vencidos].sort((a, b) => (a.sr_due_date||"") < (b.sr_due_date||"") ? -1 : 1).slice(0, 20)
+      : [...cards].sort(() => Math.random() - 0.5).slice(0, 10);
+    sessionCards.current = pool;
+    setIndex(0); setFlipped(false); setDone(false);
+    setScore({ facil:0, bom:0, dificil:0, errei:0 });
+  }, [cards.length]);
+
+  async function responder(qualidade: number) {
+    const card = sessionCards.current[index];
+    if (!card) return;
+    setSaving(true);
+
+    // Atualiza score local
+    setScore(s => ({
+      ...s,
+      ...(qualidade === 5 ? {facil: s.facil+1} :
+          qualidade === 4 ? {bom: s.bom+1} :
+          qualidade === 3 ? {dificil: s.dificil+1} :
+          {errei: s.errei+1})
+    }));
+
+    // Salva no banco
+    try {
+      await fetch("/api/chico", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ acao: "sr_review", card_id: card.id, qualidade }),
+      });
+    } catch {}
+
+    setSaving(false);
+
+    // Avança
+    if (index + 1 >= sessionCards.current.length) {
+      setDone(true);
+    } else {
+      setIndex(i => i+1);
+      setFlipped(false);
+      setNextInfo(null);
+    }
   }
 
-  function advanceQuiz(correct: boolean) {
-    setScore(s => ({ acertos: s.acertos+(correct?1:0), erros: s.erros+(correct?0:1) }));
-    if (index + 1 >= shuffled.current.length) { setDone(true); return; }
-    setIndex(i => i+1);
-    setQuizOpts([]);
-    setShowFon(false);
+  function reiniciar() {
+    const today = new Date().toISOString().split("T")[0];
+    const vencidos = cards.filter(c => !c.sr_due_date || c.sr_due_date <= today);
+    const pool = vencidos.length > 0
+      ? [...vencidos].sort((a,b) => (a.sr_due_date||"") < (b.sr_due_date||"") ? -1 : 1).slice(0,20)
+      : [...cards].sort(() => Math.random()-0.5).slice(0,10);
+    sessionCards.current = pool;
+    setIndex(0); setFlipped(false); setDone(false);
+    setScore({ facil:0, bom:0, dificil:0, errei:0 });
   }
 
-  const urgentesCount = cards.filter(c => {
-    const dias = Math.floor((Date.now() - new Date(c.criado_em||"").getTime()) / 86400000);
-    return dias >= 3;
-  }).length;
+  const C = {
+    blue:"#1A4A8A", orange:"#E07820", green:"#2A9A60",
+    red:"#CC2A20", bg:"#F7F8FC", muted:"#8A9AB8", text:"#1A2A40"
+  };
 
   // ── Sem cards ──────────────────────────────────────────────────────────────
   if (cards.length === 0) return (
     <div style={{ display:"flex", flexDirection:"column" as const, alignItems:"center", justifyContent:"center", height:"100%", gap:"12px", padding:"40px", textAlign:"center" as const }}>
       <div style={{ fontSize:"48px" }}>📚</div>
-      <p style={{ fontSize:"16px", fontWeight:700, color:"#1A2A40", margin:0, fontFamily:"Nunito, sans-serif" }}>Nenhum nexo para revisar</p>
-      <p style={{ fontSize:"13px", color:"#8A9AB8", margin:0 }}>Converse com o Chico primeiro para criar nexos.</p>
+      <p style={{ fontSize:"16px", fontWeight:700, color:C.text, margin:0, fontFamily:"Nunito, sans-serif" }}>Nenhum nexo para revisar</p>
+      <p style={{ fontSize:"13px", color:C.muted, margin:0 }}>Converse com o Chico primeiro para criar nexos.</p>
     </div>
   );
 
   // ── Sessão concluída ────────────────────────────────────────────────────────
-  if (done) return (
-    <div style={{ display:"flex", flexDirection:"column" as const, alignItems:"center", justifyContent:"center", height:"100%", gap:"20px", padding:"40px", textAlign:"center" as const }}>
-      <div style={{ fontSize:"52px" }}>{score.acertos >= shuffled.current.length * 0.7 ? "🎉" : "💪"}</div>
-      <div>
-        <h3 style={{ fontSize:"22px", fontWeight:800, color:"#1A4A8A", margin:"0 0 6px", fontFamily:"Nunito, sans-serif" }}>Sessão concluída!</h3>
-        <p style={{ fontSize:"14px", color:"#8A9AB8", margin:0 }}>{shuffled.current.length} cards revisados</p>
-      </div>
-      <div style={{ display:"flex", gap:"32px" }}>
-        <div style={{ textAlign:"center" as const }}>
-          <div style={{ fontSize:"36px", fontWeight:800, color:"#2A9A60" }}>{score.acertos}</div>
-          <div style={{ fontSize:"12px", color:"#8A9AB8" }}>Acertos</div>
+  if (done) {
+    const total = score.facil + score.bom + score.dificil + score.errei;
+    const acertos = score.facil + score.bom;
+    return (
+      <div style={{ display:"flex", flexDirection:"column" as const, alignItems:"center", justifyContent:"center", height:"100%", gap:"20px", padding:"40px", textAlign:"center" as const }}>
+        <div style={{ fontSize:"52px" }}>{acertos >= total * 0.8 ? "🎉" : acertos >= total * 0.5 ? "👍" : "💪"}</div>
+        <div>
+          <h3 style={{ fontSize:"22px", fontWeight:800, color:C.blue, margin:"0 0 6px", fontFamily:"Nunito, sans-serif" }}>Sessão concluída!</h3>
+          <p style={{ fontSize:"14px", color:C.muted, margin:0 }}>{total} cards revisados</p>
         </div>
-        <div style={{ width:1, background:"rgba(0,0,0,0.08)" }}/>
-        <div style={{ textAlign:"center" as const }}>
-          <div style={{ fontSize:"36px", fontWeight:800, color:"#CC2A20" }}>{score.erros}</div>
-          <div style={{ fontSize:"12px", color:"#8A9AB8" }}>Erros</div>
+        {/* Placar detalhado */}
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", width:"100%", maxWidth:"360px" }}>
+          {[
+            { label:"Fácil",   count:score.facil,   color:C.green,  bg:"rgba(42,154,96,0.08)"  },
+            { label:"Bom",     count:score.bom,     color:C.blue,   bg:"rgba(26,74,138,0.08)"  },
+            { label:"Difícil", count:score.dificil, color:C.orange, bg:"rgba(224,120,32,0.08)" },
+            { label:"Errei",   count:score.errei,   color:C.red,    bg:"rgba(204,42,32,0.08)"  },
+          ].map((s,i) => (
+            <div key={i} style={{ padding:"12px", borderRadius:"12px", background:s.bg, textAlign:"center" as const }}>
+              <div style={{ fontSize:"24px", fontWeight:800, color:s.color, fontFamily:"Nunito, sans-serif" }}>{s.count}</div>
+              <div style={{ fontSize:"12px", color:C.muted }}>{s.label}</div>
+            </div>
+          ))}
         </div>
+        <button onClick={reiniciar}
+          style={{ padding:"13px 32px", borderRadius:"14px", border:"none", background:`linear-gradient(135deg,${C.blue},#2A6ACC)`, color:"#fff", fontSize:"15px", fontWeight:800, cursor:"pointer", fontFamily:"Nunito, sans-serif", boxShadow:"0 3px 14px rgba(26,74,138,0.28)" }}>
+          Revisar novamente
+        </button>
       </div>
-      <button onClick={doRestart}
-        style={{ padding:"13px 32px", borderRadius:"14px", border:"none", background:"linear-gradient(135deg,#1A4A8A,#2A6ACC)", color:"#fff", fontSize:"15px", fontWeight:800, cursor:"pointer", fontFamily:"Nunito, sans-serif", boxShadow:"0 3px 14px rgba(26,74,138,0.28)" }}>
-        Revisar novamente
-      </button>
-    </div>
-  );
+    );
+  }
 
-  const card = shuffled.current[index];
+  const card = sessionCards.current[index];
   if (!card) return null;
 
   const langs = [
@@ -619,201 +628,135 @@ function FlashcardsTab({ cards, audio }: { cards: MentoriaCard[]; audio: ReturnT
     { nome:card.lang_3_nome||"", txt:card.lang_3_txt||"", fon:card.lang_3_fon||"", bcp47:card.lang_3_bcp47||"", exemplo:card.lang_3_exemplo||"" },
   ].filter(l => l.txt && l.txt !== "--" && l.txt.trim().length > 0);
 
-  const quizLangInfo  = langs[quizLang] ?? langs[0];
-  const quizCorrectTxt = quizLangInfo?.txt ?? "";
+  const vencidos = cards.filter(c => {
+    const today = new Date().toISOString().split("T")[0];
+    return !c.sr_due_date || c.sr_due_date <= today;
+  }).length;
 
   return (
-    <div style={{ display:"flex", flexDirection:"column" as const, alignItems:"center", padding:"20px 16px 40px", gap:"14px", height:"100%", overflowY:"auto" as const, background:"#F7F8FC" }}>
+    <div style={{ display:"flex", flexDirection:"column" as const, alignItems:"center", padding:"20px 16px 40px", gap:"14px", height:"100%", overflowY:"auto" as const, background:C.bg }}>
 
-      {/* Urgentes badge */}
-      {urgentesCount > 0 && (
-        <div style={{ width:"100%", maxWidth:"520px", padding:"8px 14px", borderRadius:"10px", background:"rgba(224,120,32,0.08)", border:"1px solid rgba(224,120,32,0.22)", display:"flex", alignItems:"center", gap:"8px" }}>
-          <span style={{ fontSize:"16px" }}>🔥</span>
-          <span style={{ fontSize:"12px", color:"#C06010", fontWeight:700, fontFamily:"Nunito, sans-serif" }}>
-            {urgentesCount} card{urgentesCount > 1 ? "s" : ""} sem revisão há 3+ dias — priorizados
+      {/* Header: progresso + vencidos */}
+      <div style={{ width:"100%", maxWidth:"520px", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+        <span style={{ fontSize:"13px", color:C.muted, fontFamily:"Nunito, sans-serif" }}>
+          {index + 1} / {sessionCards.current.length}
+        </span>
+        {vencidos > 0 && (
+          <span style={{ fontSize:"12px", color:C.orange, fontWeight:700, padding:"3px 10px", borderRadius:"20px", background:"rgba(224,120,32,0.10)" }}>
+            🔥 {vencidos} para revisar hoje
           </span>
-        </div>
-      )}
-
-      {/* Seletor de modo */}
-      <div style={{ display:"flex", gap:"6px", padding:"4px", borderRadius:"12px", background:"rgba(0,0,0,0.06)", width:"100%", maxWidth:"520px" }}>
-        {(["flip","quiz"] as const).map(m => (
-          <button key={m} onClick={() => { setMode(m); doRestart(); }}
-            style={{ flex:1, padding:"8px", borderRadius:"10px", border:"none", cursor:"pointer", fontSize:"13px", fontWeight:mode===m?800:500, background:mode===m?"#fff":"transparent", color:mode===m?"#1A4A8A":"#6A7A9A", boxShadow:mode===m?"0 1px 6px rgba(0,0,0,0.10)":"none", fontFamily:"Nunito, sans-serif", transition:"all 0.2s" }}>
-            {m === "flip" ? "🃏 Virar Card" : "🎯 Quiz"}
-          </button>
-        ))}
+        )}
       </div>
 
-      {/* Progresso */}
-      <div style={{ width:"100%", maxWidth:"520px" }}>
-        <div style={{ display:"flex", justifyContent:"space-between", marginBottom:"6px" }}>
-          <span style={{ fontSize:"12px", color:"#8A9AB8", fontFamily:"Nunito, sans-serif" }}>{index+1} / {shuffled.current.length}</span>
-          <div style={{ display:"flex", gap:"14px" }}>
-            <span style={{ fontSize:"12px", color:"#2A9A60", fontWeight:700 }}>✓ {score.acertos}</span>
-            <span style={{ fontSize:"12px", color:"#CC2A20", fontWeight:700 }}>✗ {score.erros}</span>
-          </div>
-        </div>
-        <div style={{ height:5, borderRadius:5, background:"rgba(0,0,0,0.07)", overflow:"hidden" }}>
-          <div style={{ height:"100%", borderRadius:5, background:"linear-gradient(90deg,#1A4A8A,#2A6ACC)", width:`${((index)/shuffled.current.length)*100}%`, transition:"width 0.35s ease" }}/>
-        </div>
+      {/* Barra de progresso */}
+      <div style={{ width:"100%", maxWidth:"520px", height:5, borderRadius:5, background:"rgba(0,0,0,0.07)", overflow:"hidden" }}>
+        <div style={{ height:"100%", borderRadius:5, background:`linear-gradient(90deg,${C.blue},#2A6ACC)`, width:`${(index/sessionCards.current.length)*100}%`, transition:"width 0.35s ease" }}/>
       </div>
 
-      {/* ── MODO FLIP ─────────────────────────────────────────────────────── */}
-      {mode === "flip" && (
+      {/* ── FRENTE do card ─────────────────────────────────────────────────── */}
+      {!flipped ? (
         <>
-          {!flipped ? (
-            /* Frente */
-            <div onClick={() => setFlipped(true)}
-              style={{ width:"100%", maxWidth:"520px", minHeight:"200px", borderRadius:"22px", background:"linear-gradient(135deg,#1A4A8A,#2A6ACC)", boxShadow:"0 6px 28px rgba(26,74,138,0.30)", padding:"28px 24px", cursor:"pointer", display:"flex", flexDirection:"column" as const, alignItems:"center", justifyContent:"center", gap:"14px", transition:"transform 0.15s, box-shadow 0.15s", userSelect:"none" as const }}
-              onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform="scale(1.015)"; (e.currentTarget as HTMLElement).style.boxShadow="0 10px 36px rgba(26,74,138,0.38)"; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform="scale(1)"; (e.currentTarget as HTMLElement).style.boxShadow="0 6px 28px rgba(26,74,138,0.30)"; }}>
-              <span style={{ fontSize:"11px", color:"rgba(255,255,255,0.65)", fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", fontFamily:"Nunito, sans-serif" }}>Em Português</span>
-              <p style={{ fontSize:"26px", fontWeight:800, color:"#fff", textAlign:"center" as const, margin:0, fontFamily:"Nunito, sans-serif", lineHeight:1.2 }}>
-                {card.titulo_card || card.tema_gerador}
-              </p>
-              <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.50)", fontFamily:"Nunito, sans-serif" }}>Toque para ver as traduções →</span>
-            </div>
-          ) : (
-            /* Verso */
-            <div style={{ width:"100%", maxWidth:"520px", borderRadius:"22px", background:"#fff", boxShadow:"0 4px 20px rgba(0,0,0,0.10)", padding:"20px", border:"1.5px solid rgba(26,74,138,0.12)" }}>
-              <div style={{ fontSize:"11px", color:"#1A4A8A", fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", textAlign:"center" as const, marginBottom:"14px", fontFamily:"Nunito, sans-serif" }}>
-                Toque para ouvir
-              </div>
-              <div style={{ display:"flex", flexDirection:"column" as const, gap:"8px" }}>
-                {langs.map((l, li) => {
-                  const fkey  = `fl-${li}-${l.bcp47}-${l.txt.slice(0,6)}`;
-                  const isPlay = audio.isSpeaking && audio.speakingKey === fkey;
-                  return (
-                    <button key={li}
-                      onClick={() => isPlay ? audio.stopSpeaking() : audio.speak(l.txt, l.bcp47, fkey)}
-                      style={{ width:"100%", borderRadius:"14px", background:isPlay?"rgba(26,74,138,0.08)":"#F7F8FC", border:`1.5px solid ${isPlay?"rgba(26,74,138,0.30)":"transparent"}`, cursor:"pointer", padding:0, overflow:"hidden", textAlign:"left" as const, transition:"all 0.2s", fontFamily:"Nunito, sans-serif" }}>
-                      <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px 14px" }}>
-                        <div style={{ width:36, height:36, borderRadius:"50%", background:isPlay?"#1A4A8A":"rgba(26,74,138,0.10)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.2s" }}>
-                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke={isPlay?"#fff":"#1A4A8A"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                            {isPlay
-                              ? <><line x1="8" y1="6" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="18"/></>
-                              : <polygon points="5 3 19 12 5 21 5 3"/>
-                            }
-                          </svg>
-                        </div>
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:"10px", fontWeight:700, color:isPlay?"#1A4A8A":"#8A9AB8", textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"2px" }}>{l.nome}</div>
-                          <div style={{ fontSize:"17px", fontWeight:800, color:isPlay?"#1A4A8A":"#1A2A40" }}>{l.txt}</div>
-                          {l.fon && <div style={{ fontSize:"12px", color:"#8A9AB8", fontStyle:"italic", marginTop:"2px" }}>{l.fon}</div>}
-                        </div>
-                      </div>
-                      {l.exemplo && (
-                        <div style={{ padding:"5px 14px 10px 62px", borderTop:"1px solid rgba(0,0,0,0.05)", fontSize:"11px", color:"#8A9AB8", fontStyle:"italic", lineHeight:1.55 }}>
-                          {l.exemplo}
-                        </div>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Botões de avaliação — só aparecem quando virado */}
-          {flipped && (
-            <div style={{ display:"flex", gap:"12px", width:"100%", maxWidth:"520px" }}>
-              <button onClick={() => advanceFlip(false)}
-                style={{ flex:1, padding:"13px", borderRadius:"14px", border:"1.5px solid rgba(204,42,32,0.25)", background:"rgba(204,42,32,0.06)", color:"#CC2A20", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"Nunito, sans-serif", transition:"all 0.2s" }}>
-                ✗ Errei
-              </button>
-              <button onClick={() => advanceFlip(true)}
-                style={{ flex:1, padding:"13px", borderRadius:"14px", border:"1.5px solid rgba(42,154,96,0.25)", background:"rgba(42,154,96,0.06)", color:"#2A9A60", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"Nunito, sans-serif", transition:"all 0.2s" }}>
-                ✓ Acertei
-              </button>
-            </div>
-          )}
-
-          {/* Botão virar de volta */}
-          {flipped && (
-            <button onClick={() => setFlipped(false)}
-              style={{ background:"none", border:"none", cursor:"pointer", fontSize:"12px", color:"#AEAEB2", fontFamily:"Nunito, sans-serif", padding:"4px" }}>
-              ← Ver pergunta novamente
-            </button>
-          )}
-        </>
-      )}
-
-      {/* ── MODO QUIZ ─────────────────────────────────────────────────────── */}
-      {mode === "quiz" && (
-        <>
-          {/* Pergunta */}
-          <div style={{ width:"100%", maxWidth:"520px", borderRadius:"22px", background:"linear-gradient(135deg,#1A4A8A,#2A6ACC)", boxShadow:"0 6px 28px rgba(26,74,138,0.28)", padding:"24px" }}>
-            <p style={{ margin:"0 0 8px", fontSize:"12px", color:"rgba(255,255,255,0.65)", fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", fontFamily:"Nunito, sans-serif" }}>
-              Como se diz em {quizLangInfo?.nome}?
-            </p>
-            <p style={{ margin:0, fontSize:"22px", fontWeight:800, color:"#fff", fontFamily:"Nunito, sans-serif", lineHeight:1.2 }}>
+          <div
+            onClick={() => {
+              setFlipped(true);
+              // Áudio automático ao virar
+              if (langs[0]?.txt && langs[0]?.bcp47) {
+                setTimeout(() => audio.speak(langs[0].txt, langs[0].bcp47, `auto-${card.id}`), 300);
+              }
+            }}
+            style={{ width:"100%", maxWidth:"520px", minHeight:"220px", borderRadius:"22px", background:`linear-gradient(135deg,${C.blue},#2A6ACC)`, boxShadow:"0 6px 28px rgba(26,74,138,0.30)", padding:"32px 28px", cursor:"pointer", display:"flex", flexDirection:"column" as const, alignItems:"center", justifyContent:"center", gap:"16px", userSelect:"none" as const, transition:"transform 0.15s, box-shadow 0.15s" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform="scale(1.015)"; (e.currentTarget as HTMLElement).style.boxShadow="0 10px 36px rgba(26,74,138,0.38)"; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform="scale(1)"; (e.currentTarget as HTMLElement).style.boxShadow="0 6px 28px rgba(26,74,138,0.30)"; }}>
+            <span style={{ fontSize:"11px", color:"rgba(255,255,255,0.60)", fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", fontFamily:"Nunito, sans-serif" }}>
+              Em Português
+            </span>
+            <p style={{ fontSize:"28px", fontWeight:800, color:"#fff", textAlign:"center" as const, margin:0, fontFamily:"Nunito, sans-serif", lineHeight:1.2 }}>
               {card.titulo_card || card.tema_gerador}
             </p>
+            <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.50)", fontFamily:"Nunito, sans-serif" }}>
+              Toque para ver a resposta
+            </span>
           </div>
 
-          {/* Opções */}
-          <div style={{ display:"flex", flexDirection:"column" as const, gap:"10px", width:"100%", maxWidth:"520px" }}>
-            {quizOpts.length === 0
-              ? <p style={{ textAlign:"center" as const, color:"#8A9AB8", fontSize:"14px" }}>Carregando opções...</p>
-              : quizOpts.map((opt, i) => {
-                  const answered   = quizAnswer !== null;
-                  const isSelected = quizAnswer === i;
-                  const isCorrect  = opt.correct;
-
-                  let bg = "#fff", border = "1.5px solid rgba(0,0,0,0.09)", color = "#1A2A40", fw = 500;
-                  if (answered) {
-                    if (isCorrect)       { bg="rgba(42,154,96,0.09)";  border="1.5px solid #2A9A60"; color="#2A9A60"; fw=800; }
-                    else if (isSelected) { bg="rgba(204,42,32,0.08)";  border="1.5px solid #CC2A20"; color="#CC2A20"; fw=700; }
-                    else                 { bg="#F7F8FC"; color="#AEAEB2"; }
-                  }
-
-                  const qkey   = `qz-${index}-${i}`;
-                  const isPlay = audio.isSpeaking && audio.speakingKey === qkey;
-
-                  return (
-                    <button key={i}
-                      disabled={answered}
-                      onClick={() => {
-                        if (answered) return;
-                        setQuizAnswer(i);
-                        setShowFon(true);
-                        if (isCorrect) {
-                          setTimeout(() => audio.speak(opt.txt, quizLangInfo?.bcp47 ?? "es-ES", qkey), 350);
-                        }
-                        setTimeout(() => advanceQuiz(isCorrect), 1400);
-                      }}
-                      style={{ width:"100%", padding:"14px 18px", borderRadius:"14px", border, background:bg, color, fontSize:"15px", fontWeight:fw, cursor:answered?"default":"pointer", fontFamily:"Nunito, sans-serif", textAlign:"left" as const, transition:"all 0.22s", display:"flex", alignItems:"center", justifyContent:"space-between", gap:"10px" }}>
-                      <span>{opt.txt}</span>
-                      {answered && isCorrect && (
-                        <span style={{ fontSize:"16px" }}>✓</span>
-                      )}
-                      {answered && isSelected && !isCorrect && (
-                        <span style={{ fontSize:"16px" }}>✗</span>
-                      )}
-                    </button>
-                  );
-                })
-            }
-          </div>
-
-          {/* Fonética da resposta correta */}
-          {showFon && quizLangInfo?.fon && (
-            <div style={{ width:"100%", maxWidth:"520px", padding:"10px 16px", borderRadius:"12px", background:"rgba(42,154,96,0.08)", border:"1px solid rgba(42,154,96,0.20)", display:"flex", alignItems:"center", gap:"10px", animation:"fadeIn 0.2s ease forwards" }}>
-              <span style={{ fontSize:"16px" }}>🔊</span>
-              <div>
-                <div style={{ fontSize:"11px", color:"#2A9A60", fontWeight:700, fontFamily:"Nunito, sans-serif" }}>{quizLangInfo.nome}</div>
-                <div style={{ fontSize:"14px", color:"#2A6A48", fontStyle:"italic", fontFamily:"Nunito, sans-serif" }}>{quizLangInfo.fon}</div>
-              </div>
-              <button onClick={() => audio.speak(quizCorrectTxt, quizLangInfo?.bcp47 ?? "es-ES", `qz-replay-${index}`)}
-                style={{ marginLeft:"auto", padding:"6px 12px", borderRadius:"8px", border:"none", background:"rgba(42,154,96,0.15)", color:"#2A9A60", fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}>
-                Ouvir de novo
-              </button>
+          {/* Info do próximo intervalo atual */}
+          {card.sr_due_date && card.sr_reviews && card.sr_reviews > 0 && (
+            <div style={{ fontSize:"12px", color:C.muted, textAlign:"center" as const }}>
+              Intervalo atual: {card.sr_interval || 1} {(card.sr_interval||1) === 1 ? "dia" : "dias"}
             </div>
           )}
         </>
-      )}
+      ) : (
+        <>
+          {/* ── VERSO do card ───────────────────────────────────────────────── */}
+          <div style={{ width:"100%", maxWidth:"520px", borderRadius:"22px", background:"#fff", boxShadow:"0 4px 20px rgba(0,0,0,0.10)", padding:"20px", border:`1.5px solid rgba(26,74,138,0.12)` }}>
+            {/* Palavra em PT no topo do verso */}
+            <div style={{ textAlign:"center" as const, marginBottom:"16px", paddingBottom:"14px", borderBottom:"1px solid rgba(0,0,0,0.07)" }}>
+              <span style={{ fontSize:"20px", fontWeight:800, color:C.text, fontFamily:"Nunito, sans-serif" }}>
+                {card.titulo_card || card.tema_gerador}
+              </span>
+            </div>
 
+            {/* Traduções nas 3 línguas com áudio */}
+            <div style={{ display:"flex", flexDirection:"column" as const, gap:"8px" }}>
+              {langs.map((l, li) => {
+                const key = `ans-${li}-${card.id}`;
+                const isPlay = audio.isSpeaking && audio.speakingKey === key;
+                return (
+                  <button key={li}
+                    onClick={() => isPlay ? audio.stopSpeaking() : audio.speak(l.txt, l.bcp47, key)}
+                    style={{ width:"100%", borderRadius:"14px", background:isPlay?"rgba(26,74,138,0.08)":"#F7F8FC", border:`1.5px solid ${isPlay?"rgba(26,74,138,0.30)":"transparent"}`, cursor:"pointer", padding:0, overflow:"hidden", textAlign:"left" as const, transition:"all 0.2s", fontFamily:"Nunito, sans-serif" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px 14px" }}>
+                      <div style={{ width:34, height:34, borderRadius:"50%", background:isPlay?"#1A4A8A":"rgba(26,74,138,0.10)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.2s" }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={isPlay?"#fff":"#1A4A8A"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                          {isPlay
+                            ? <><line x1="8" y1="6" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="18"/></>
+                            : <polygon points="5 3 19 12 5 21 5 3"/>
+                          }
+                        </svg>
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:"10px", fontWeight:700, color:isPlay?"#1A4A8A":C.muted, textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"2px" }}>{l.nome}</div>
+                        <div style={{ fontSize:"17px", fontWeight:800, color:isPlay?"#1A4A8A":C.text }}>{l.txt}</div>
+                        {l.fon && <div style={{ fontSize:"12px", color:C.muted, fontStyle:"italic", marginTop:"1px" }}>{l.fon}</div>}
+                      </div>
+                    </div>
+                    {l.exemplo && (
+                      <div style={{ padding:"4px 14px 10px 60px", borderTop:"1px solid rgba(0,0,0,0.05)", fontSize:"11px", color:C.muted, fontStyle:"italic", lineHeight:1.5 }}>
+                        {l.exemplo}
+                      </div>
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* ── Botões SM-2 ─────────────────────────────────────────────────── */}
+          <div style={{ width:"100%", maxWidth:"520px" }}>
+            <div style={{ fontSize:"11px", fontWeight:700, color:C.muted, textTransform:"uppercase" as const, letterSpacing:"0.06em", textAlign:"center" as const, marginBottom:"10px" }}>
+              Como foi?
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:"8px" }}>
+              {[
+                { label:"Errei",   q:0, color:C.red,    bg:"rgba(204,42,32,0.07)",  border:"rgba(204,42,32,0.25)"  },
+                { label:"Difícil", q:3, color:C.orange, bg:"rgba(224,120,32,0.07)", border:"rgba(224,120,32,0.25)" },
+                { label:"Bom",     q:4, color:C.blue,   bg:"rgba(26,74,138,0.07)",  border:"rgba(26,74,138,0.25)"  },
+                { label:"Fácil",   q:5, color:C.green,  bg:"rgba(42,154,96,0.07)",  border:"rgba(42,154,96,0.25)"  },
+              ].map(btn => (
+                <button key={btn.q}
+                  disabled={saving}
+                  onClick={() => responder(btn.q)}
+                  style={{ padding:"10px 6px", borderRadius:"14px", border:`1.5px solid ${btn.border}`, background:btn.bg, color:btn.color, cursor:saving?"not-allowed":"pointer", fontFamily:"Nunito, sans-serif", transition:"all 0.15s", display:"flex", flexDirection:"column" as const, alignItems:"center", gap:"4px" }}>
+                  <span style={{ fontSize:"13px", fontWeight:800 }}>{btn.label}</span>
+                  <span style={{ fontSize:"10px", color:C.muted, fontWeight:500 }}>
+                    {previewInterval(card, btn.q)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
