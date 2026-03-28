@@ -600,11 +600,7 @@ function FlashcardsTab({ cards, audio }: {
       s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g,"").trim();
 
     const card = sessionCards.current[index];
-    const refLangs = [
-      { nome: card?.lang_1_nome||"", txt: card?.lang_1_txt||"", bcp47: card?.lang_1_bcp47||"" },
-      { nome: card?.lang_2_nome||"", txt: card?.lang_2_txt||"", bcp47: card?.lang_2_bcp47||"" },
-      { nome: card?.lang_3_nome||"", txt: card?.lang_3_txt||"", bcp47: card?.lang_3_bcp47||"" },
-    ].filter((l: any) => l.txt && l.txt !== "--");
+    const refLangs = langs.filter((l: any) => l.txt && l.txt !== "--" && l.txt.trim().length > 0);
 
     let totalAcertos = 0;
     let totalPalavras = 0;
@@ -706,7 +702,9 @@ function FlashcardsTab({ cards, audio }: {
     { nome:card.lang_1_nome||"", txt:card.lang_1_txt||"", fon:card.lang_1_fon||"", bcp47:card.lang_1_bcp47||"", exemplo:card.lang_1_exemplo||"" },
     { nome:card.lang_2_nome||"", txt:card.lang_2_txt||"", fon:card.lang_2_fon||"", bcp47:card.lang_2_bcp47||"", exemplo:card.lang_2_exemplo||"" },
     { nome:card.lang_3_nome||"", txt:card.lang_3_txt||"", fon:card.lang_3_fon||"", bcp47:card.lang_3_bcp47||"", exemplo:card.lang_3_exemplo||"" },
-  ].filter((l: any) => l.txt && l.txt !== "--" && l.txt.trim().length > 0);
+  ];
+  // langsValidas: só as que têm tradução real (para diff e verso)
+  const langsValidas = langs.filter((l: any) => l.txt && l.txt !== "--" && l.txt.trim().length > 0);
 
   const vencidos = cards.filter((c: MentoriaCard) => {
     const today = new Date().toISOString().split("T")[0];
@@ -843,7 +841,7 @@ function FlashcardsTab({ cards, audio }: {
 
             {/* Traduções nas 3 línguas com áudio */}
             <div style={{ display:"flex", flexDirection:"column" as const, gap:"8px" }}>
-              {langs.map((l, li) => {
+              {langsValidas.map((l: any, li: number) => {
                 const key = `ans-${li}-${card.id}`;
                 const isPlay = audio.isSpeaking && audio.speakingKey === key;
                 return (
