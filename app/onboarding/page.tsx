@@ -1,10 +1,8 @@
 "use client";
-// app/onboarding/page.tsx
+// app/onboarding/page.tsx — Onboarding redesenhado
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { createBrowserClient } from "@supabase/ssr";
-
-// ── Imagens do Chico ─────────────────────────────────────────────────────────
 
 function createSupabase() {
   return createBrowserClient(
@@ -13,455 +11,188 @@ function createSupabase() {
   );
 }
 
-
-// ── Dados ─────────────────────────────────────────────────────────────────────
+const INTERESSES = [
+  { id:"futebol",    label:"Futebol",    icon:"⚽" },
+  { id:"musica",     label:"Música",     icon:"🎵" },
+  { id:"culinaria",  label:"Culinária",  icon:"🍳" },
+  { id:"tecnologia", label:"Tecnologia", icon:"💻" },
+  { id:"viagens",    label:"Viagens",    icon:"✈️" },
+  { id:"cinema",     label:"Cinema",     icon:"🎬" },
+  { id:"literatura", label:"Literatura", icon:"📚" },
+  { id:"negocios",   label:"Negócios",   icon:"💼" },
+  { id:"esportes",   label:"Esportes",   icon:"🏋️" },
+  { id:"arte",       label:"Arte",       icon:"🎨" },
+  { id:"jogos",      label:"Jogos",      icon:"🎮" },
+  { id:"natureza",   label:"Natureza",   icon:"🌿" },
+];
 
 const TRONCOS = [
   {
     id: "românico" as const,
     label: "Tear Românico",
-    desc: "Espanhol, Francês e Italiano",
-    color: "#C04018",
-    bg: "#FFF3EE",
-    border: "#FFDDD0",
-    flags: ["🇪🇸", "🇫🇷", "🇮🇹"],
-    detalhe: "Línguas filhas do latim, moldadas pelo sol do Mediterrâneo.",
+    desc: "Aprenda Espanhol, Francês e Italiano a partir do Português",
+    linguas: ["🇧🇷 Português", "🇪🇸 Espanhol", "🇫🇷 Francês", "🇮🇹 Italiano"],
+    accent: "#1B5E2B",
+    bg: "#EBF5EE",
+    border: "#A8D5B5",
   },
   {
     id: "germânico" as const,
     label: "Tear Germânico",
-    desc: "Inglês, Alemão e Holandês",
-    color: "#1A4A8A",
-    bg: "#EEF3FF",
-    border: "#C8D8F8",
-    flags: ["🇬🇧", "🇩🇪", "🇳🇱"],
-    detalhe: "Línguas do norte — precisas, robustas e ricas em compostos.",
+    desc: "Aprenda Inglês, Alemão e Holandês a partir do Português",
+    linguas: ["🇧🇷 Português", "🇺🇸 Inglês", "🇩🇪 Alemão", "🇳🇱 Holandês"],
+    accent: "#1A4A8A",
+    bg: "#EBF3FB",
+    border: "#A8C5E8",
   },
 ];
 
-const INTERESSES = [
-  { id: "futebol",     emoji: "⚽", label: "Futebol" },
-  { id: "música",      emoji: "🎵", label: "Música" },
-  { id: "culinária",   emoji: "🍳", label: "Culinária" },
-  { id: "tecnologia",  emoji: "💻", label: "Tecnologia" },
-  { id: "viagens",     emoji: "✈️", label: "Viagens" },
-  { id: "cinema",      emoji: "🎬", label: "Cinema" },
-  { id: "literatura",  emoji: "📚", label: "Literatura" },
-  { id: "negócios",    emoji: "💼", label: "Negócios" },
-  { id: "esportes",    emoji: "🏃", label: "Esportes" },
-  { id: "arte",        emoji: "🎨", label: "Arte" },
-  { id: "jogos",       emoji: "🎮", label: "Jogos" },
-  { id: "natureza",    emoji: "🌿", label: "Natureza" },
-  { id: "história",    emoji: "🏛️", label: "História" },
-  { id: "ciência",     emoji: "🔬", label: "Ciência" },
-  { id: "moda",        emoji: "👗", label: "Moda" },
-  { id: "fotografia",  emoji: "📷", label: "Fotografia" },
-  { id: "saúde",       emoji: "💪", label: "Saúde" },
-  { id: "política",    emoji: "🗳️", label: "Política" },
-];
-
-// ── Componente principal ──────────────────────────────────────────────────────
-
 export default function OnboardingPage() {
   const supabase = createSupabase();
-
-  const [step, setStep]           = useState(1);
-  const [nome, setNome]           = useState("");
-  const [troncos, setTroncos]     = useState<("românico" | "germânico")[]>([]);
+  const [step, setStep]           = useState<1|2>(1);
+  const [tronco, setTronco]       = useState<"românico"|"germânico"|null>(null);
   const [interesses, setInteresses] = useState<string[]>([]);
-  const [saving, setSaving]       = useState(false);
+  const [loading, setLoading]     = useState(false);
   const [error, setError]         = useState<string | null>(null);
-  const [animDir, setAnimDir]     = useState<"forward" | "back">("forward");
-
-  // Pré-preenche nome do Google
-  useEffect(() => {
-    async function load() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { window.location.href = "/"; return; }
-      const displayName = user.user_metadata?.full_name || user.user_metadata?.name || "";
-      const firstName = displayName.split(" ")[0] || "";
-      setNome(firstName);
-    }
-    load();
-  }, []);
-
-  function goNext() { setAnimDir("forward"); setStep(s => s + 1); }
-  function goBack() { setAnimDir("back");    setStep(s => s - 1); }
-
-  function toggleTronco(id: "românico" | "germânico") {
-    setTroncos(prev =>
-      prev.includes(id) ? prev.filter(t => t !== id) : [...prev, id]
-    );
-  }
 
   function toggleInteresse(id: string) {
-    setInteresses(prev =>
-      prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]
-    );
+    setInteresses(prev => prev.includes(id) ? prev.filter(i=>i!==id) : [...prev, id]);
   }
 
-  async function handleFinish() {
-    if (troncos.length === 0 || interesses.length === 0) {
-      setError("Selecione pelo menos um tronco e um interesse.");
-      return;
-    }
-    setSaving(true);
+  async function handleSalvar() {
+    if (!tronco || interesses.length < 2) return;
+    setLoading(true); setError(null);
     try {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("Sem sessão");
-
-      const { error: dbErr } = await supabase.from("user_profiles").upsert({
-        id:                  user.id,
-        display_name:        nome.trim() || user.user_metadata?.full_name || "Aluno",
-        tronco:              troncos[0],
-        troncos_selecionados: troncos,
+      if (!user) { window.location.href = "/"; return; }
+      const { error } = await supabase.from("user_profiles").upsert({
+        id: user.id,
+        display_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Aluno",
+        tronco,
         interesses,
-        onboarding_ok:       true,
-      }, { onConflict: "id" });
-
-      if (dbErr) throw dbErr;
+        onboarding_ok: true,
+        updated_at: new Date().toISOString(),
+      });
+      if (error) { setError(error.message); setLoading(false); return; }
       window.location.href = "/dashboard";
-    } catch (e: any) {
-      setError(e.message || "Erro ao salvar. Tente novamente.");
-      setSaving(false);
+    } catch (e) {
+      setError("Erro ao salvar. Tente novamente.");
+      setLoading(false);
     }
   }
 
-  // ── Estilos base ─────────────────────────────────────────────────────────
-
-  const S = {
-    page: {
-      minHeight: "100vh",
-      background: "#F5F7FF",
-      fontFamily: "'Nunito', -apple-system, sans-serif",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      padding: "24px 16px",
-    } as React.CSSProperties,
-
-    card: {
-      width: "100%",
-      maxWidth: "520px",
-      background: "#FFFFFF",
-      borderRadius: "24px",
-      boxShadow: "0 4px 40px rgba(26,74,138,0.10), 0 1px 4px rgba(26,74,138,0.06)",
-      padding: "40px 40px 36px",
-      animation: "fadeUp 0.4s ease forwards",
-    } as React.CSSProperties,
-
-    progress: {
-      display: "flex",
-      gap: "6px",
-      marginBottom: "36px",
-    } as React.CSSProperties,
-
-    dot: (active: boolean, done: boolean): React.CSSProperties => ({
-      flex: 1,
-      height: 4,
-      borderRadius: 4,
-      background: done ? "#1A4A8A" : active ? "#E07820" : "rgba(0,0,0,0.09)",
-      transition: "background 0.3s ease",
-    }),
-
-    h1: {
-      fontSize: "26px",
-      fontWeight: 800,
-      color: "#1A4A8A",
-      letterSpacing: "-0.02em",
-      margin: "0 0 8px",
-      lineHeight: 1.2,
-    } as React.CSSProperties,
-
-    sub: {
-      fontSize: "15px",
-      color: "#6A7A9A",
-      lineHeight: 1.55,
-      margin: "0 0 28px",
-    } as React.CSSProperties,
-
-    btn: (disabled = false): React.CSSProperties => ({
-      width: "100%",
-      padding: "14px",
-      borderRadius: "14px",
-      border: "none",
-      background: disabled ? "rgba(0,0,0,0.07)" : "linear-gradient(135deg,#1A4A8A,#2A6ACC)",
-      color: disabled ? "#AEAEB2" : "#fff",
-      fontSize: "16px",
-      fontWeight: 700,
-      cursor: disabled ? "not-allowed" : "pointer",
-      fontFamily: "'Nunito', sans-serif",
-      boxShadow: disabled ? "none" : "0 3px 14px rgba(26,74,138,0.28)",
-      transition: "all 0.2s",
-      letterSpacing: "-0.01em",
-    }),
-
-    backBtn: {
-      background: "none",
-      border: "none",
-      color: "#8A9AB8",
-      fontSize: "14px",
-      fontWeight: 600,
-      cursor: "pointer",
-      fontFamily: "'Nunito', sans-serif",
-      padding: "8px 0",
-      display: "flex",
-      alignItems: "center",
-      gap: "4px",
-    } as React.CSSProperties,
-  };
+  const G = "#1B5E2B";
+  const Y = "#F5C800";
 
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800&display=swap');
-        @keyframes fadeUp { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background: #F5F7FF; }
-        input { outline: none; -webkit-appearance: none; }
-        input:focus { border-color: #1A4A8A !important; }
+        *{box-sizing:border-box;margin:0;padding:0}
+        body{margin:0;background:#F4F5F0}
+        @keyframes fadeUp{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+        @media(max-width:600px){.ob-card{padding:24px!important}.ob-troncos{flex-direction:column!important}.ob-interesses{grid-template-columns:repeat(3,1fr)!important}}
       `}</style>
 
-      <div style={S.page}>
-        <div style={S.card}>
+      <div style={{ minHeight:"100vh", background:"#F4F5F0", display:"flex", flexDirection:"column" as const, alignItems:"center", justifyContent:"center", padding:"32px 16px", fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif" }}>
 
-          {/* Barra de progresso */}
-          <div style={S.progress}>
-            {[1, 2, 3].map(n => (
-              <div key={n} style={S.dot(step === n, step > n)}/>
+        {/* Header */}
+        <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"32px" }}>
+          <div style={{ width:"34px", height:"34px", background:G, borderRadius:"4px", display:"flex", alignItems:"center", justifyContent:"center" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+          </div>
+          <span style={{ fontSize:"17px", fontWeight:800, color:G, letterSpacing:"-0.2px" }}>Chico Mentor</span>
+        </div>
+
+        {/* Card */}
+        <div className="ob-card" style={{ background:"#fff", borderRadius:"6px", border:"1px solid #E2E5E9", padding:"36px 40px", width:"100%", maxWidth:"580px", animation:"fadeUp 0.4s ease forwards" }}>
+
+          {/* Steps */}
+          <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"32px" }}>
+            {[1,2].map(n => (
+              <div key={n} style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                <div style={{ width:"28px", height:"28px", borderRadius:"50%", background:step>=n?G:"#E2E5E9", color:step>=n?"#fff":"#9CA3AF", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"12px", fontWeight:800, transition:"all 0.2s" }}>
+                  {step > n ? <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="2.5"><polyline points="20 6 9 17 4 12"/></svg> : n}
+                </div>
+                <span style={{ fontSize:"12px", fontWeight:step>=n?700:500, color:step>=n?G:"#9CA3AF" }}>
+                  {n===1?"Escolher tronco":"Seus interesses"}
+                </span>
+                {n < 2 && <div style={{ width:"32px", height:"1px", background:step>1?G:"#E2E5E9", transition:"background 0.3s" }}/>}
+              </div>
             ))}
           </div>
 
-          {/* ── PASSO 1 — Boas-vindas ──────────────────────────────────────── */}
+          {/* ── STEP 1: Tronco ── */}
           {step === 1 && (
-            <div style={{ animation: "fadeUp 0.35s ease forwards" }}>
-              {/* Mascote centralizado */}
-              <div style={{ display: "flex", justifyContent: "center", marginBottom: "20px" }}>
-                <div style={{ position: "relative" as const }}>
-                  <div style={{ width:80, height:80, borderRadius:"50%", background:"linear-gradient(135deg,#1A4A8A,#2A6ACC)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"36px", fontWeight:800, color:"#fff", fontFamily:'"Nunito",sans-serif', flexShrink:0 }}>C</div>
-                  {/* Balão de fala */}
-                  <div style={{ position: "absolute" as const, top: -8, right: -100, background: "#1A4A8A", color: "#fff", fontSize: "12px", fontWeight: 700, padding: "6px 12px", borderRadius: "20px 20px 20px 4px", whiteSpace: "nowrap" as const, boxShadow: "0 2px 8px rgba(26,74,138,0.25)" }}>
-                    Au au! 🐾
+            <>
+              <h2 style={{ fontSize:"22px", fontWeight:800, color:"#111827", letterSpacing:"-0.3px", marginBottom:"6px" }}>Escolha seu Tear</h2>
+              <p style={{ fontSize:"13px", color:"#6B7280", marginBottom:"24px", lineHeight:1.6 }}>
+                O Tear define quais línguas você aprende. As línguas de um mesmo Tear compartilham raízes — isso acelera o aprendizado.
+              </p>
+              <div className="ob-troncos" style={{ display:"flex", gap:"12px", marginBottom:"28px" }}>
+                {TRONCOS.map(t => (
+                  <div key={t.id} onClick={()=>setTronco(t.id)}
+                    style={{ flex:1, padding:"18px", borderRadius:"6px", border:`2px solid ${tronco===t.id?t.accent:t.border}`, background:tronco===t.id?t.bg:"#FAFAFA", cursor:"pointer", transition:"all 0.15s" }}>
+                    <div style={{ fontSize:"14px", fontWeight:800, color:tronco===t.id?t.accent:"#111827", marginBottom:"5px" }}>{t.label}</div>
+                    <div style={{ fontSize:"12px", color:"#6B7280", lineHeight:1.5, marginBottom:"12px" }}>{t.desc}</div>
+                    <div style={{ display:"flex", flexWrap:"wrap" as const, gap:"5px" }}>
+                      {t.linguas.map((l,i) => (
+                        <span key={i} style={{ fontSize:"11px", fontWeight:600, background:tronco===t.id?t.accent:"#E2E5E9", color:tronco===t.id?"#fff":"#374151", padding:"2px 8px", borderRadius:"3px" }}>{l}</span>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                ))}
               </div>
-
-              <h1 style={S.h1}>Oi! Sou o Chico.</h1>
-              <p style={S.sub}>
-                Vou te ensinar línguas do jeito que você aprende — com exemplos do que você gosta, conexões que fazem sentido e muita curiosidade.
-              </p>
-
-              <div style={{ marginBottom: "24px" }}>
-                <label style={{ display: "block", fontSize: "13px", fontWeight: 700, color: "#3A4A6A", marginBottom: "8px", letterSpacing: "0.01em" }}>
-                  Como posso te chamar?
-                </label>
-                <input
-                  type="text"
-                  value={nome}
-                  onChange={e => setNome(e.target.value)}
-                  placeholder="Seu primeiro nome"
-                  onKeyDown={e => e.key === "Enter" && nome.trim() && goNext()}
-                  style={{
-                    width: "100%",
-                    padding: "13px 16px",
-                    borderRadius: "12px",
-                    border: "2px solid rgba(0,0,0,0.10)",
-                    fontSize: "16px",
-                    fontWeight: 600,
-                    color: "#1A2A40",
-                    fontFamily: "'Nunito', sans-serif",
-                    background: "#F8F9FF",
-                    transition: "border-color 0.2s",
-                  }}
-                  onFocus={e => (e.target.style.borderColor = "#1A4A8A")}
-                  onBlur={e => (e.target.style.borderColor = "rgba(0,0,0,0.10)")}
-                />
-              </div>
-
-              <button
-                onClick={goNext}
-                disabled={!nome.trim()}
-                style={S.btn(!nome.trim())}
-              >
-                Vamos começar →
-              </button>
-            </div>
-          )}
-
-          {/* ── PASSO 2 — Tronco ───────────────────────────────────────────── */}
-          {step === 2 && (
-            <div style={{ animation: "fadeUp 0.35s ease forwards" }}>
-              {/* Chico pequeno no canto */}
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-                <div style={{ width:52, height:52, borderRadius:"50%", background:"linear-gradient(135deg,#1A4A8A,#2A6ACC)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", fontWeight:800, color:"#fff", fontFamily:'"Nunito",sans-serif', flexShrink:0 }}>C</div>
-                <div style={{ background: "#F0F5FF", borderRadius: "12px 12px 12px 4px", padding: "10px 14px", fontSize: "14px", color: "#3A5A9A", fontWeight: 600, lineHeight: 1.4, maxWidth: "300px" }}>
-                  {nome ? `${nome}, qual` : "Qual"} família de línguas mais te chama?
-                </div>
-              </div>
-
-              <h1 style={{ ...S.h1, fontSize: "22px" }}>Escolha seu tronco</h1>
-              <p style={{ ...S.sub, marginBottom: "20px" }}>
-                Você pode escolher os dois — o Chico vai alternar entre eles.
-              </p>
-
-              <div style={{ display: "flex", flexDirection: "column" as const, gap: "12px", marginBottom: "24px" }}>
-                {TRONCOS.map(t => {
-                  const sel = troncos.includes(t.id);
-                  return (
-                    <button
-                      key={t.id}
-                      onClick={() => toggleTronco(t.id)}
-                      style={{
-                        width: "100%",
-                        padding: "18px 20px",
-                        borderRadius: "16px",
-                        border: `2px solid ${sel ? t.color : "rgba(0,0,0,0.08)"}`,
-                        background: sel ? t.bg : "#FAFBFF",
-                        cursor: "pointer",
-                        textAlign: "left" as const,
-                        fontFamily: "'Nunito', sans-serif",
-                        transition: "all 0.2s",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                        gap: "16px",
-                        boxShadow: sel ? `0 2px 12px ${t.color}22` : "none",
-                      }}
-                    >
-                      <div style={{ flex: 1 }}>
-                        {/* Flags */}
-                        <div style={{ fontSize: "22px", marginBottom: "6px", letterSpacing: "2px" }}>
-                          {t.flags.join(" ")}
-                        </div>
-                        <div style={{ fontSize: "16px", fontWeight: 800, color: sel ? t.color : "#1A2A40", marginBottom: "3px" }}>
-                          {t.label}
-                        </div>
-                        <div style={{ fontSize: "13px", fontWeight: 600, color: sel ? t.color : "#7A8AAA" }}>
-                          {t.desc}
-                        </div>
-                        <div style={{ fontSize: "12px", color: sel ? t.color : "#A0AABF", marginTop: "4px", fontStyle: "italic" }}>
-                          {t.detalhe}
-                        </div>
-                      </div>
-                      {/* Checkbox */}
-                      <div style={{
-                        width: 28,
-                        height: 28,
-                        borderRadius: "8px",
-                        border: `2px solid ${sel ? t.color : "rgba(0,0,0,0.15)"}`,
-                        background: sel ? t.color : "transparent",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        flexShrink: 0,
-                        transition: "all 0.2s",
-                      }}>
-                        {sel && (
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                            <polyline points="20 6 9 17 4 12"/>
-                          </svg>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <button
-                onClick={goNext}
-                disabled={troncos.length === 0}
-                style={{ ...S.btn(troncos.length === 0), marginBottom: "10px" }}
-              >
+              <button onClick={()=>tronco&&setStep(2)} disabled={!tronco}
+                style={{ width:"100%", background:!tronco?"#E2E5E9":G, color:!tronco?"#9CA3AF":"#fff", border:"none", borderRadius:"5px", padding:"12px", fontSize:"14px", fontWeight:800, cursor:!tronco?"not-allowed":"pointer" }}>
                 Continuar →
               </button>
-              <div style={{ textAlign: "center" as const }}>
-                <button onClick={goBack} style={S.backBtn}>← Voltar</button>
-              </div>
-            </div>
+            </>
           )}
 
-          {/* ── PASSO 3 — Interesses ───────────────────────────────────────── */}
-          {step === 3 && (
-            <div style={{ animation: "fadeUp 0.35s ease forwards" }}>
-              {/* Chico com balão */}
-              <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
-                <div style={{ width:52, height:52, borderRadius:"50%", background:"linear-gradient(135deg,#1A4A8A,#2A6ACC)", display:"flex", alignItems:"center", justifyContent:"center", fontSize:"22px", fontWeight:800, color:"#fff", fontFamily:'"Nunito",sans-serif', flexShrink:0 }}>C</div>
-                <div style={{ background: "#FFF3EE", borderRadius: "12px 12px 12px 4px", padding: "10px 14px", fontSize: "14px", color: "#8A3A18", fontWeight: 600, lineHeight: 1.4, border: "1px solid #FFD8C8" }}>
-                  Quais são seus interesses? Vou usá-los nos exemplos!
-                </div>
-              </div>
-
-              <h1 style={{ ...S.h1, fontSize: "22px" }}>O que você gosta?</h1>
-              <p style={{ ...S.sub, marginBottom: "20px" }}>
-                Escolha pelo menos 2. O Chico usa esses temas para criar exemplos que fazem sentido pra você.
+          {/* ── STEP 2: Interesses ── */}
+          {step === 2 && (
+            <>
+              <h2 style={{ fontSize:"22px", fontWeight:800, color:"#111827", letterSpacing:"-0.3px", marginBottom:"6px" }}>Seus interesses</h2>
+              <p style={{ fontSize:"13px", color:"#6B7280", marginBottom:"6px", lineHeight:1.6 }}>
+                O Chico personaliza as aulas com base no que você gosta. Escolha pelo menos 2.
               </p>
-
-              {/* Grid de chips com emoji */}
-              <div style={{ display: "flex", flexWrap: "wrap" as const, gap: "8px", marginBottom: "24px" }}>
+              <div style={{ display:"flex", alignItems:"center", gap:"8px", marginBottom:"20px" }}>
+                <div style={{ height:"3px", flex:1, borderRadius:"3px", background:"#E2E5E9", overflow:"hidden" }}>
+                  <div style={{ height:"100%", background:G, width:`${Math.min(100,(interesses.length/4)*100)}%`, transition:"width 0.3s" }}/>
+                </div>
+                <span style={{ fontSize:"11px", fontWeight:700, color:interesses.length>=2?G:"#9CA3AF" }}>{interesses.length} selecionados</span>
+              </div>
+              <div className="ob-interesses" style={{ display:"grid", gridTemplateColumns:"repeat(4,minmax(0,1fr))", gap:"8px", marginBottom:"24px" }}>
                 {INTERESSES.map(item => {
                   const sel = interesses.includes(item.id);
                   return (
-                    <button
-                      key={item.id}
-                      onClick={() => toggleInteresse(item.id)}
-                      style={{
-                        padding: "9px 16px",
-                        borderRadius: "24px",
-                        border: `2px solid ${sel ? "#1A4A8A" : "rgba(0,0,0,0.09)"}`,
-                        background: sel ? "rgba(26,74,138,0.08)" : "#F8F9FF",
-                        color: sel ? "#1A4A8A" : "#3A4A6A",
-                        fontSize: "14px",
-                        fontWeight: sel ? 700 : 500,
-                        cursor: "pointer",
-                        fontFamily: "'Nunito', sans-serif",
-                        transition: "all 0.15s",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "6px",
-                        boxShadow: sel ? "0 2px 8px rgba(26,74,138,0.15)" : "none",
-                      }}
-                    >
-                      <span style={{ fontSize: "16px" }}>{item.emoji}</span>
-                      {item.label}
+                    <button key={item.id} onClick={()=>toggleInteresse(item.id)}
+                      style={{ background:sel?"#EBF5EE":"#F9FAFB", border:`1.5px solid ${sel?"#A8D5B5":"#E2E5E9"}`, borderRadius:"5px", padding:"12px 8px", cursor:"pointer", display:"flex", flexDirection:"column" as const, alignItems:"center", gap:"5px", transition:"all 0.15s" }}>
+                      <span style={{ fontSize:"20px" }}>{item.icon}</span>
+                      <span style={{ fontSize:"11px", fontWeight:sel?700:500, color:sel?G:"#374151" }}>{item.label}</span>
                     </button>
                   );
                 })}
               </div>
-
-              {/* Contador */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "16px" }}>
-                <span style={{ fontSize: "13px", color: "#8A9AB8", fontWeight: 500 }}>
-                  {interesses.length === 0 ? "Nenhum selecionado" : `${interesses.length} selecionado${interesses.length > 1 ? "s" : ""}`}
-                </span>
-                {interesses.length > 0 && (
-                  <button
-                    onClick={() => setInteresses([])}
-                    style={{ background: "none", border: "none", color: "#AEAEB2", fontSize: "13px", cursor: "pointer", fontFamily: "'Nunito', sans-serif" }}>
-                    Limpar
-                  </button>
-                )}
+              {error && <div style={{ background:"#FEF2F2", border:"1px solid #FECACA", borderRadius:"5px", padding:"10px 14px", fontSize:"13px", color:"#991B1B", marginBottom:"16px" }}>{error}</div>}
+              <div style={{ display:"flex", gap:"10px" }}>
+                <button onClick={()=>setStep(1)}
+                  style={{ padding:"12px 20px", background:"#fff", border:"1px solid #E2E5E9", borderRadius:"5px", fontSize:"14px", fontWeight:700, color:"#374151", cursor:"pointer" }}>
+                  ← Voltar
+                </button>
+                <button onClick={handleSalvar} disabled={loading||interesses.length<2}
+                  style={{ flex:1, background:loading||interesses.length<2?"#E2E5E9":G, color:loading||interesses.length<2?"#9CA3AF":"#fff", border:"none", borderRadius:"5px", padding:"12px", fontSize:"14px", fontWeight:800, cursor:loading||interesses.length<2?"not-allowed":"pointer" }}>
+                  {loading?"Salvando...":"Começar a aprender →"}
+                </button>
               </div>
-
-              {error && (
-                <div style={{ padding: "11px 14px", borderRadius: "10px", background: "rgba(255,59,48,0.06)", border: "1px solid rgba(255,59,48,0.18)", fontSize: "13px", color: "#CC2A20", marginBottom: "14px", fontWeight: 500 }}>
-                  {error}
-                </div>
-              )}
-
-              <button
-                onClick={handleFinish}
-                disabled={interesses.length < 2 || saving}
-                style={{ ...S.btn(interesses.length < 2 || saving), background: interesses.length >= 2 && !saving ? "linear-gradient(135deg,#E07820,#F09030)" : "rgba(0,0,0,0.07)", boxShadow: interesses.length >= 2 && !saving ? "0 3px 14px rgba(224,120,32,0.30)" : "none", marginBottom: "10px" }}
-              >
-                {saving ? "Entrando..." : `Começar com o Chico →`}
-              </button>
-              <div style={{ textAlign: "center" as const }}>
-                <button onClick={goBack} style={S.backBtn}>← Voltar</button>
-              </div>
-            </div>
+            </>
           )}
-
         </div>
+
+        {/* Footer */}
+        <p style={{ fontSize:"12px", color:"#9CA3AF", marginTop:"20px" }}>
+          Chico Mentor · Aprendizado acelerado de línguas
+        </p>
       </div>
     </>
   );
