@@ -592,62 +592,65 @@ function FlashcardsTab({ cards, audio }: {
 
   // Verifica o que o aluno digitou contra a tradução correta
   function verificarTentativa() {
-    if (!tentativa.trim()) return;
-    const normalize = (s: string) =>
-      s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9\s]/g,"").trim();
+    const partes = tentativa.split("|||");
+    const hasAny = partes.some((p: string) => p.trim().length > 0);
+    if (!hasAny) return;
 
-    // Usa a primeira língua disponível como referência
+    const normalize = (s: string) =>
+      s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"").replace(/[^a-z0-9 ]/g,"").trim();
+
     const card = sessionCards.current[index];
     const refLangs = [
       { nome: card?.lang_1_nome||"", txt: card?.lang_1_txt||"", bcp47: card?.lang_1_bcp47||"" },
-      { nome: card?.lang_2_nome||"", txt: card?.lang_2_txt||"" , bcp47: card?.lang_2_bcp47||"" },
+      { nome: card?.lang_2_nome||"", txt: card?.lang_2_txt||"", bcp47: card?.lang_2_bcp47||"" },
       { nome: card?.lang_3_nome||"", txt: card?.lang_3_txt||"", bcp47: card?.lang_3_bcp47||"" },
     ].filter((l: any) => l.txt && l.txt !== "--");
 
-    // Tenta encontrar a melhor correspondência entre as línguas
-    let bestLang = refLangs[0];
-    let bestScore = 0;
-    refLangs.forEach((l: any) => {
-      const lWords = normalize(l.txt).split(/\s+/);
-      const tWords = normalize(tentativa).split(/\s+/);
-      const match = lWords.filter((w: string, i: number) => w === tWords[i]).length;
-      if (match > bestScore) { bestScore = match; bestLang = l; }
-    });
+    let totalAcertos = 0;
+    let totalPalavras = 0;
+    const allDiffs: React.ReactNode[] = [];
 
-    const esperado = normalize(bestLang.txt).split(/\s+/);
-    const dado     = normalize(tentativa).split(/\s+/);
-    let acertos = 0;
+    refLangs.forEach((l: any, li: number) => {
+      const dado = partes[li] ? normalize(partes[li]).split(" ").filter((x:string)=>x) : [];
+      if (!dado.length) return;
 
-    const diff: React.ReactNode[] = esperado.map((p: string, i: number) => {
-      const ok = dado[i] === p;
-      if (ok) acertos++;
-      return (
-        <span key={i} style={{
-          display:"inline-block", marginRight:"4px", marginBottom:"4px",
-          padding:"2px 8px", borderRadius:"6px",
-          background: ok ? "rgba(42,154,96,0.12)" : "rgba(204,42,32,0.10)",
-          color: ok ? "#2A9A60" : "#CC2A20",
-          fontWeight: ok ? 600 : 700, fontSize:"15px",
-        }}>
-          {ok ? p : (
-            <>{dado[i] || "___"}<br/>
-            <span style={{fontSize:"11px",color:"#2A9A60",fontWeight:500}}>{p}</span></>
-          )}
-        </span>
+      const esperado = normalize(l.txt).split(" ").filter((x:string)=>x);
+      totalPalavras += esperado.length;
+
+      allDiffs.push(
+        <div key={li} style={{ marginBottom:"8px" }}>
+          <div style={{ fontSize:"10px", fontWeight:700, color:"#8A9AB8", textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"4px" }}>
+            {l.nome}
+          </div>
+          <div style={{ display:"flex", flexWrap:"wrap" as const, gap:"4px" }}>
+            {esperado.map((p: string, i: number) => {
+              const ok = (dado[i]||"") === p;
+              if (ok) totalAcertos++;
+              return (
+                <span key={i} style={{ display:"inline-block", padding:"2px 8px", borderRadius:"6px", background:ok?"rgba(42,154,96,0.12)":"rgba(204,42,32,0.10)", color:ok?"#2A9A60":"#CC2A20", fontWeight:ok?600:700, fontSize:"14px" }}>
+                  {ok ? p : (
+                    <>{dado[i]||"___"}<br/>
+                    <span style={{fontSize:"10px",color:"#2A9A60",fontWeight:500}}>{p}</span>
+                    </>
+                  )}
+                </span>
+              );
+            })}
+          </div>
+        </div>
       );
+
+      if (l.bcp47 && l.txt) {
+        setTimeout(() => audio.speak(l.txt, l.bcp47, `verify-${li}-${card?.id}`), 400 + li * 700);
+      }
     });
 
-    const allOk = acertos === esperado.length;
-    setDiffResult({ ok: allOk, diff });
-
-    // Toca o áudio da palavra correta automaticamente
-    if (bestLang.bcp47 && bestLang.txt) {
-      setTimeout(() => audio.speak(bestLang.txt, bestLang.bcp47, `verify-${card?.id}`), 400);
-    }
-
+    const allOk = totalPalavras > 0 && totalAcertos === totalPalavras;
+    setDiffResult({ ok: allOk, diff: allDiffs });
     setFlipped(true);
     setTimeout(() => inputRef.current?.blur(), 50);
   }
+
 
   const C = {
     blue:"#1A4A8A", orange:"#E07820", green:"#2A9A60",
@@ -742,33 +745,58 @@ function FlashcardsTab({ cards, audio }: {
               {card.titulo_card || card.tema_gerador}
             </p>
             <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.55)", fontFamily:"Nunito, sans-serif" }}>
-              Como se diz em {langs[0]?.nome || "espanhol"}?
+              Como se diz nas {langs.length} línguas?
             </div>
           </div>
 
-          {/* Campo de digitação ativo */}
+          {/* Campo de digitação — uma linha por língua */}
           <div style={{ width:"100%", maxWidth:"520px", background:"#fff", borderRadius:"18px", padding:"18px 20px", boxShadow:"0 2px 12px rgba(26,74,138,0.08)", border:`1.5px solid rgba(26,74,138,0.12)` }}>
-            <div style={{ fontSize:"11px", fontWeight:700, color:C.muted, textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"10px" }}>
-              Digite a tradução
+            <div style={{ fontSize:"11px", fontWeight:700, color:C.muted, textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"12px" }}>
+              Digite nas {langs.length} línguas
             </div>
-            <input
-              ref={inputRef}
-              value={tentativa}
-              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTentativa(e.target.value)}
-              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter" && tentativa.trim()) verificarTentativa(); }}
-              placeholder={`Em ${langs[0]?.nome || "espanhol"}...`}
-              autoFocus
-              style={{ width:"100%", padding:"12px 14px", borderRadius:"12px", border:`1.5px solid rgba(26,74,138,0.20)`, fontSize:"17px", fontFamily:"Nunito, sans-serif", color:C.text, outline:"none", boxSizing:"border-box" as const, background:"#FAFBFD" }}
-            />
-            <div style={{ display:"flex", gap:"8px", marginTop:"10px" }}>
+            <div style={{ display:"flex", flexDirection:"column" as const, gap:"8px" }}>
+              {langs.map((l: any, li: number) => (
+                <div key={li} style={{ display:"flex", alignItems:"center", gap:"8px" }}>
+                  <span style={{ fontSize:"11px", fontWeight:700, color:C.muted, minWidth:"62px", textAlign:"right" as const, textTransform:"uppercase" as const, letterSpacing:"0.04em" }}>
+                    {l.nome}
+                  </span>
+                  <input
+                    ref={li === 0 ? inputRef : undefined}
+                    value={tentativa.split("|||")[li] || ""}
+                    onChange={(e: React.ChangeEvent<HTMLInputElement>) => {
+                      const parts = tentativa.split("|||");
+                      while (parts.length < langs.length) parts.push("");
+                      parts[li] = e.target.value;
+                      setTentativa(parts.join("|||"));
+                    }}
+                    onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
+                      if (e.key === "Enter") {
+                        const allFilled = langs.every((_: any, i: number) => (tentativa.split("|||")[i]||"").trim().length > 0);
+                        if (allFilled) verificarTentativa();
+                        else {
+                          // Foca no próximo campo vazio
+                          const next = document.querySelector<HTMLInputElement>(`input[data-lang-idx="${li+1}"]`);
+                          if (next) next.focus();
+                        }
+                      }
+                    }}
+                    data-lang-idx={li}
+                    autoFocus={li === 0}
+                    placeholder={`Em ${l.nome}...`}
+                    style={{ flex:1, padding:"10px 14px", borderRadius:"10px", border:`1.5px solid rgba(26,74,138,0.18)`, fontSize:"15px", fontFamily:"Nunito, sans-serif", color:C.text, outline:"none", background:"#FAFBFD" }}
+                  />
+                </div>
+              ))}
+            </div>
+            <div style={{ display:"flex", gap:"8px", marginTop:"12px" }}>
               <button
                 onClick={verificarTentativa}
-                disabled={!tentativa.trim()}
-                style={{ flex:1, padding:"12px", borderRadius:"12px", border:"none", background:!tentativa.trim()?"rgba(0,0,0,0.06)":`linear-gradient(135deg,${C.blue},#2A6ACC)`, color:!tentativa.trim()?"#AEAEB2":"#fff", fontSize:"14px", fontWeight:800, cursor:!tentativa.trim()?"not-allowed":"pointer", fontFamily:"Nunito, sans-serif", boxShadow:!tentativa.trim()?"none":"0 3px 12px rgba(26,74,138,0.25)" }}>
+                disabled={!tentativa.split("|||").some((p: string) => p.trim().length > 0)}
+                style={{ flex:1, padding:"12px", borderRadius:"12px", border:"none", background:!tentativa.split("|||").some((p: string) => p.trim().length > 0)?"rgba(0,0,0,0.06)":`linear-gradient(135deg,${C.blue},#2A6ACC)`, color:!tentativa.split("|||").some((p: string) => p.trim().length > 0)?"#AEAEB2":"#fff", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}>
                 Ver resposta →
               </button>
               <button
-                onClick={() => { setTentativa(""); setFlipped(true); if (langs[0]?.txt && langs[0]?.bcp47) setTimeout(()=>audio.speak(langs[0].txt, langs[0].bcp47, `skip-${card.id}`), 300); }}
+                onClick={() => { setTentativa(""); setFlipped(true); langs.forEach((l: any, i: number) => { if (l.txt && l.bcp47) setTimeout(()=>audio.speak(l.txt, l.bcp47, `skip-${i}-${card.id}`), 300 + i*600); }); }}
                 style={{ padding:"12px 16px", borderRadius:"12px", border:`1.5px solid rgba(0,0,0,0.09)`, background:"transparent", color:C.muted, fontSize:"13px", fontWeight:600, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}>
                 Pular
               </button>
