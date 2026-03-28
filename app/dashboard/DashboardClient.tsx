@@ -2403,6 +2403,85 @@ function exportAnki(cards: MentoriaCard[]) {
   URL.revokeObjectURL(url);
 }
 
+// ── ChatBubble ────────────────────────────────────────────────────────────────
+
+function ChatBubble({ message: msg, audio }: {
+  message: ChatMessage;
+  audio: ReturnType<typeof useAudio>;
+}) {
+  const isUser = msg.role === "user";
+
+  // Loading
+  if (msg.isLoading) return (
+    <div style={{ display:"flex", alignItems:"flex-start", gap:"8px", marginBottom:"4px" }}>
+      <div style={{ width:28, height:28, borderRadius:"50%", background:C.green, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+        <span style={{ fontSize:"13px", fontWeight:800, color:"#fff" }}>C</span>
+      </div>
+      <div style={{ padding:"12px 16px", borderRadius:"4px 12px 12px 12px", background:C.panel, border:`1px solid ${C.border}` }}>
+        <div style={{ display:"flex", gap:"5px", alignItems:"center" }}>
+          {[0,1,2].map((i: number) => (
+            <div key={i} style={{ width:7, height:7, borderRadius:"50%", background:C.green, animation:"typingDot 1.2s ease infinite", animationDelay:`${i*0.2}s` }}/>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+
+  // Roteiro
+  if (msg.isRoteiro) {
+    let roteiroData: any = null;
+    try { roteiroData = JSON.parse(msg.content); } catch {}
+    if (roteiroData) return (
+      <div style={{ display:"flex", alignItems:"flex-start", gap:"8px", marginBottom:"4px" }}>
+        <div style={{ width:28, height:28, borderRadius:"50%", background:C.green, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+          <span style={{ fontSize:"13px", fontWeight:800, color:"#fff" }}>C</span>
+        </div>
+        <div style={{ maxWidth:"88%", padding:"12px 14px", borderRadius:"4px 16px 16px 16px", background:"rgba(255,149,0,0.07)", border:"1px solid rgba(255,149,0,0.20)", fontSize:"14px", color:C.text }}>
+          <div style={{ fontSize:"10px", fontWeight:700, color:"#FF9500", textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"8px" }}>
+            Roteiro de aprendizado
+          </div>
+          <div style={{ fontWeight:700, fontSize:"15px", marginBottom:"4px" }}>{roteiroData.titulo}</div>
+          <div style={{ fontSize:"13px", color:C.muted, marginBottom:"10px" }}>{roteiroData.descricao}</div>
+          {(roteiroData.nexos||[]).map((n: any, i: number) => (
+            <div key={i} style={{ display:"flex", alignItems:"center", gap:"8px", padding:"6px 0", borderTop:i===0?"none":`1px solid ${C.border}` }}>
+              <div style={{ width:20, height:20, borderRadius:"50%", background:C.green, color:"#fff", fontSize:"10px", fontWeight:800, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>{i+1}</div>
+              <div>
+                <div style={{ fontSize:"13px", fontWeight:700, color:C.text }}>{n.palavra}</div>
+                <div style={{ fontSize:"11px", color:C.muted }}>{n.motivo}</div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  // User bubble
+  if (isUser) return (
+    <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:"4px" }}>
+      <div style={{ maxWidth:"75%", padding:"10px 14px", borderRadius:"12px 4px 12px 12px", background:C.green, color:"#fff", fontSize:"14px", lineHeight:1.55, fontFamily:"Nunito, sans-serif", wordBreak:"break-word" as const }}>
+        {msg.content}
+      </div>
+    </div>
+  );
+
+  // Chico bubble
+  return (
+    <div style={{ display:"flex", alignItems:"flex-start", gap:"8px", marginBottom:"4px" }}>
+      <div style={{ width:28, height:28, borderRadius:"50%", background:C.green, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+        <span style={{ fontSize:"13px", fontWeight:800, color:"#fff" }}>C</span>
+      </div>
+      <div style={{ maxWidth:"82%", display:"flex", flexDirection:"column" as const, gap:"6px" }}>
+        <div style={{ padding:"10px 14px", borderRadius:"4px 12px 12px 12px", background:C.panel, border:`1px solid ${C.border}`, fontSize:"14px", lineHeight:1.6, color:C.text, fontFamily:"Nunito, sans-serif", wordBreak:"break-word" as const }}>
+          {msg.content}
+        </div>
+        {msg.card && <InlineCard card={msg.card} audio={audio}/>}
+      </div>
+    </div>
+  );
+}
+
+
 function ChicoDashboard() {
   const supabase = createSupabase();
   const audio    = useAudio();
