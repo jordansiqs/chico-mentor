@@ -268,7 +268,7 @@ function InlineCard({ card, audio }: { card: MentoriaCard; audio: ReturnType<typ
 
       {/* Traduções */}
       <div style={{ padding:"10px 14px", display:"flex", flexDirection:"column", gap:"8px" }}>
-        {langs.filter(l => l.txt && l.txt !== "--").map(l => {
+        {langs.filter((l: any) => l.txt && l.txt !== "--").map(l => {
           const key = `ic-${l.bcp47}-${l.txt.slice(0,8)}`;
           const isPlaying = audio.isSpeaking && audio.speakingKey === key;
           return (
@@ -301,7 +301,7 @@ function InlineCard({ card, audio }: { card: MentoriaCard; audio: ReturnType<typ
 
       {expanded && (
         <div style={{ padding:"10px 14px 12px", display:"flex", flexDirection:"column", gap:"10px", background:"rgba(0,113,227,0.03)" }}>
-          {langs.map(l => {
+          {langs.map((l: any) => {
             if (!l.exemplo) return null;
             const key = `ex-${l.bcp47}-${l.exemplo.slice(0,10)}`;
             const isPlaying = audio.isSpeaking && audio.speakingKey === key;
@@ -389,7 +389,7 @@ function NexoCard({ card, audio, onDelete }: {
       </div>
 
       <div style={{ display:"flex", flexDirection:"column", gap:"6px", marginBottom:"10px" }}>
-        {langs.map(l => {
+        {langs.map((l: any) => {
           const key = `side-${l.bcp47}-${l.txt}`;
           const isPlaying = audio.isSpeaking && audio.speakingKey === key;
           return (
@@ -494,6 +494,11 @@ function FlashcardsTab({ cards, audio }: {
   const [nextInfo, setNextInfo]   = useState<string | null>(null);
   const sessionCards = useRef<MentoriaCard[]>([]);
 
+  // Escrita ativa — estado do campo de digitação
+  const [tentativa, setTentativa]   = useState("");
+  const [diffResult, setDiffResult] = useState<null|{ok:boolean; diff:React.ReactNode[]}>(null);
+  const inputRef                    = useRef<HTMLInputElement>(null);
+
   // Calcula próximo intervalo para preview nos botões (sem salvar)
   function previewInterval(card: MentoriaCard, q: number): string {
     const interval = card.sr_interval || 1;
@@ -527,13 +532,14 @@ function FlashcardsTab({ cards, audio }: {
     if (cards.length === 0) return;
     const today = new Date().toISOString().split("T")[0];
     // Prioriza cards com revisão vencida (sr_due_date <= hoje) ou nunca revisados
-    const vencidos = cards.filter(c => !c.sr_due_date || c.sr_due_date <= today);
+    const vencidos = cards.filter((c: MentoriaCard) => !c.sr_due_date || c.sr_due_date <= today);
     const pool = vencidos.length > 0
       ? [...vencidos].sort((a, b) => (a.sr_due_date||"") < (b.sr_due_date||"") ? -1 : 1).slice(0, 20)
       : [...cards].sort(() => Math.random() - 0.5).slice(0, 10);
     sessionCards.current = pool;
     setIndex(0); setFlipped(false); setDone(false);
     setScore({ facil:0, bom:0, dificil:0, errei:0 });
+    setTentativa(""); setDiffResult(null);
   }, [cards.length]);
 
   async function responder(qualidade: number) {
@@ -568,18 +574,79 @@ function FlashcardsTab({ cards, audio }: {
       setIndex(i => i+1);
       setFlipped(false);
       setNextInfo(null);
+      setTentativa("");
+      setDiffResult(null);
     }
   }
 
   function reiniciar() {
     const today = new Date().toISOString().split("T")[0];
-    const vencidos = cards.filter(c => !c.sr_due_date || c.sr_due_date <= today);
+    const vencidos = cards.filter((c: MentoriaCard) => !c.sr_due_date || c.sr_due_date <= today);
     const pool = vencidos.length > 0
       ? [...vencidos].sort((a,b) => (a.sr_due_date||"") < (b.sr_due_date||"") ? -1 : 1).slice(0,20)
       : [...cards].sort(() => Math.random()-0.5).slice(0,10);
     sessionCards.current = pool;
     setIndex(0); setFlipped(false); setDone(false);
     setScore({ facil:0, bom:0, dificil:0, errei:0 });
+  }
+
+  // Verifica o que o aluno digitou contra a tradução correta
+  function verificarTentativa() {
+    if (!tentativa.trim()) return;
+    const normalize = (s: string) =>
+      s.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/[^a-z0-9\s]/g,"").trim();
+
+    // Usa a primeira língua disponível como referência
+    const card = sessionCards.current[index];
+    const refLangs = [
+      { nome: card?.lang_1_nome||"", txt: card?.lang_1_txt||"", bcp47: card?.lang_1_bcp47||"" },
+      { nome: card?.lang_2_nome||"", txt: card?.lang_2_txt||"" , bcp47: card?.lang_2_bcp47||"" },
+      { nome: card?.lang_3_nome||"", txt: card?.lang_3_txt||"", bcp47: card?.lang_3_bcp47||"" },
+    ].filter((l: any) => l.txt && l.txt !== "--");
+
+    // Tenta encontrar a melhor correspondência entre as línguas
+    let bestLang = refLangs[0];
+    let bestScore = 0;
+    refLangs.forEach((l: any) => {
+      const lWords = normalize(l.txt).split(/\s+/);
+      const tWords = normalize(tentativa).split(/\s+/);
+      const match = lWords.filter((w: string, i: number) => w === tWords[i]).length;
+      if (match > bestScore) { bestScore = match; bestLang = l; }
+    });
+
+    const esperado = normalize(bestLang.txt).split(/\s+/);
+    const dado     = normalize(tentativa).split(/\s+/);
+    let acertos = 0;
+
+    const diff: React.ReactNode[] = esperado.map((p: string, i: number) => {
+      const ok = dado[i] === p;
+      if (ok) acertos++;
+      return (
+        <span key={i} style={{
+          display:"inline-block", marginRight:"4px", marginBottom:"4px",
+          padding:"2px 8px", borderRadius:"6px",
+          background: ok ? "rgba(42,154,96,0.12)" : "rgba(204,42,32,0.10)",
+          color: ok ? "#2A9A60" : "#CC2A20",
+          fontWeight: ok ? 600 : 700, fontSize:"15px",
+        }}>
+          {ok ? p : (
+            <>{dado[i] || "___"}<br/>
+            <span style={{fontSize:"11px",color:"#2A9A60",fontWeight:500}}>{p}</span></>
+          )}
+        </span>
+      );
+    });
+
+    const allOk = acertos === esperado.length;
+    setDiffResult({ ok: allOk, diff });
+
+    // Toca o áudio da palavra correta automaticamente
+    if (bestLang.bcp47 && bestLang.txt) {
+      setTimeout(() => audio.speak(bestLang.txt, bestLang.bcp47, `verify-${card?.id}`), 400);
+    }
+
+    setFlipped(true);
+    setTimeout(() => inputRef.current?.blur(), 50);
   }
 
   const C = {
@@ -636,9 +703,9 @@ function FlashcardsTab({ cards, audio }: {
     { nome:card.lang_1_nome||"", txt:card.lang_1_txt||"", fon:card.lang_1_fon||"", bcp47:card.lang_1_bcp47||"", exemplo:card.lang_1_exemplo||"" },
     { nome:card.lang_2_nome||"", txt:card.lang_2_txt||"", fon:card.lang_2_fon||"", bcp47:card.lang_2_bcp47||"", exemplo:card.lang_2_exemplo||"" },
     { nome:card.lang_3_nome||"", txt:card.lang_3_txt||"", fon:card.lang_3_fon||"", bcp47:card.lang_3_bcp47||"", exemplo:card.lang_3_exemplo||"" },
-  ].filter(l => l.txt && l.txt !== "--" && l.txt.trim().length > 0);
+  ].filter((l: any) => l.txt && l.txt !== "--" && l.txt.trim().length > 0);
 
-  const vencidos = cards.filter(c => {
+  const vencidos = cards.filter((c: MentoriaCard) => {
     const today = new Date().toISOString().split("T")[0];
     return !c.sr_due_date || c.sr_due_date <= today;
   }).length;
@@ -666,29 +733,49 @@ function FlashcardsTab({ cards, audio }: {
       {/* ── FRENTE do card ─────────────────────────────────────────────────── */}
       {!flipped ? (
         <>
-          <div
-            onClick={() => {
-              setFlipped(true);
-              // Áudio automático ao virar
-              if (langs[0]?.txt && langs[0]?.bcp47) {
-                setTimeout(() => audio.speak(langs[0].txt, langs[0].bcp47, `auto-${card.id}`), 300);
-              }
-            }}
-            style={{ width:"100%", maxWidth:"520px", minHeight:"220px", borderRadius:"22px", background:`linear-gradient(135deg,${C.blue},#2A6ACC)`, boxShadow:"0 6px 28px rgba(26,74,138,0.30)", padding:"32px 28px", cursor:"pointer", display:"flex", flexDirection:"column" as const, alignItems:"center", justifyContent:"center", gap:"16px", userSelect:"none" as const, transition:"transform 0.15s, box-shadow 0.15s" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLElement).style.transform="scale(1.015)"; (e.currentTarget as HTMLElement).style.boxShadow="0 10px 36px rgba(26,74,138,0.38)"; }}
-            onMouseLeave={e => { (e.currentTarget as HTMLElement).style.transform="scale(1)"; (e.currentTarget as HTMLElement).style.boxShadow="0 6px 28px rgba(26,74,138,0.30)"; }}>
+          {/* Card frente — palavra em PT */}
+          <div style={{ width:"100%", maxWidth:"520px", borderRadius:"22px", background:`linear-gradient(135deg,${C.blue},#2A6ACC)`, boxShadow:"0 6px 28px rgba(26,74,138,0.30)", padding:"28px 24px 24px", display:"flex", flexDirection:"column" as const, alignItems:"center", gap:"14px" }}>
             <span style={{ fontSize:"11px", color:"rgba(255,255,255,0.60)", fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", fontFamily:"Nunito, sans-serif" }}>
               Em Português
             </span>
-            <p style={{ fontSize:"28px", fontWeight:800, color:"#fff", textAlign:"center" as const, margin:0, fontFamily:"Nunito, sans-serif", lineHeight:1.2 }}>
+            <p style={{ fontSize:"26px", fontWeight:800, color:"#fff", textAlign:"center" as const, margin:0, fontFamily:"Nunito, sans-serif", lineHeight:1.2 }}>
               {card.titulo_card || card.tema_gerador}
             </p>
-            <span style={{ fontSize:"12px", color:"rgba(255,255,255,0.50)", fontFamily:"Nunito, sans-serif" }}>
-              Toque para ver a resposta
-            </span>
+            <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.55)", fontFamily:"Nunito, sans-serif" }}>
+              Como se diz em {langs[0]?.nome || "espanhol"}?
+            </div>
           </div>
 
-          {/* Info do próximo intervalo atual */}
+          {/* Campo de digitação ativo */}
+          <div style={{ width:"100%", maxWidth:"520px", background:"#fff", borderRadius:"18px", padding:"18px 20px", boxShadow:"0 2px 12px rgba(26,74,138,0.08)", border:`1.5px solid rgba(26,74,138,0.12)` }}>
+            <div style={{ fontSize:"11px", fontWeight:700, color:C.muted, textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"10px" }}>
+              Digite a tradução
+            </div>
+            <input
+              ref={inputRef}
+              value={tentativa}
+              onChange={(e: React.ChangeEvent<HTMLInputElement>) => setTentativa(e.target.value)}
+              onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter" && tentativa.trim()) verificarTentativa(); }}
+              placeholder={`Em ${langs[0]?.nome || "espanhol"}...`}
+              autoFocus
+              style={{ width:"100%", padding:"12px 14px", borderRadius:"12px", border:`1.5px solid rgba(26,74,138,0.20)`, fontSize:"17px", fontFamily:"Nunito, sans-serif", color:C.text, outline:"none", boxSizing:"border-box" as const, background:"#FAFBFD" }}
+            />
+            <div style={{ display:"flex", gap:"8px", marginTop:"10px" }}>
+              <button
+                onClick={verificarTentativa}
+                disabled={!tentativa.trim()}
+                style={{ flex:1, padding:"12px", borderRadius:"12px", border:"none", background:!tentativa.trim()?"rgba(0,0,0,0.06)":`linear-gradient(135deg,${C.blue},#2A6ACC)`, color:!tentativa.trim()?"#AEAEB2":"#fff", fontSize:"14px", fontWeight:800, cursor:!tentativa.trim()?"not-allowed":"pointer", fontFamily:"Nunito, sans-serif", boxShadow:!tentativa.trim()?"none":"0 3px 12px rgba(26,74,138,0.25)" }}>
+                Ver resposta →
+              </button>
+              <button
+                onClick={() => { setTentativa(""); setFlipped(true); if (langs[0]?.txt && langs[0]?.bcp47) setTimeout(()=>audio.speak(langs[0].txt, langs[0].bcp47, `skip-${card.id}`), 300); }}
+                style={{ padding:"12px 16px", borderRadius:"12px", border:`1.5px solid rgba(0,0,0,0.09)`, background:"transparent", color:C.muted, fontSize:"13px", fontWeight:600, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}>
+                Pular
+              </button>
+            </div>
+          </div>
+
+          {/* Info intervalo atual */}
           {card.sr_due_date != null && (card.sr_reviews||0) > 0 && (
             <div style={{ fontSize:"12px", color:C.muted, textAlign:"center" as const }}>
               Intervalo atual: {card.sr_interval || 1} {(card.sr_interval||1) === 1 ? "dia" : "dias"}
@@ -697,6 +784,26 @@ function FlashcardsTab({ cards, audio }: {
         </>
       ) : (
         <>
+          {/* ── Resultado da digitação (diff) ───────────────────────────────── */}
+          {diffResult && (
+            <div style={{ width:"100%", maxWidth:"520px", borderRadius:"16px", padding:"16px 18px", background:diffResult.ok?"rgba(42,154,96,0.08)":"rgba(224,120,32,0.07)", border:`1.5px solid ${diffResult.ok?"rgba(42,154,96,0.25)":"rgba(224,120,32,0.25)"}` }}>
+              <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"10px" }}>
+                <span style={{ fontSize:"20px" }}>{diffResult.ok ? "🎉" : "📝"}</span>
+                <span style={{ fontSize:"13px", fontWeight:700, color:diffResult.ok?C.green:C.orange }}>
+                  {diffResult.ok ? "Correto!" : "Veja a diferença:"}
+                </span>
+              </div>
+              <div style={{ display:"flex", flexWrap:"wrap" as const, gap:"4px" }}>
+                {diffResult.diff}
+              </div>
+              {!diffResult.ok && tentativa.trim() && (
+                <div style={{ marginTop:"8px", fontSize:"12px", color:C.muted }}>
+                  Você digitou: <em>{tentativa}</em>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* ── VERSO do card ───────────────────────────────────────────────── */}
           <div style={{ width:"100%", maxWidth:"520px", borderRadius:"22px", background:"#fff", boxShadow:"0 4px 20px rgba(0,0,0,0.10)", padding:"20px", border:`1.5px solid rgba(26,74,138,0.12)` }}>
             {/* Palavra em PT no topo do verso */}
@@ -752,7 +859,7 @@ function FlashcardsTab({ cards, audio }: {
                 { label:"Difícil", q:3, color:C.orange, bg:"rgba(224,120,32,0.07)", border:"rgba(224,120,32,0.25)" },
                 { label:"Bom",     q:4, color:C.blue,   bg:"rgba(26,74,138,0.07)",  border:"rgba(26,74,138,0.25)"  },
                 { label:"Fácil",   q:5, color:C.green,  bg:"rgba(42,154,96,0.07)",  border:"rgba(42,154,96,0.25)"  },
-              ].map(btn => (
+              ].map((btn: any) => (
                 <button key={btn.q}
                   disabled={saving}
                   onClick={() => responder(btn.q)}
@@ -777,28 +884,28 @@ function FlashcardsTab({ cards, audio }: {
 
 function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
   const total    = cards.length;
-  const revisados = cards.filter(c => (c.quiz_acertos||0) + (c.quiz_erros||0) > 0).length;
-  const urgentes  = cards.filter(c => Math.floor((Date.now()-new Date(c.criado_em||"").getTime())/86400000) >= 3).length;
+  const revisados = cards.filter((c: MentoriaCard) => (c.quiz_acertos||0) + (c.quiz_erros||0) > 0).length;
+  const urgentes  = cards.filter((c: MentoriaCard) => Math.floor((Date.now()-new Date(c.criado_em||"").getTime())/86400000) >= 3).length;
   const acertos   = cards.reduce((s,c) => s+(c.quiz_acertos||0), 0);
   const erros     = cards.reduce((s,c) => s+(c.quiz_erros||0), 0);
   const taxa      = acertos+erros > 0 ? Math.round((acertos/(acertos+erros))*100) : 0;
 
   // Distribuição por tronco
-  const romanico  = cards.filter(c => c.tronco === "românico").length;
-  const germanico = cards.filter(c => c.tronco === "germânico").length;
+  const romanico  = cards.filter((c: MentoriaCard) => c.tronco === "românico").length;
+  const germanico = cards.filter((c: MentoriaCard) => c.tronco === "germânico").length;
 
   // Últimos 7 dias
   const hoje = new Date();
   const porDia = Array.from({length:7}, (_,i) => {
     const d = new Date(hoje); d.setDate(hoje.getDate()-6+i);
     const label = d.toLocaleDateString("pt-BR",{weekday:"short"}).replace(".","");
-    const count = cards.filter(c => {
+    const count = cards.filter((c: MentoriaCard) => {
       const cd = new Date(c.criado_em||"");
       return cd.toDateString() === d.toDateString();
     }).length;
     return { label, count };
   });
-  const maxDia = Math.max(...(porDia||[]).map(d=>d.count), 1);
+  const maxDia = Math.max(...(porDia||[]).map((d: any) =>d.count), 1);
 
   const C2 = { blue:"#1A4A8A", orange:"#E07820", green:"#2A9A60", bg:"#F7F8FC", text:"#1A2A40", muted:"#8A9AB8" };
 
@@ -967,7 +1074,7 @@ function ViagemTab({ profile, audio }: { profile: UserProfile | null; audio: Ret
                     { label:"lang_1", txt: item.lang_1, fon: item.fon_1 },
                     { label:"lang_2", txt: item.lang_2, fon: item.fon_2 },
                     { label:"lang_3", txt: item.lang_3, fon: item.fon_3 },
-                  ].filter(l => l.txt && l.txt.trim().length > 0).map((l, li) => (
+                  ].filter((l: any) => l.txt && l.txt.trim().length > 0).map((l, li) => (
                     <div key={li} style={{ display:"flex", alignItems:"center", gap:"10px", padding:"8px 12px", borderRadius:"10px", background:"#F7F8FC" }}>
                       <div style={{ flex:1 }}>
                         <div style={{ fontSize:"15px", fontWeight:700, color:"#1A2A40" }}>{l.txt}</div>
@@ -1034,7 +1141,7 @@ function PraticarTab({ profile, cards, audio }: {
   const [sessaoDone, setSessaoDone] = useState(false);
   const [placar, setPlacar]         = useState({ acertos:0, total:0 });
 
-  const nexos = cards.map(c => c.titulo_card||c.tema_gerador).filter(Boolean).slice(0,10);
+  const nexos = cards.map((c: MentoriaCard) => c.titulo_card||c.tema_gerador).filter(Boolean).slice(0,10);
 
   // ── DITADO: gerar frase ───────────────────────────────────────────────────
   async function gerarDitado() {
@@ -1178,7 +1285,7 @@ function PraticarTab({ profile, cards, audio }: {
             <div style={{ flex:1, minWidth:"120px" }}>
               <div style={{ fontSize:"11px", fontWeight:700, color:C3.muted, letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"8px" }}>Língua</div>
               <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" as const }}>
-                {linguas.map(l => (
+                {linguas.map((l: any) => (
                   <button key={l} onClick={()=>setLingua(l)}
                     style={{ padding:"6px 12px", borderRadius:"20px", border:`1.5px solid ${lingua===l?C3.blue:"rgba(0,0,0,0.09)"}`, background:lingua===l?"rgba(26,74,138,0.08)":"transparent", color:lingua===l?C3.blue:C3.muted, fontSize:"12px", fontWeight:lingua===l?800:500, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}>
                     {l}
@@ -1189,7 +1296,7 @@ function PraticarTab({ profile, cards, audio }: {
             <div style={{ flex:1, minWidth:"180px" }}>
               <div style={{ fontSize:"11px", fontWeight:700, color:C3.muted, letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"8px" }}>Nível</div>
               <div style={{ display:"flex", gap:"6px" }}>
-                {(["iniciante","intermediário","avançado"] as const).map(n => {
+                {(["iniciante","intermediário","avançado"] as const).map((n: any) => {
                   const nc = nivelCores[n];
                   return (
                     <button key={n} onClick={()=>setNivel(n)}
@@ -1226,7 +1333,7 @@ function PraticarTab({ profile, cards, audio }: {
                       Ouvir
                     </button>
                     <div style={{ display:"flex", gap:"4px" }}>
-                      {([0.7, 1.0, 1.3] as const).map(s => (
+                      {([0.7, 1.0, 1.3] as const).map((s: any) => (
                         <button key={s} onClick={()=>setPlaySpeed(s)}
                           style={{ padding:"6px 10px", borderRadius:"8px", border:"none", background:playSpeed===s?"rgba(255,255,255,0.30)":"rgba(255,255,255,0.12)", color:"#fff", fontSize:"12px", fontWeight:playSpeed===s?800:500, cursor:"pointer", fontFamily:"Nunito, sans-serif" }}>
                           {s === 0.7 ? "🐢 Lento" : s === 1.0 ? "Normal" : "🐇 Rápido"}
@@ -1693,7 +1800,7 @@ function HistoriasTab({ profile, cards, onAddCard }: {
                 <div style={{flex:1, minWidth:"130px"}}>
                   <div style={{fontSize:"11px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"6px"}}>Língua</div>
                   <div style={{display:"flex", gap:"6px", flexWrap:"wrap" as const}}>
-                    {linguas.map(l=>(
+                    {linguas.map((l: any) =>(
                       <button key={l} onClick={()=>setLingua(l)}
                         style={{padding:"7px 14px", borderRadius:"20px", border:`2px solid ${lingua===l?"#1A4A8A":"rgba(0,0,0,0.09)"}`, background:lingua===l?"rgba(26,74,138,0.08)":"transparent", color:lingua===l?"#1A4A8A":"#5A6A80", fontSize:"13px", fontWeight:lingua===l?800:500, cursor:"pointer", fontFamily:"Nunito, sans-serif", transition:"all 0.15s"}}>
                         {l}
@@ -1704,7 +1811,7 @@ function HistoriasTab({ profile, cards, onAddCard }: {
                 <div style={{flex:1, minWidth:"200px"}}>
                   <div style={{fontSize:"11px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"6px"}}>Nível</div>
                   <div style={{display:"flex", gap:"6px"}}>
-                    {(["iniciante","intermediário","avançado"] as const).map(n=>{
+                    {(["iniciante","intermediário","avançado"] as const).map((n: any) =>{
                       const nc=nivelCores[n];
                       return(
                         <button key={n} onClick={()=>setNivel(n)}
@@ -2176,7 +2283,7 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
             </div>
             {/* Stats inline */}
             <div style={{ display:"flex", gap:"16px", marginTop:"10px" }}>
-              {[{v:total,l:"nexos",c:"#1A4A8A"},{v:streak,l:"dias",c:"#E07820"},{v:total*3,l:"traduções",c:"#2A9A60"}].map(s=>(
+              {[{v:total,l:"nexos",c:"#1A4A8A"},{v:streak,l:"dias",c:"#E07820"},{v:total*3,l:"traduções",c:"#2A9A60"}].map((s: any) =>(
                 <div key={s.l}>
                   <span style={{ fontSize:"18px", fontWeight:800, color:s.c, fontFamily:"Nunito, sans-serif" }}>{s.v}</span>
                   <span style={{ fontSize:"12px", color:"#8A9AB8", marginLeft:"4px", fontWeight:500 }}>{s.l}</span>
@@ -2287,7 +2394,7 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
 // ── Exportar Nexos para Anki ─────────────────────────────────────────────────
 function exportAnki(cards: MentoriaCard[]) {
   const header = "#separator:tab\n#html:false\n#notetype:Basic\n#deck:Chico Mentor\n";
-  const rows = cards.map(c => {
+  const rows = cards.map((c: MentoriaCard) => {
     const frente = (c.titulo_card || c.tema_gerador || "").replace(/\t|\n/g, " ");
     const verso = [
       c.lang_1_nome && c.lang_1_txt && c.lang_1_txt !== "--"
@@ -2365,7 +2472,7 @@ function ChicoDashboard() {
     if (profile && messages.length === 0) {
       const troncoLabel = profile.tronco==="românico"?"Tear Românico":"Tear Germânico";
       const hoje = new Date().toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
-      const paraRevisar = cards.filter(c=>Math.floor((Date.now()-new Date(c.criado_em).getTime())/86400000)>=3).length;
+      const paraRevisar = cards.filter((c: MentoriaCard) =>Math.floor((Date.now()-new Date(c.criado_em).getTime())/86400000)>=3).length;
       // ── Desafio diário ───────────────────────────────────────────────────────
       // Usa a data + cards mais antigos para sempre ser diferente e relevante
       const hoje_dia   = new Date().getDate();
@@ -2465,7 +2572,7 @@ function ChicoDashboard() {
 
       // Atualiza memória em background a cada 5 nexos
       if (cards.length > 0 && cards.length % 5 === 0) {
-        fetch("/api/chico", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ acao:"atualizar_memoria", nexos:cards.map(c=>c.titulo_card||c.tema_gerador), historico:chatHistoryRef.current, memoria_atual:memoria }) })
+        fetch("/api/chico", { method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ acao:"atualizar_memoria", nexos:cards.map((c: MentoriaCard) =>c.titulo_card||c.tema_gerador), historico:chatHistoryRef.current, memoria_atual:memoria }) })
           .then(r=>r.json()).then(d=>{ if(d.memoria) setMemoria(d.memoria); }).catch(()=>{});
       }
 
