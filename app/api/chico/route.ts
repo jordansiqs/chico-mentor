@@ -202,24 +202,30 @@ Avançado → nuances culturais, registros, polissemia.
 - SEMPRE termine com 1 pergunta nova e prática
 ${modoExtra[modo_especial] || ""}
 
+## ATENÇÃO CRÍTICA SOBRE AS LÍNGUAS
+- lang_1 = SEMPRE ${troncoInfo.linguas[0].nome} — sem exceção
+- lang_2 = SEMPRE ${troncoInfo.linguas[1].nome} — sem exceção  
+- lang_3 = SEMPRE ${troncoInfo.linguas[2].nome} — sem exceção
+Não troque a ordem. lang_1 NÃO pode conter texto em ${troncoInfo.linguas[1].nome} ou ${troncoInfo.linguas[2].nome}.
+
 ## FORMATO -- JSON puro. Primeira linha { última linha }
 
 {
-  "titulo_card": "Palavra ou chunk central. Máx 3 palavras.",
+  "titulo_card": "A PALAVRA ou expressão sendo ensinada. NUNCA o assunto da pergunta. Ex: pergunta sobre se apresentar → titulo_card = 'Je me présente' ou 'soy', NÃO 'Me apresento'.",
   "aula_chico": "Resposta com os 4 pilares integrados. Máx 3 parágrafos. Surpreenda. Biologia quando relevante.",
   "pergunta_verificacao": "Pergunta nova, prática, diferente das do histórico.",
   "lang_1": {
-    "txt": "Tradução para ${troncoInfo.linguas[0].nome}",
-    "fon": "Fonética com nota biológica se o som for difícil. Ex: [r-RA-to -- uma batida nos alvéolos]",
-    "exemplo": "Frase natural ligada a ${interessesStr}."
+    "txt": "OBRIGATÓRIO: Tradução SOMENTE para ${troncoInfo.linguas[0].nome} (não para outra língua)",
+    "fon": "Fonética para ${troncoInfo.linguas[0].nome} com nota biológica se difícil",
+    "exemplo": "Frase em ${troncoInfo.linguas[0].nome} ligada a ${interessesStr}."
   },
   "lang_2": {
-    "txt": "Tradução para ${troncoInfo.linguas[1].nome}",
-    "fon": "Fonética com nota biológica se necessário",
-    "exemplo": "Frase natural."
+    "txt": "OBRIGATÓRIO: Tradução SOMENTE para ${troncoInfo.linguas[1].nome} (não para outra língua)",
+    "fon": "Fonética para ${troncoInfo.linguas[1].nome}",
+    "exemplo": "Frase em ${troncoInfo.linguas[1].nome}."
   },
   "lang_3": {
-    "txt": "Tradução para ${troncoInfo.linguas[2].nome}",
+    "txt": "OBRIGATÓRIO: Tradução SOMENTE para ${troncoInfo.linguas[2].nome} (não para outra língua)",
     "fon": "Fonética com nota biológica se necessário",
     "exemplo": "Frase natural."
   }
