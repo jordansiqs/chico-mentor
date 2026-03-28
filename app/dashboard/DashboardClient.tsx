@@ -240,6 +240,18 @@ function useAudio() {
   return { speak, stopSpeaking, isSpeaking, speakingKey, startListening, stopListening, isListening };
 }
 
+// ── Design tokens (cores e espaçamentos globais) ──────────────────────────────
+const C = {
+  green:      "#1B5E2B", greenMid:   "#2E7D45", greenLt:"#EBF5EE", greenBd:"#A8D5B5",
+  yellow:     "#F5C800", yellowLt:   "#FFFAE6", yellowBd:"#E8B800",
+  bg:         "#F4F5F0", panel:      "#FFFFFF",  border:"#E2E5E9",  surface:"#F9FAFB",
+  text:       "#111827", muted:      "#6B7280",  hint:"#9CA3AF",
+  red:        "#991B1B", redLt:      "#FEF2F2",  redBd:"#FECACA",
+  blue:       "#1A4A8A", blueLight:  "#EBF5FF",
+  orange:     "#E07820", orangeLight:"#FFF3E8",
+  textSub:    "#6B7280", textMuted:  "#9CA3AF",
+};
+
 // ── InlineCard -- card de traduções exibido no chat ───────────────────────────
 
 function InlineCard({ card, audio }: { card: MentoriaCard; audio: ReturnType<typeof useAudio> }) {
@@ -598,14 +610,7 @@ function FlashcardsTab({ cards, audio }: {
   }
 
 
-  const C = {
-    green:"#1B5E2B", greenMid:"#2E7D45", greenLt:"#EBF5EE", greenBd:"#A8D5B5",
-    yellow:"#F5C800", yellowLt:"#FFFAE6", yellowBd:"#E8B800",
-    bg:"#F4F5F0", panel:"#FFFFFF", border:"#E2E5E9", surface:"#F9FAFB",
-    text:"#111827", muted:"#6B7280", hint:"#9CA3AF",
-    red:"#991B1B", redLt:"#FEF2F2", redBd:"#FECACA",
-    blue:"#1A4A8A", orange:"#E07820",
-  };
+  // C is defined at module level
 
   // ── Sem cards ──────────────────────────────────────────────────────────────
   if (cards.length === 0) return (
@@ -2597,37 +2602,7 @@ function ChicoDashboard() {
     .filter(c=>sidebarFilter==="todos"||c.tronco===sidebarFilter)
     .filter(c=>{ if(!searchQuery.trim())return true; const q=searchQuery.toLowerCase(); return(c.titulo_card||c.tema_gerador).toLowerCase().includes(q)||c.lang_1_txt?.toLowerCase().includes(q)||c.lang_2_txt?.toLowerCase().includes(q)||c.lang_3_txt?.toLowerCase().includes(q); });
 
-  // ── Design tokens ──────────────────────────────────────────────────────────
-  const C = {
-    // Brand — verde/amarelo Brasil
-    green:      "#1B5E2B",
-    greenMid:   "#2E7D45",
-    greenLt:    "#EBF5EE",
-    greenBd:    "#A8D5B5",
-    yellow:     "#F5C800",
-    yellowLt:   "#FFFAE6",
-    yellowBd:   "#E8B800",
-    // Layout
-    bg:         "#F4F5F0",
-    panel:      "#FFFFFF",
-    border:     "#E2E5E9",
-    surface:    "#F9FAFB",
-    // Text
-    text:       "#111827",
-    muted:      "#6B7280",
-    hint:       "#9CA3AF",
-    // Semantic
-    red:        "#991B1B",
-    redLt:      "#FEF2F2",
-    redBd:      "#FECACA",
-    // Legacy (manter compatibilidade com abas antigas)
-    blue:       "#1A4A8A",
-    blueLight:  "#EBF5FF",
-    orange:     "#E07820",
-    orangeLight:"#FFF3E8",
-    textSub:    "#6B7280",
-    textMuted:  "#9CA3AF",
-  };
+  // C definido no nível do módulo
 
   const NAV_W        = 220;
   const SIDEBAR_W    = 320;
