@@ -75,14 +75,14 @@ const Icon = {
   Settings:  ({ c }: { c: string }) => (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>),
   Library:   ({ c }: { c: string }) => (<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>),
   Book:      () => (<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>),
-  Chevron:   ({ down }: { down: boolean }) => (<svg width="12" height="12" viewBox="0 0 12 12" style={{ transform:down?"rotate(180deg)":"rotate(0deg)", transition:"transform 0.2s" }}><path d="M2 4l4 4 4-4" stroke="#1A4A8A" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>),
+  Chevron:   ({ down }: { down: boolean }) => (<svg width="12" height="12" viewBox="0 0 12 12" style={{ transform:down?"rotate(180deg)":"rotate(0deg)", transition:"transform 0.2s" }}><path d="M2 4l4 4 4-4" stroke="#1B5E2B" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/></svg>),
   Play:      () => (<svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor"><polygon points="1,0.5 9,5 1,9.5"/></svg>),
   Wave:      () => (<span style={{ display:"flex", gap:"2px", alignItems:"center" }}>{[10,14,8].map((h,i)=><span key={i} style={{ width:3, height:h, background:"currentColor", borderRadius:2, animation:`pulse 0.6s ${i*0.15}s ease-in-out infinite alternate` }}/>)}</span>),
   Mic:       ({ active }: { active: boolean }) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={active?"#fff":"#86868B"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 2a3 3 0 0 1 3 3v7a3 3 0 0 1-6 0V5a3 3 0 0 1 3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>),
   Send:      ({ active }: { active: boolean }) => (<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={active?"#fff":"#C7C7CC"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>),
   Search:    ({ size=32, color="#AEAEB2" }: { size?: number; color?: string }) => (<svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>),
   Avatar:    () => (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>),
-  Check:     () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#34C759" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>),
+  Check:     () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2E7D45" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>),
   X:         () => (<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#FF3B30" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>),
   Trash:     () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>),
   Copy:      () => (<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>),
@@ -247,7 +247,7 @@ const C = {
   bg:         "#F4F5F0", panel:      "#FFFFFF",  border:"#E2E5E9",  surface:"#F9FAFB",
   text:       "#111827", muted:      "#6B7280",  hint:"#9CA3AF",
   red:        "#991B1B", redLt:      "#FEF2F2",  redBd:"#FECACA",
-  blue:       "#1A4A8A", blueLight:  "#EBF5FF",
+  blue:       "#1B5E2B", blueLight:  "#EBF5EE",
   orange:     "#E07820", orangeLight:"#FFF3E8",
   textSub:    "#6B7280", textMuted:  "#9CA3AF",
 };
@@ -365,8 +365,8 @@ function NexoCard({ card, audio, onDelete }: {
       {/* Header */}
       <div style={{ padding:"10px 12px 8px", cursor:"pointer" }} onClick={()=>setExpanded((v:boolean)=>!v)}>
         <div style={{ display:"flex", alignItems:"center", gap:"6px", marginBottom:"4px" }}>
-          <span style={{ width:5, height:5, borderRadius:"50%", background:isRom?G:"#1A4A8A", flexShrink:0 as const }}/>
-          <span style={{ fontSize:"9px", fontWeight:700, color:isRom?G:"#1A4A8A", textTransform:"uppercase" as const, letterSpacing:"0.06em", flex:1 }}>{isRom?"Românico":"Germânico"}</span>
+          <span style={{ width:5, height:5, borderRadius:"50%", background:isRom?G:"#1B5E2B", flexShrink:0 as const }}/>
+          <span style={{ fontSize:"9px", fontWeight:700, color:isRom?G:"#1B5E2B", textTransform:"uppercase" as const, letterSpacing:"0.06em", flex:1 }}>{isRom?"Românico":"Germânico"}</span>
           {isDue && <span style={{ background:"#FFFAE6", border:"1px solid #E8B800", borderRadius:"3px", padding:"1px 6px", fontSize:"9px", fontWeight:700, color:"#7A5F00" }}>revisar</span>}
           <Icon.Chevron down={expanded}/>
         </div>
@@ -581,7 +581,7 @@ function FlashcardsTab({ cards, audio }: {
 
       allDiffs.push(
         <div key={pi} style={{ marginBottom:"8px" }}>
-          <div style={{ fontSize:"10px", fontWeight:700, color:"#8A9AB8", textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"4px" }}>
+          <div style={{ fontSize:"10px", fontWeight:700, color:"#6B7280", textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"4px" }}>
             {l.nome}
           </div>
           <div style={{ display:"flex", flexWrap:"wrap" as const, gap:"4px" }}>
@@ -589,8 +589,8 @@ function FlashcardsTab({ cards, audio }: {
               const ok = (dado[i]||"") === p;
               if (ok) totalAcertos++;
               return (
-                <span key={i} style={{ display:"inline-block", padding:"2px 8px", borderRadius:"6px", background:ok?"rgba(42,154,96,0.12)":"rgba(204,42,32,0.10)", color:ok?"#2A9A60":"#CC2A20", fontWeight:ok?600:700, fontSize:"14px" }}>
-                  {ok ? p : (<>{dado[i]||"___"}<br/><span style={{fontSize:"10px",color:"#2A9A60",fontWeight:500}}>{p}</span></>)}
+                <span key={i} style={{ display:"inline-block", padding:"2px 8px", borderRadius:"6px", background:ok?"rgba(27,94,43,0.12)":"rgba(204,42,32,0.10)", color:ok?"#1B5E2B":"#991B1B", fontWeight:ok?600:700, fontSize:"14px" }}>
+                  {ok ? p : (<>{dado[i]||"___"}<br/><span style={{fontSize:"10px",color:"#1B5E2B",fontWeight:500}}>{p}</span></>)}
                 </span>
               );
             })}
@@ -635,9 +635,9 @@ function FlashcardsTab({ cards, audio }: {
         {/* Placar detalhado */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", width:"100%", maxWidth:"360px" }}>
           {[
-            { label:"Fácil",   count:score.facil,   color:C.green,  bg:"rgba(42,154,96,0.08)"  },
-            { label:"Bom",     count:score.bom,     color:C.blue,   bg:"rgba(26,74,138,0.08)"  },
-            { label:"Difícil", count:score.dificil, color:C.orange, bg:"rgba(224,120,32,0.08)" },
+            { label:"Fácil",   count:score.facil,   color:C.green,  bg:"rgba(27,94,43,0.08)"  },
+            { label:"Bom",     count:score.bom,     color:C.blue,   bg:"rgba(27,94,43,0.08)"  },
+            { label:"Difícil", count:score.dificil, color:C.orange, bg:"rgba(245,200,0,0.12)" },
             { label:"Errei",   count:score.errei,   color:C.red,    bg:"rgba(204,42,32,0.08)"  },
           ].map((s,i) => (
             <div key={i} style={{ padding:"12px", borderRadius:"12px", background:s.bg, textAlign:"center" as const }}>
@@ -647,7 +647,7 @@ function FlashcardsTab({ cards, audio }: {
           ))}
         </div>
         <button onClick={reiniciar}
-          style={{ padding:"13px 32px", borderRadius:"6px", border:"none", background:`linear-gradient(135deg,${C.blue},#2A6ACC)`, color:"#fff", fontSize:"15px", fontWeight:800, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", boxShadow:"0 3px 14px rgba(26,74,138,0.28)" }}>
+          style={{ padding:"13px 32px", borderRadius:"6px", border:"none", background:`linear-gradient(135deg,${C.blue},#2E7D45)`, color:"#fff", fontSize:"15px", fontWeight:800, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", boxShadow:"0 3px 14px rgba(27,94,43,0.28)" }}>
           Revisar novamente
         </button>
       </div>
@@ -679,7 +679,7 @@ function FlashcardsTab({ cards, audio }: {
           {index + 1} / {sessionCards.current.length}
         </span>
         {vencidos > 0 && (
-          <span style={{ fontSize:"12px", color:C.orange, fontWeight:700, padding:"3px 10px", borderRadius:"8px", background:"rgba(224,120,32,0.10)" }}>
+          <span style={{ fontSize:"12px", color:C.orange, fontWeight:700, padding:"3px 10px", borderRadius:"8px", background:"rgba(245,200,0,0.15)" }}>
             🔥 {vencidos} para revisar hoje
           </span>
         )}
@@ -687,14 +687,14 @@ function FlashcardsTab({ cards, audio }: {
 
       {/* Barra de progresso */}
       <div style={{ width:"100%", maxWidth:"520px", height:5, borderRadius:5, background:"rgba(0,0,0,0.07)", overflow:"hidden" }}>
-        <div style={{ height:"100%", borderRadius:5, background:`linear-gradient(90deg,${C.blue},#2A6ACC)`, width:`${(index/sessionCards.current.length)*100}%`, transition:"width 0.35s ease" }}/>
+        <div style={{ height:"100%", borderRadius:5, background:`linear-gradient(90deg,${C.blue},#2E7D45)`, width:`${(index/sessionCards.current.length)*100}%`, transition:"width 0.35s ease" }}/>
       </div>
 
       {/* ── FRENTE do card ─────────────────────────────────────────────────── */}
       {!flipped ? (
         <>
           {/* Card frente — palavra em PT */}
-          <div style={{ width:"100%", maxWidth:"520px", borderRadius:"8px", background:`linear-gradient(135deg,${C.blue},#2A6ACC)`, boxShadow:"0 6px 28px rgba(26,74,138,0.30)", padding:"28px 24px 24px", display:"flex", flexDirection:"column" as const, alignItems:"center", gap:"14px" }}>
+          <div style={{ width:"100%", maxWidth:"520px", borderRadius:"8px", background:`linear-gradient(135deg,${C.blue},#2E7D45)`, boxShadow:"0 6px 28px rgba(27,94,43,0.30)", padding:"28px 24px 24px", display:"flex", flexDirection:"column" as const, alignItems:"center", gap:"14px" }}>
             <span style={{ fontSize:"11px", color:"rgba(255,255,255,0.60)", fontWeight:700, textTransform:"uppercase" as const, letterSpacing:"0.08em", fontFamily:"Inter, -apple-system, sans-serif" }}>
               Em Português
             </span>
@@ -707,7 +707,7 @@ function FlashcardsTab({ cards, audio }: {
           </div>
 
           {/* Campo de digitação — uma linha por língua */}
-          <div style={{ width:"100%", maxWidth:"520px", background:"#fff", borderRadius:"6px", padding:"18px 20px", boxShadow:"0 2px 12px rgba(26,74,138,0.08)", border:`1.5px solid rgba(26,74,138,0.12)` }}>
+          <div style={{ width:"100%", maxWidth:"520px", background:"#fff", borderRadius:"6px", padding:"18px 20px", boxShadow:"0 2px 12px rgba(27,94,43,0.08)", border:`1.5px solid rgba(27,94,43,0.12)` }}>
             <div style={{ fontSize:"11px", fontWeight:700, color:C.muted, textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"12px" }}>
               Digite nas {langs.length} línguas
             </div>
@@ -740,7 +740,7 @@ function FlashcardsTab({ cards, audio }: {
                     data-lang-idx={li}
                     autoFocus={li === 0}
                     placeholder={`Em ${l.nome}...`}
-                    style={{ flex:1, padding:"10px 14px", borderRadius:"10px", border:`1.5px solid rgba(26,74,138,0.18)`, fontSize:"15px", fontFamily:"Inter, -apple-system, sans-serif", color:C.text, outline:"none", background:"#FAFBFD" }}
+                    style={{ flex:1, padding:"10px 14px", borderRadius:"10px", border:`1.5px solid rgba(27,94,43,0.18)`, fontSize:"15px", fontFamily:"Inter, -apple-system, sans-serif", color:C.text, outline:"none", background:"#FAFBFD" }}
                   />
                 </div>
               ))}
@@ -749,7 +749,7 @@ function FlashcardsTab({ cards, audio }: {
               <button
                 onClick={verificarTentativa}
                 disabled={!tentativa.split("|||").some((p: string) => p.trim().length > 0)}
-                style={{ flex:1, padding:"12px", borderRadius:"12px", border:"none", background:!tentativa.split("|||").some((p: string) => p.trim().length > 0)?"rgba(0,0,0,0.06)":`linear-gradient(135deg,${C.blue},#2A6ACC)`, color:!tentativa.split("|||").some((p: string) => p.trim().length > 0)?"#AEAEB2":"#fff", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
+                style={{ flex:1, padding:"12px", borderRadius:"12px", border:"none", background:!tentativa.split("|||").some((p: string) => p.trim().length > 0)?"rgba(0,0,0,0.06)":`linear-gradient(135deg,${C.blue},#2E7D45)`, color:!tentativa.split("|||").some((p: string) => p.trim().length > 0)?"#AEAEB2":"#fff", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
                 Ver resposta →
               </button>
               <button
@@ -771,7 +771,7 @@ function FlashcardsTab({ cards, audio }: {
         <>
           {/* ── Resultado da digitação (diff) ───────────────────────────────── */}
           {diffResult && (
-            <div style={{ width:"100%", maxWidth:"520px", borderRadius:"6px", padding:"16px 18px", background:diffResult.ok?"rgba(42,154,96,0.08)":"rgba(224,120,32,0.07)", border:`1.5px solid ${diffResult.ok?"rgba(42,154,96,0.25)":"rgba(224,120,32,0.25)"}` }}>
+            <div style={{ width:"100%", maxWidth:"520px", borderRadius:"6px", padding:"16px 18px", background:diffResult.ok?"rgba(27,94,43,0.08)":"rgba(245,200,0,0.10)", border:`1.5px solid ${diffResult.ok?"rgba(27,94,43,0.25)":"rgba(224,120,32,0.25)"}` }}>
               <div style={{ display:"flex", alignItems:"center", gap:"10px", marginBottom:"10px" }}>
                 <span style={{ fontSize:"20px" }}>{diffResult.ok ? "🎉" : "📝"}</span>
                 <span style={{ fontSize:"13px", fontWeight:700, color:diffResult.ok?C.green:C.orange }}>
@@ -794,7 +794,7 @@ function FlashcardsTab({ cards, audio }: {
           )}
 
           {/* ── VERSO do card ───────────────────────────────────────────────── */}
-          <div style={{ width:"100%", maxWidth:"520px", borderRadius:"8px", background:"#fff", boxShadow:"0 4px 20px rgba(0,0,0,0.10)", padding:"20px", border:`1.5px solid rgba(26,74,138,0.12)` }}>
+          <div style={{ width:"100%", maxWidth:"520px", borderRadius:"8px", background:"#fff", boxShadow:"0 4px 20px rgba(0,0,0,0.10)", padding:"20px", border:`1.5px solid rgba(27,94,43,0.12)` }}>
             {/* Palavra em PT no topo do verso */}
             <div style={{ textAlign:"center" as const, marginBottom:"16px", paddingBottom:"14px", borderBottom:"1px solid rgba(0,0,0,0.07)" }}>
               <span style={{ fontSize:"20px", fontWeight:800, color:C.text, fontFamily:"Inter, -apple-system, sans-serif" }}>
@@ -810,10 +810,10 @@ function FlashcardsTab({ cards, audio }: {
                 return (
                   <button key={li}
                     onClick={() => isPlay ? audio.stopSpeaking() : audio.speak(l.txt, l.bcp47, key)}
-                    style={{ width:"100%", borderRadius:"6px", background:isPlay?"rgba(26,74,138,0.08)":"#F7F8FC", border:`1.5px solid ${isPlay?"rgba(26,74,138,0.30)":"transparent"}`, cursor:"pointer", padding:0, overflow:"hidden", textAlign:"left" as const, transition:"all 0.2s", fontFamily:"Inter, -apple-system, sans-serif" }}>
+                    style={{ width:"100%", borderRadius:"6px", background:isPlay?"rgba(27,94,43,0.08)":"#F7F8FC", border:`1.5px solid ${isPlay?"rgba(27,94,43,0.30)":"transparent"}`, cursor:"pointer", padding:0, overflow:"hidden", textAlign:"left" as const, transition:"all 0.2s", fontFamily:"Inter, -apple-system, sans-serif" }}>
                     <div style={{ display:"flex", alignItems:"center", gap:"12px", padding:"12px 14px" }}>
-                      <div style={{ width:34, height:34, borderRadius:"50%", background:isPlay?"#1A4A8A":"rgba(26,74,138,0.10)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.2s" }}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={isPlay?"#fff":"#1A4A8A"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <div style={{ width:34, height:34, borderRadius:"50%", background:isPlay?"#1B5E2B":"rgba(27,94,43,0.10)", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.2s" }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke={isPlay?"#fff":"#1B5E2B"} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                           {isPlay
                             ? <><line x1="8" y1="6" x2="8" y2="18"/><line x1="16" y1="6" x2="16" y2="18"/></>
                             : <polygon points="5 3 19 12 5 21 5 3"/>
@@ -821,8 +821,8 @@ function FlashcardsTab({ cards, audio }: {
                         </svg>
                       </div>
                       <div style={{ flex:1, minWidth:0 }}>
-                        <div style={{ fontSize:"10px", fontWeight:700, color:isPlay?"#1A4A8A":C.muted, textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"2px" }}>{l.nome}</div>
-                        <div style={{ fontSize:"17px", fontWeight:800, color:isPlay?"#1A4A8A":C.text }}>{l.txt}</div>
+                        <div style={{ fontSize:"10px", fontWeight:700, color:isPlay?"#1B5E2B":C.muted, textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"2px" }}>{l.nome}</div>
+                        <div style={{ fontSize:"17px", fontWeight:800, color:isPlay?"#1B5E2B":C.text }}>{l.txt}</div>
                         {l.fon && <div style={{ fontSize:"12px", color:C.muted, fontStyle:"italic", marginTop:"1px" }}>{l.fon}</div>}
                       </div>
                     </div>
@@ -845,9 +845,9 @@ function FlashcardsTab({ cards, audio }: {
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr 1fr", gap:"8px" }}>
               {[
                 { label:"Errei",   q:0, color:C.red,    bg:"rgba(204,42,32,0.07)",  border:"rgba(204,42,32,0.25)"  },
-                { label:"Difícil", q:3, color:C.orange, bg:"rgba(224,120,32,0.07)", border:"rgba(224,120,32,0.25)" },
-                { label:"Bom",     q:4, color:C.blue,   bg:"rgba(26,74,138,0.07)",  border:"rgba(26,74,138,0.25)"  },
-                { label:"Fácil",   q:5, color:C.green,  bg:"rgba(42,154,96,0.07)",  border:"rgba(42,154,96,0.25)"  },
+                { label:"Difícil", q:3, color:C.orange, bg:"rgba(245,200,0,0.10)", border:"rgba(224,120,32,0.25)" },
+                { label:"Bom",     q:4, color:C.blue,   bg:"rgba(27,94,43,0.07)",  border:"rgba(27,94,43,0.25)"  },
+                { label:"Fácil",   q:5, color:C.green,  bg:"rgba(27,94,43,0.07)",  border:"rgba(27,94,43,0.25)"  },
               ].map((btn: any) => (
                 <button key={btn.q}
                   disabled={saving}
@@ -896,7 +896,7 @@ function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
   });
   const maxDia = Math.max(...(porDia||[]).map((d: any) =>d.count), 1);
 
-  const C2 = { blue:"#1A4A8A", orange:"#E07820", green:"#2A9A60", bg:"#F7F8FC", text:"#1A2A40", muted:"#8A9AB8" };
+  const C2 = { blue:"#1B5E2B", orange:"#E07820", green:"#1B5E2B", bg:"#F7F8FC", text:"#111827", muted:"#6B7280" };
 
   return (
     <div style={{ height:"100%", overflowY:"auto" as const, background:C2.bg }}>
@@ -910,7 +910,7 @@ function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
             { label:"Taxa de acerto", value:taxa+"%", color:C2.green, emoji:"🎯" },
             { label:"Para revisar", value:urgentes, color:C2.orange, emoji:"🔥" },
           ].map((s,i) => (
-            <div key={i} style={{ background:"#fff", borderRadius:"6px", padding:"16px 14px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)", textAlign:"center" as const }}>
+            <div key={i} style={{ background:"#fff", borderRadius:"6px", padding:"16px 14px", boxShadow:"0 2px 10px rgba(27,94,43,0.07)", textAlign:"center" as const }}>
               <div style={{ fontSize:"22px", marginBottom:"4px" }}>{s.emoji}</div>
               <div style={{ fontSize:"24px", fontWeight:800, color:s.color, fontFamily:"Inter, -apple-system, sans-serif" }}>{s.value}</div>
               <div style={{ fontSize:"11px", color:C2.muted, fontWeight:600 }}>{s.label}</div>
@@ -919,12 +919,12 @@ function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
         </div>
 
         {/* Gráfico 7 dias */}
-        <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"16px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+        <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"16px", boxShadow:"0 2px 10px rgba(27,94,43,0.07)" }}>
           <div style={{ fontSize:"13px", fontWeight:700, color:C2.muted, letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"16px" }}>Nexos criados — últimos 7 dias</div>
           <div style={{ display:"flex", alignItems:"flex-end", gap:"8px", height:"80px" }}>
             {porDia.map((d,i) => (
               <div key={i} style={{ flex:1, display:"flex", flexDirection:"column" as const, alignItems:"center", gap:"4px" }}>
-                <div style={{ width:"100%", background:d.count>0?"rgba(26,74,138,0.15)":"#F0F4FA", borderRadius:"6px 6px 0 0", height:`${Math.max(4,(d.count/maxDia)*68)}px`, display:"flex", alignItems:"center", justifyContent:"center" }}>
+                <div style={{ width:"100%", background:d.count>0?"rgba(27,94,43,0.15)":"#F4F5F0", borderRadius:"6px 6px 0 0", height:`${Math.max(4,(d.count/maxDia)*68)}px`, display:"flex", alignItems:"center", justifyContent:"center" }}>
                   {d.count > 0 && <span style={{ fontSize:"10px", fontWeight:700, color:C2.blue }}>{d.count}</span>}
                 </div>
                 <span style={{ fontSize:"10px", color:C2.muted, fontWeight:600 }}>{d.label}</span>
@@ -935,7 +935,7 @@ function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
 
         {/* Distribuição por tronco */}
         {total > 0 && (
-          <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"16px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+          <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"16px", boxShadow:"0 2px 10px rgba(27,94,43,0.07)" }}>
             <div style={{ fontSize:"13px", fontWeight:700, color:C2.muted, letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"14px" }}>Distribuição por tronco</div>
             {[
               { label:"Tear Românico", count:romanico, color:C2.blue, langs:"Espanhol · Francês · Italiano" },
@@ -949,7 +949,7 @@ function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
                   </div>
                   <span style={{ fontSize:"13px", fontWeight:700, color:t.color }}>{t.count}</span>
                 </div>
-                <div style={{ height:"6px", borderRadius:"6px", background:"#F0F4FA", overflow:"hidden" }}>
+                <div style={{ height:"6px", borderRadius:"6px", background:"#F4F5F0", overflow:"hidden" }}>
                   <div style={{ height:"100%", borderRadius:"6px", background:t.color, width:`${total>0?(t.count/total)*100:0}%`, transition:"width 0.4s ease" }}/>
                 </div>
               </div>
@@ -959,7 +959,7 @@ function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
 
         {/* Quiz stats */}
         {acertos+erros > 0 && (
-          <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+          <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", boxShadow:"0 2px 10px rgba(27,94,43,0.07)" }}>
             <div style={{ fontSize:"13px", fontWeight:700, color:C2.muted, letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"14px" }}>Desempenho no Quiz</div>
             <div style={{ display:"flex", gap:"20px" }}>
               <div style={{ textAlign:"center" as const }}>
@@ -967,11 +967,11 @@ function ProgressoTab({ cards }: { cards: MentoriaCard[] }) {
                 <div style={{ fontSize:"11px", color:C2.muted }}>Acertos</div>
               </div>
               <div style={{ textAlign:"center" as const }}>
-                <div style={{ fontSize:"28px", fontWeight:800, color:"#CC2A20" }}>{erros}</div>
+                <div style={{ fontSize:"28px", fontWeight:800, color:"#991B1B" }}>{erros}</div>
                 <div style={{ fontSize:"11px", color:C2.muted }}>Erros</div>
               </div>
               <div style={{ flex:1, display:"flex", alignItems:"center" }}>
-                <div style={{ width:"100%", height:"10px", borderRadius:"10px", background:"#F0F4FA", overflow:"hidden" }}>
+                <div style={{ width:"100%", height:"10px", borderRadius:"10px", background:"#F4F5F0", overflow:"hidden" }}>
                   <div style={{ height:"100%", background:`linear-gradient(90deg,${C2.green},#34C759)`, width:`${taxa}%`, borderRadius:"10px", transition:"width 0.4s ease" }}/>
                 </div>
               </div>
@@ -1022,39 +1022,39 @@ function ViagemTab({ profile, audio }: { profile: UserProfile | null; audio: Ret
     <div style={{ height:"100%", overflowY:"auto" as const, background:"#F4F5F0" }}>
       <div style={{ maxWidth:"640px", margin:"0 auto", padding:"24px 20px 48px" }}>
         <div style={{ fontSize:"22px", fontWeight:800, color:C.green, fontFamily:"Inter, -apple-system, sans-serif", marginBottom:"6px" }}>Modo Viagem ✈️</div>
-        <div style={{ fontSize:"14px", color:"#8A9AB8", marginBottom:"20px" }}>Digite o destino e o Chico cria um guia de sobrevivência linguística personalizado.</div>
+        <div style={{ fontSize:"14px", color:"#6B7280", marginBottom:"20px" }}>Digite o destino e o Chico cria um guia de sobrevivência linguística personalizado.</div>
 
         <div style={{ display:"flex", gap:"10px", marginBottom:"20px" }}>
           <input value={destino} onChange={e=>setDestino(e.target.value)}
             onKeyDown={e=>e.key==="Enter"&&gerarGuia()}
             placeholder="Ex: Barcelona, Paris, Berlim..."
-            style={{ flex:1, padding:"12px 16px", borderRadius:"6px", border:"1.5px solid rgba(26,74,138,0.20)", fontSize:"14px", fontFamily:"Inter, -apple-system, sans-serif", color:"#1A2A40", outline:"none", background:"#fff" }}/>
+            style={{ flex:1, padding:"12px 16px", borderRadius:"6px", border:"1.5px solid rgba(27,94,43,0.20)", fontSize:"14px", fontFamily:"Inter, -apple-system, sans-serif", color:"#111827", outline:"none", background:"#fff" }}/>
           <button onClick={gerarGuia} disabled={!destino.trim()||loading}
-            style={{ padding:"12px 22px", borderRadius:"6px", border:"none", background:loading||!destino.trim()?"rgba(0,0,0,0.07)":"linear-gradient(135deg,#1A4A8A,#2A6ACC)", color:loading||!destino.trim()?"#AEAEB2":"#fff", fontSize:"14px", fontWeight:800, cursor:loading||!destino.trim()?"not-allowed":"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
+            style={{ padding:"12px 22px", borderRadius:"6px", border:"none", background:loading||!destino.trim()?"rgba(0,0,0,0.07)":"linear-gradient(135deg,#1B5E2B,#2E7D45)", color:loading||!destino.trim()?"#AEAEB2":"#fff", fontSize:"14px", fontWeight:800, cursor:loading||!destino.trim()?"not-allowed":"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
             {loading?"...":"Gerar →"}
           </button>
         </div>
 
-        {error && <div style={{ padding:"12px 16px", borderRadius:"12px", background:"rgba(204,42,32,0.08)", color:"#CC2A20", fontSize:"13px", marginBottom:"16px" }}>{error}</div>}
+        {error && <div style={{ padding:"12px 16px", borderRadius:"12px", background:"rgba(204,42,32,0.08)", color:"#991B1B", fontSize:"13px", marginBottom:"16px" }}>{error}</div>}
 
         {resultado && (
           <div style={{ display:"flex", flexDirection:"column" as const, gap:"10px" }}>
             {/* Dica cultural do destino */}
             {resultado.dica_cultural && (
-              <div style={{ padding:"12px 16px", borderRadius:"6px", background:"rgba(26,74,138,0.07)", border:"1px solid rgba(26,74,138,0.15)", fontSize:"13px", color:C.green, lineHeight:1.6 }}>
+              <div style={{ padding:"12px 16px", borderRadius:"6px", background:"rgba(27,94,43,0.07)", border:"1px solid rgba(27,94,43,0.15)", fontSize:"13px", color:C.green, lineHeight:1.6 }}>
                 🌍 {resultado.dica_cultural}
               </div>
             )}
             {/* Cards de palavras/expressoes */}
             {Array.isArray(resultado.palavras) && resultado.palavras.map((item: any, i: number) => (
-              <div key={i} style={{ background:"#fff", borderRadius:"6px", padding:"16px 18px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+              <div key={i} style={{ background:"#fff", borderRadius:"6px", padding:"16px 18px", boxShadow:"0 2px 10px rgba(27,94,43,0.07)" }}>
                 {/* Palavra em PT + contexto */}
                 <div style={{ marginBottom:"8px" }}>
                   <div style={{ fontSize:"17px", fontWeight:800, color:C.green, fontFamily:"Inter, -apple-system, sans-serif" }}>
                     {item.pt || item.expressao || item.palavra || ""}
                   </div>
                   {item.contexto && (
-                    <div style={{ fontSize:"12px", color:"#8A9AB8", marginTop:"2px" }}>💡 {item.contexto}</div>
+                    <div style={{ fontSize:"12px", color:"#6B7280", marginTop:"2px" }}>💡 {item.contexto}</div>
                   )}
                 </div>
                 {/* Traducoes nas linguas do tronco */}
@@ -1066,12 +1066,12 @@ function ViagemTab({ profile, audio }: { profile: UserProfile | null; audio: Ret
                   ].filter((l: any) => l.txt && l.txt.trim().length > 0).map((l, li) => (
                     <div key={li} style={{ display:"flex", alignItems:"center", gap:"10px", padding:"8px 12px", borderRadius:"10px", background:"#F4F5F0" }}>
                       <div style={{ flex:1 }}>
-                        <div style={{ fontSize:"15px", fontWeight:700, color:"#1A2A40" }}>{l.txt}</div>
-                        {l.fon && <div style={{ fontSize:"12px", color:"#8A9AB8", fontStyle:"italic" }}>{l.fon}</div>}
+                        <div style={{ fontSize:"15px", fontWeight:700, color:"#111827" }}>{l.txt}</div>
+                        {l.fon && <div style={{ fontSize:"12px", color:"#6B7280", fontStyle:"italic" }}>{l.fon}</div>}
                       </div>
                       <button onClick={()=>audio.speak(l.txt, "es-ES", "v"+i+li)}
-                        style={{ width:28, height:28, borderRadius:"50%", border:"none", background:"rgba(26,74,138,0.10)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1A4A8A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+                        style={{ width:28, height:28, borderRadius:"50%", border:"none", background:"rgba(27,94,43,0.10)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1B5E2B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
                       </button>
                     </div>
                   ))}
@@ -1082,9 +1082,9 @@ function ViagemTab({ profile, audio }: { profile: UserProfile | null; audio: Ret
         )}
 
         {!resultado && !loading && !error && (
-          <div style={{ textAlign:"center" as const, padding:"48px 24px", color:"#8A9AB8" }}>
+          <div style={{ textAlign:"center" as const, padding:"48px 24px", color:"#6B7280" }}>
             <div style={{ fontSize:"48px", marginBottom:"12px" }}>✈️</div>
-            <div style={{ fontSize:"15px", fontWeight:700, color:"#5A6A80", fontFamily:"Inter, -apple-system, sans-serif" }}>Para onde você vai?</div>
+            <div style={{ fontSize:"15px", fontWeight:700, color:"#6B7280", fontFamily:"Inter, -apple-system, sans-serif" }}>Para onde você vai?</div>
             <div style={{ fontSize:"13px", marginTop:"6px" }}>O Chico cria um guia com as expressões essenciais para se virar no destino.</div>
           </div>
         )}
@@ -1173,11 +1173,11 @@ function PraticarTab({ profile, cards, audio }: {
       return (
         <span key={i} style={{
           marginRight:"4px", padding:"1px 4px", borderRadius:"4px",
-          background: ok ? "rgba(42,154,96,0.12)" : "rgba(204,42,32,0.12)",
-          color: ok ? "#2A9A60" : "#CC2A20", fontWeight: ok ? 500 : 700,
+          background: ok ? "rgba(27,94,43,0.12)" : "rgba(204,42,32,0.12)",
+          color: ok ? "#1B5E2B" : "#991B1B", fontWeight: ok ? 500 : 700,
         }}>
           {ok ? p : (palavrasD[i] || "___")}
-          {!ok && <span style={{fontSize:"10px",display:"block",color:"#2A9A60"}}>{p}</span>}
+          {!ok && <span style={{fontSize:"10px",display:"block",color:"#1B5E2B"}}>{p}</span>}
         </span>
       );
     });
@@ -1240,11 +1240,11 @@ function PraticarTab({ profile, cards, audio }: {
   }
 
   // ── cores e helpers ───────────────────────────────────────────────────────
-  const C3 = { blue:"#1A4A8A", orange:"#E07820", green:"#2A9A60", bg:"#F7F8FC", muted:"#8A9AB8", text:"#1A2A40" };
+  const C3 = { blue:"#1B5E2B", orange:"#E07820", green:"#1B5E2B", bg:"#F7F8FC", muted:"#6B7280", text:"#111827" };
   const nivelCores: Record<string,{bg:string;color:string}> = {
-    "iniciante":    {bg:"rgba(42,154,96,0.08)",  color:"#2A9A60"},
-    "intermediário":{bg:"rgba(224,120,32,0.08)", color:"#C06010"},
-    "avançado":     {bg:"rgba(26,74,138,0.08)",  color:C.green},
+    "iniciante":    {bg:"rgba(27,94,43,0.08)",  color:"#1B5E2B"},
+    "intermediário":{bg:"rgba(245,200,0,0.12)", color:"#C06010"},
+    "avançado":     {bg:"rgba(27,94,43,0.08)",  color:C.green},
   };
 
   return (
@@ -1266,14 +1266,14 @@ function PraticarTab({ profile, cards, audio }: {
         </div>
 
         {/* Controles comuns: língua + nível */}
-        <div style={{ background:"#fff", borderRadius:"6px", padding:"18px", marginBottom:"16px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+        <div style={{ background:"#fff", borderRadius:"6px", padding:"18px", marginBottom:"16px", boxShadow:"0 2px 10px rgba(27,94,43,0.07)" }}>
           <div style={{ display:"flex", gap:"16px", flexWrap:"wrap" as const }}>
             <div style={{ flex:1, minWidth:"120px" }}>
               <div style={{ fontSize:"11px", fontWeight:700, color:C3.muted, letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"8px" }}>Língua</div>
               <div style={{ display:"flex", gap:"6px", flexWrap:"wrap" as const }}>
                 {linguas.map((l: any) => (
                   <button key={l} onClick={()=>setLingua(l)}
-                    style={{ padding:"6px 12px", borderRadius:"8px", border:`1.5px solid ${lingua===l?C3.blue:"rgba(0,0,0,0.09)"}`, background:lingua===l?"rgba(26,74,138,0.08)":"transparent", color:lingua===l?C3.blue:C3.muted, fontSize:"12px", fontWeight:lingua===l?800:500, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
+                    style={{ padding:"6px 12px", borderRadius:"8px", border:`1.5px solid ${lingua===l?C3.blue:"rgba(0,0,0,0.09)"}`, background:lingua===l?"rgba(27,94,43,0.08)":"transparent", color:lingua===l?C3.blue:C3.muted, fontSize:"12px", fontWeight:lingua===l?800:500, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
                     {l}
                   </button>
                 ))}
@@ -1300,14 +1300,14 @@ function PraticarTab({ profile, cards, audio }: {
         {modo === "ditado" && (
           <>
             <button onClick={gerarDitado} disabled={loadingDitado}
-              style={{ width:"100%", padding:"14px", borderRadius:"6px", border:"none", background:loadingDitado?"rgba(0,0,0,0.07)":"linear-gradient(135deg,#1A4A8A,#2A6ACC)", color:loadingDitado?"#AEAEB2":"#fff", fontSize:"15px", fontWeight:800, cursor:loadingDitado?"not-allowed":"pointer", fontFamily:"Inter, -apple-system, sans-serif", marginBottom:"16px", boxShadow:loadingDitado?"none":"0 3px 14px rgba(26,74,138,0.25)" }}>
+              style={{ width:"100%", padding:"14px", borderRadius:"6px", border:"none", background:loadingDitado?"rgba(0,0,0,0.07)":"linear-gradient(135deg,#1B5E2B,#2E7D45)", color:loadingDitado?"#AEAEB2":"#fff", fontSize:"15px", fontWeight:800, cursor:loadingDitado?"not-allowed":"pointer", fontFamily:"Inter, -apple-system, sans-serif", marginBottom:"16px", boxShadow:loadingDitado?"none":"0 3px 14px rgba(27,94,43,0.25)" }}>
               {loadingDitado ? "Gerando..." : ditado ? "Nova frase →" : "Gerar frase →"}
             </button>
 
             {ditado && (
               <>
                 {/* Card de áudio */}
-                <div style={{ background:C.green, borderRadius:"6px", padding:"22px", marginBottom:"12px", boxShadow:"0 4px 20px rgba(26,74,138,0.25)" }}>
+                <div style={{ background:C.green, borderRadius:"6px", padding:"22px", marginBottom:"12px", boxShadow:"0 4px 20px rgba(27,94,43,0.25)" }}>
                   <div style={{ fontSize:"12px", color:"rgba(255,255,255,0.65)", fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase" as const, marginBottom:"12px" }}>
                     Ouça e escreva o que ouvir
                   </div>
@@ -1331,7 +1331,7 @@ function PraticarTab({ profile, cards, audio }: {
 
                 {/* Campo de resposta */}
                 {!resultDitado ? (
-                  <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"12px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+                  <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"12px", boxShadow:"0 2px 10px rgba(27,94,43,0.07)" }}>
                     <div style={{ fontSize:"12px", fontWeight:700, color:C3.muted, marginBottom:"10px", textTransform:"uppercase" as const, letterSpacing:"0.06em" }}>
                       Escreva o que ouviu
                     </div>
@@ -1340,7 +1340,7 @@ function PraticarTab({ profile, cards, audio }: {
                       onChange={e => setRespDitado(e.target.value)}
                       placeholder={"Escreva em " + lingua + "..."}
                       rows={3}
-                      style={{ width:"100%", padding:"12px 14px", borderRadius:"12px", border:"1.5px solid rgba(26,74,138,0.20)", fontSize:"15px", fontFamily:"Inter, -apple-system, sans-serif", color:C3.text, resize:"none" as const, boxSizing:"border-box" as const }}
+                      style={{ width:"100%", padding:"12px 14px", borderRadius:"12px", border:"1.5px solid rgba(27,94,43,0.20)", fontSize:"15px", fontFamily:"Inter, -apple-system, sans-serif", color:C3.text, resize:"none" as const, boxSizing:"border-box" as const }}
                     />
                     <button onClick={verificarDitado} disabled={!respDitado.trim()}
                       style={{ width:"100%", marginTop:"10px", padding:"13px", borderRadius:"12px", border:"none", background:!respDitado.trim()?"rgba(0,0,0,0.06)":"linear-gradient(135deg,#E07820,#F09030)", color:!respDitado.trim()?"#AEAEB2":"#fff", fontSize:"14px", fontWeight:800, cursor:!respDitado.trim()?"not-allowed":"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
@@ -1349,9 +1349,9 @@ function PraticarTab({ profile, cards, audio }: {
                   </div>
                 ) : (
                   /* Resultado do ditado */
-                  <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"12px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+                  <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"12px", boxShadow:"0 2px 10px rgba(27,94,43,0.07)" }}>
                     {/* Pontuação */}
-                    <div style={{ display:"flex", alignItems:"center", gap:"16px", marginBottom:"16px", padding:"14px 16px", borderRadius:"12px", background:resultDitado.acertos===resultDitado.total?"rgba(42,154,96,0.08)":"rgba(224,120,32,0.08)" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:"16px", marginBottom:"16px", padding:"14px 16px", borderRadius:"12px", background:resultDitado.acertos===resultDitado.total?"rgba(27,94,43,0.08)":"rgba(245,200,0,0.12)" }}>
                       <div style={{ fontSize:"32px" }}>{resultDitado.acertos===resultDitado.total?"🎉":resultDitado.acertos>=resultDitado.total*0.7?"👍":"💪"}</div>
                       <div>
                         <div style={{ fontSize:"20px", fontWeight:800, color:resultDitado.acertos===resultDitado.total?C3.green:C3.orange, fontFamily:"Inter, -apple-system, sans-serif" }}>
@@ -1370,7 +1370,7 @@ function PraticarTab({ profile, cards, audio }: {
                       {resultDitado.diff}
                     </div>
                     {/* Frase correta */}
-                    <div style={{ marginTop:"12px", padding:"10px 14px", borderRadius:"10px", background:"rgba(42,154,96,0.07)", fontSize:"14px", color:C3.green, fontWeight:600 }}>
+                    <div style={{ marginTop:"12px", padding:"10px 14px", borderRadius:"10px", background:"rgba(27,94,43,0.07)", fontSize:"14px", color:C3.green, fontWeight:600 }}>
                       ✓ {ditado.frase}
                     </div>
                     {/* Tradução */}
@@ -1381,7 +1381,7 @@ function PraticarTab({ profile, cards, audio }: {
                     )}
                     {/* Dica */}
                     {ditado.dica && (
-                      <div style={{ marginTop:"8px", padding:"8px 12px", borderRadius:"8px", background:"rgba(26,74,138,0.06)", fontSize:"12px", color:C3.blue }}>
+                      <div style={{ marginTop:"8px", padding:"8px 12px", borderRadius:"8px", background:"rgba(27,94,43,0.06)", fontSize:"12px", color:C3.blue }}>
                         💡 {ditado.dica}
                       </div>
                     )}
@@ -1393,7 +1393,7 @@ function PraticarTab({ profile, cards, audio }: {
             {!ditado && !loadingDitado && (
               <div style={{ textAlign:"center" as const, padding:"40px 24px", color:C3.muted }}>
                 <div style={{ fontSize:"48px", marginBottom:"12px" }}>🎧</div>
-                <div style={{ fontSize:"15px", fontWeight:700, color:"#5A6A80", fontFamily:"Inter, -apple-system, sans-serif" }}>Pronto para ouvir?</div>
+                <div style={{ fontSize:"15px", fontWeight:700, color:"#6B7280", fontFamily:"Inter, -apple-system, sans-serif" }}>Pronto para ouvir?</div>
                 <div style={{ fontSize:"13px", marginTop:"6px", lineHeight:1.5 }}>O Chico vai falar uma frase em {lingua}.<br/>Ouça e escreva o que ouviu.</div>
               </div>
             )}
@@ -1405,14 +1405,14 @@ function PraticarTab({ profile, cards, audio }: {
           <>
             {!situacao && !loadingSit && !sessaoDone && (
               <>
-                <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"16px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+                <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"16px", boxShadow:"0 2px 10px rgba(27,94,43,0.07)" }}>
                   <div style={{ fontSize:"15px", fontWeight:700, color:C3.text, fontFamily:"Inter, -apple-system, sans-serif", marginBottom:"6px" }}>Como funciona</div>
                   <div style={{ fontSize:"13px", color:C3.muted, lineHeight:1.6 }}>
                     O Chico vai te colocar em 5 situações reais — restaurante, hotel, transporte, loja e perguntar direções. Você responde em {lingua} e o Chico avalia e corrige.
                   </div>
                 </div>
                 <button onClick={()=>{ setSitNum(1); gerarSituacao(1); }}
-                  style={{ width:"100%", padding:"14px", borderRadius:"6px", border:"none", background:"linear-gradient(135deg,#2A9A60,#1A7A48)", color:"#fff", fontSize:"15px", fontWeight:800, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", boxShadow:"0 3px 14px rgba(42,154,96,0.28)" }}>
+                  style={{ width:"100%", padding:"14px", borderRadius:"6px", border:"none", background:"linear-gradient(135deg,#1B5E2B,#2E7D45)", color:"#fff", fontSize:"15px", fontWeight:800, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", boxShadow:"0 3px 14px rgba(27,94,43,0.28)" }}>
                   Começar sessão →
                 </button>
               </>
@@ -1425,17 +1425,17 @@ function PraticarTab({ profile, cards, audio }: {
             )}
 
             {sessaoDone && (
-              <div style={{ background:"#fff", borderRadius:"6px", padding:"28px", textAlign:"center" as const, boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+              <div style={{ background:"#fff", borderRadius:"6px", padding:"28px", textAlign:"center" as const, boxShadow:"0 2px 10px rgba(27,94,43,0.07)" }}>
                 <div style={{ fontSize:"48px", marginBottom:"12px" }}>{placar.acertos>=4?"🎉":placar.acertos>=3?"👍":"💪"}</div>
                 <div style={{ fontSize:"22px", fontWeight:800, color:C3.blue, fontFamily:"Inter, -apple-system, sans-serif", marginBottom:"6px" }}>Sessão concluída!</div>
                 <div style={{ fontSize:"15px", color:C3.muted, marginBottom:"20px" }}>{placar.acertos}/5 situações respondidas corretamente</div>
                 <div style={{ display:"flex", gap:"12px", justifyContent:"center" as const }}>
                   <button onClick={reiniciarConversa}
-                    style={{ padding:"12px 24px", borderRadius:"6px", border:"none", background:"linear-gradient(135deg,#2A9A60,#1A7A48)", color:"#fff", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
+                    style={{ padding:"12px 24px", borderRadius:"6px", border:"none", background:"linear-gradient(135deg,#1B5E2B,#2E7D45)", color:"#fff", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
                     Nova sessão
                   </button>
                   <button onClick={()=>{ setSituacao(null); setSessaoDone(false); }}
-                    style={{ padding:"12px 24px", borderRadius:"6px", border:"1.5px solid rgba(26,74,138,0.20)", background:"transparent", color:C3.blue, fontSize:"14px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
+                    style={{ padding:"12px 24px", borderRadius:"6px", border:"1.5px solid rgba(27,94,43,0.20)", background:"transparent", color:C3.blue, fontSize:"14px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
                     Mudar configurações
                   </button>
                 </div>
@@ -1450,11 +1450,11 @@ function PraticarTab({ profile, cards, audio }: {
                   <span style={{ fontSize:"13px", fontWeight:700, color:C3.green }}>✓ {placar.acertos} corretas</span>
                 </div>
                 <div style={{ height:5, borderRadius:5, background:"rgba(0,0,0,0.07)", marginBottom:"16px", overflow:"hidden" }}>
-                  <div style={{ height:"100%", borderRadius:5, background:"linear-gradient(90deg,#2A9A60,#34C759)", width:`${((sitNum-1)/5)*100}%`, transition:"width 0.4s ease" }}/>
+                  <div style={{ height:"100%", borderRadius:5, background:"linear-gradient(90deg,#1B5E2B,#2E7D45)", width:`${((sitNum-1)/5)*100}%`, transition:"width 0.4s ease" }}/>
                 </div>
 
                 {/* Card da situação */}
-                <div style={{ background:"linear-gradient(135deg,#2A9A60,#1A7A48)", borderRadius:"6px", padding:"22px", marginBottom:"12px", boxShadow:"0 4px 20px rgba(42,154,96,0.25)" }}>
+                <div style={{ background:"linear-gradient(135deg,#1B5E2B,#2E7D45)", borderRadius:"6px", padding:"22px", marginBottom:"12px", boxShadow:"0 4px 20px rgba(27,94,43,0.25)" }}>
                   <div style={{ fontSize:"11px", color:"rgba(255,255,255,0.65)", fontWeight:700, letterSpacing:"0.08em", textTransform:"uppercase" as const, marginBottom:"10px" }}>
                     Situação
                   </div>
@@ -1475,7 +1475,7 @@ function PraticarTab({ profile, cards, audio }: {
 
                 {/* Campo de resposta ou avaliação */}
                 {!avaliacao ? (
-                  <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+                  <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", boxShadow:"0 2px 10px rgba(27,94,43,0.07)" }}>
                     <div style={{ fontSize:"12px", fontWeight:700, color:C3.muted, textTransform:"uppercase" as const, letterSpacing:"0.06em", marginBottom:"10px" }}>
                       Sua resposta em {lingua}
                     </div>
@@ -1484,18 +1484,18 @@ function PraticarTab({ profile, cards, audio }: {
                       onChange={e => setRespSit(e.target.value)}
                       placeholder={"Responda em " + lingua + "..."}
                       rows={3}
-                      style={{ width:"100%", padding:"12px 14px", borderRadius:"12px", border:"1.5px solid rgba(42,154,96,0.25)", fontSize:"15px", fontFamily:"Inter, -apple-system, sans-serif", color:C3.text, resize:"none" as const, boxSizing:"border-box" as const }}
+                      style={{ width:"100%", padding:"12px 14px", borderRadius:"12px", border:"1.5px solid rgba(27,94,43,0.25)", fontSize:"15px", fontFamily:"Inter, -apple-system, sans-serif", color:C3.text, resize:"none" as const, boxSizing:"border-box" as const }}
                     />
                     <button onClick={avaliarResposta} disabled={!respSit.trim() || loadingAval}
-                      style={{ width:"100%", marginTop:"10px", padding:"13px", borderRadius:"12px", border:"none", background:!respSit.trim()||loadingAval?"rgba(0,0,0,0.06)":"linear-gradient(135deg,#2A9A60,#1A7A48)", color:!respSit.trim()||loadingAval?"#AEAEB2":"#fff", fontSize:"14px", fontWeight:800, cursor:!respSit.trim()||loadingAval?"not-allowed":"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
+                      style={{ width:"100%", marginTop:"10px", padding:"13px", borderRadius:"12px", border:"none", background:!respSit.trim()||loadingAval?"rgba(0,0,0,0.06)":"linear-gradient(135deg,#1B5E2B,#2E7D45)", color:!respSit.trim()||loadingAval?"#AEAEB2":"#fff", fontSize:"14px", fontWeight:800, cursor:!respSit.trim()||loadingAval?"not-allowed":"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
                       {loadingAval ? "Avaliando..." : "Enviar →"}
                     </button>
                   </div>
                 ) : (
                   /* Avaliação */
-                  <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", boxShadow:"0 2px 10px rgba(26,74,138,0.07)" }}>
+                  <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", boxShadow:"0 2px 10px rgba(27,94,43,0.07)" }}>
                     {/* Nota */}
-                    <div style={{ display:"flex", alignItems:"center", gap:"14px", marginBottom:"14px", padding:"14px 16px", borderRadius:"12px", background:(avaliacao.correto||avaliacao.nota>=6)?"rgba(42,154,96,0.08)":"rgba(224,120,32,0.08)" }}>
+                    <div style={{ display:"flex", alignItems:"center", gap:"14px", marginBottom:"14px", padding:"14px 16px", borderRadius:"12px", background:(avaliacao.correto||avaliacao.nota>=6)?"rgba(27,94,43,0.08)":"rgba(245,200,0,0.12)" }}>
                       <div style={{ fontSize:"32px" }}>{avaliacao.nota>=8?"🎉":avaliacao.nota>=6?"👍":"💪"}</div>
                       <div>
                         <div style={{ fontSize:"22px", fontWeight:800, color:(avaliacao.correto||avaliacao.nota>=6)?C3.green:C3.orange, fontFamily:"Inter, -apple-system, sans-serif" }}>
@@ -1506,13 +1506,13 @@ function PraticarTab({ profile, cards, audio }: {
                     </div>
                     {/* Correção */}
                     {avaliacao.correcao && avaliacao.correcao.trim().length > 0 && (
-                      <div style={{ marginBottom:"10px", padding:"10px 14px", borderRadius:"10px", background:"rgba(26,74,138,0.06)", fontSize:"14px", color:C3.blue }}>
+                      <div style={{ marginBottom:"10px", padding:"10px 14px", borderRadius:"10px", background:"rgba(27,94,43,0.06)", fontSize:"14px", color:C3.blue }}>
                         <span style={{ fontWeight:700 }}>✓ Como ficaria: </span>{avaliacao.correcao}
                       </div>
                     )}
                     {/* Dica */}
                     {avaliacao.dica && (
-                      <div style={{ marginBottom:"14px", padding:"10px 14px", borderRadius:"10px", background:"rgba(224,120,32,0.07)", fontSize:"13px", color:"#8A4A10" }}>
+                      <div style={{ marginBottom:"14px", padding:"10px 14px", borderRadius:"10px", background:"rgba(245,200,0,0.10)", fontSize:"13px", color:"#8A4A10" }}>
                         💡 {avaliacao.dica}
                       </div>
                     )}
@@ -1717,7 +1717,7 @@ function HistoriasTab({ profile, cards, onAddCard }: {
     const ptParafs = paragrafosPt;
     return parafs.map((para, pi) => (
       <div key={pi} style={{ display:"grid", gridTemplateColumns:paralelo&&ptParafs[pi]?"1fr 1fr":"1fr", gap:"16px", marginBottom:"18px" }}>
-        <p style={{ margin:0, fontSize:"16px", lineHeight:"1.85", color:"#1A2A40", fontFamily:"Inter, -apple-system, sans-serif", fontWeight:500 }}>
+        <p style={{ margin:0, fontSize:"16px", lineHeight:"1.85", color:"#111827", fontFamily:"Inter, -apple-system, sans-serif", fontWeight:500 }}>
           {para.split(" ").map((word, wi) => {
             const clean = word.replace(/[^a-zA-Z\u00C0-\u024F0-9]/gi,"").toLowerCase();
             const kw = clean.length > 1 ? h.palavras_chave.find(k=>k.palavra.toLowerCase()===clean) : null;
@@ -1729,9 +1729,9 @@ function HistoriasTab({ profile, cards, onAddCard }: {
                   onClick={()=>{ if(clean.length>1){ setWordTranslation(null); if(selWord===word){setSelWord(null);}else{traduzirPalavra(word);} } }}
                   style={{
                     cursor: clean.length>1 ? "pointer" : "default",
-                    background: isSelected?"rgba(26,74,138,0.15)":kw?(isSaved?"rgba(42,154,96,0.10)":"rgba(224,120,32,0.12)"):"transparent",
+                    background: isSelected?"rgba(27,94,43,0.15)":kw?(isSaved?"rgba(27,94,43,0.10)":"rgba(224,120,32,0.12)"):"transparent",
                     borderRadius:"3px", padding:"0 2px",
-                    color: isSelected?"#1A4A8A":kw?(isSaved?"#2A9A60":"#B05A10"):"inherit",
+                    color: isSelected?"#1B5E2B":kw?(isSaved?"#1B5E2B":"#B05A10"):"inherit",
                     fontWeight: kw?700:500,
                     textDecoration: kw?"underline":"none",
                     textDecorationStyle: "dotted" as const,
@@ -1754,9 +1754,9 @@ function HistoriasTab({ profile, cards, onAddCard }: {
   }
 
   const nivelCores: Record<string,{bg:string;color:string;border:string}> = {
-    iniciante:     {bg:"rgba(42,154,96,0.08)",  color:"#2A9A60", border:"rgba(42,154,96,0.25)"},
-    intermediário: {bg:"rgba(224,120,32,0.08)", color:"#C06010", border:"rgba(224,120,32,0.25)"},
-    avançado:      {bg:"rgba(26,74,138,0.08)",  color:C.green, border:"rgba(26,74,138,0.25)"},
+    iniciante:     {bg:"rgba(27,94,43,0.08)",  color:"#1B5E2B", border:"rgba(27,94,43,0.25)"},
+    intermediário: {bg:"rgba(245,200,0,0.12)", color:"#C06010", border:"rgba(224,120,32,0.25)"},
+    avançado:      {bg:"rgba(27,94,43,0.08)",  color:C.green, border:"rgba(27,94,43,0.25)"},
   };
 
   const textoAtual: Historia | null = historiaSelecionada ?? historia;
@@ -1769,7 +1769,7 @@ function HistoriasTab({ profile, cards, onAddCard }: {
         <div style={{display:"flex", gap:"8px", marginBottom:"16px", padding:"4px", background:"rgba(0,0,0,0.05)", borderRadius:"6px", width:"fit-content"}}>
           {(["gerar","salvas"] as const).map(v=>(
             <button key={v} onClick={()=>{setView(v); setHistoriaSelecionada(null);}}
-              style={{padding:"8px 20px", borderRadius:"10px", border:"none", background:view===v?"#fff":"transparent", color:view===v?"#1A4A8A":"#6A7A9A", fontSize:"14px", fontWeight:view===v?800:600, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", boxShadow:view===v?"0 1px 4px rgba(0,0,0,0.10)":"none", transition:"all 0.15s"}}>
+              style={{padding:"8px 20px", borderRadius:"10px", border:"none", background:view===v?"#fff":"transparent", color:view===v?"#1B5E2B":"#6A7A9A", fontSize:"14px", fontWeight:view===v?800:600, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", boxShadow:view===v?"0 1px 4px rgba(0,0,0,0.10)":"none", transition:"all 0.15s"}}>
               {v==="gerar"?"📖 Gerar história":`🔖 Salvas (${historiasSalvas.length})`}
             </button>
           ))}
@@ -1779,29 +1779,29 @@ function HistoriasTab({ profile, cards, onAddCard }: {
         {view==="gerar" && (
           <>
             {/* Controles */}
-            <div style={{background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"16px", boxShadow:"0 2px 12px rgba(26,74,138,0.07)"}}>
+            <div style={{background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"16px", boxShadow:"0 2px 12px rgba(27,94,43,0.07)"}}>
               <div style={{fontSize:"20px", fontWeight:800, color:C.green, fontFamily:"Inter, -apple-system, sans-serif", marginBottom:"4px"}}>Histórias</div>
               <div style={{fontSize:"14px", color:"#6A7A9A", marginBottom:"18px"}}>Toque em qualquer palavra para traduzir. Palavras destacadas em laranja são do glossário da história.</div>
               <div style={{display:"flex", gap:"16px", flexWrap:"wrap" as const, marginBottom:"16px"}}>
                 <div style={{flex:1, minWidth:"130px"}}>
-                  <div style={{fontSize:"11px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"6px"}}>Língua</div>
+                  <div style={{fontSize:"11px", fontWeight:700, color:"#6B7280", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"6px"}}>Língua</div>
                   <div style={{display:"flex", gap:"6px", flexWrap:"wrap" as const}}>
                     {linguas.map((l: any) =>(
                       <button key={l} onClick={()=>setLingua(l)}
-                        style={{padding:"7px 14px", borderRadius:"8px", border:`2px solid ${lingua===l?"#1A4A8A":"rgba(0,0,0,0.09)"}`, background:lingua===l?"rgba(26,74,138,0.08)":"transparent", color:lingua===l?"#1A4A8A":"#5A6A80", fontSize:"13px", fontWeight:lingua===l?800:500, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", transition:"all 0.15s"}}>
+                        style={{padding:"7px 14px", borderRadius:"8px", border:`2px solid ${lingua===l?"#1B5E2B":"rgba(0,0,0,0.09)"}`, background:lingua===l?"rgba(27,94,43,0.08)":"transparent", color:lingua===l?"#1B5E2B":"#6B7280", fontSize:"13px", fontWeight:lingua===l?800:500, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", transition:"all 0.15s"}}>
                         {l}
                       </button>
                     ))}
                   </div>
                 </div>
                 <div style={{flex:1, minWidth:"200px"}}>
-                  <div style={{fontSize:"11px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"6px"}}>Nível</div>
+                  <div style={{fontSize:"11px", fontWeight:700, color:"#6B7280", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"6px"}}>Nível</div>
                   <div style={{display:"flex", gap:"6px"}}>
                     {(["iniciante","intermediário","avançado"] as const).map((n: any) =>{
                       const nc=nivelCores[n];
                       return(
                         <button key={n} onClick={()=>setNivel(n)}
-                          style={{padding:"7px 14px", borderRadius:"8px", border:`2px solid ${nivel===n?nc.border:"rgba(0,0,0,0.09)"}`, background:nivel===n?nc.bg:"transparent", color:nivel===n?nc.color:"#5A6A80", fontSize:"13px", fontWeight:nivel===n?800:500, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", transition:"all 0.15s", textTransform:"capitalize" as const}}>
+                          style={{padding:"7px 14px", borderRadius:"8px", border:`2px solid ${nivel===n?nc.border:"rgba(0,0,0,0.09)"}`, background:nivel===n?nc.bg:"transparent", color:nivel===n?nc.color:"#6B7280", fontSize:"13px", fontWeight:nivel===n?800:500, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", transition:"all 0.15s", textTransform:"capitalize" as const}}>
                           {n}
                         </button>
                       );
@@ -1810,7 +1810,7 @@ function HistoriasTab({ profile, cards, onAddCard }: {
                 </div>
               </div>
               <button onClick={gerarHistoria} disabled={loading}
-                style={{width:"100%", padding:"14px", borderRadius:"6px", border:"none", background:loading?"rgba(0,0,0,0.07)":"linear-gradient(135deg,#1A4A8A,#2A6ACC)", color:loading?"#AEAEB2":"#fff", fontSize:"15px", fontWeight:800, cursor:loading?"not-allowed":"pointer", fontFamily:"Inter, -apple-system, sans-serif", boxShadow:loading?"none":"0 3px 14px rgba(26,74,138,0.28)"}}>
+                style={{width:"100%", padding:"14px", borderRadius:"6px", border:"none", background:loading?"rgba(0,0,0,0.07)":"linear-gradient(135deg,#1B5E2B,#2E7D45)", color:loading?"#AEAEB2":"#fff", fontSize:"15px", fontWeight:800, cursor:loading?"not-allowed":"pointer", fontFamily:"Inter, -apple-system, sans-serif", boxShadow:loading?"none":"0 3px 14px rgba(27,94,43,0.28)"}}>
                 {loading?"Gerando história...":textoAtual?"Nova história →":"Gerar história →"}
               </button>
             </div>
@@ -1819,7 +1819,7 @@ function HistoriasTab({ profile, cards, onAddCard }: {
             {textoAtual && (
               <>
                 {/* Header da história */}
-                <div style={{background:C.green, borderRadius:"6px", padding:"22px 24px", marginBottom:"12px", boxShadow:"0 4px 20px rgba(26,74,138,0.25)"}}>
+                <div style={{background:C.green, borderRadius:"6px", padding:"22px 24px", marginBottom:"12px", boxShadow:"0 4px 20px rgba(27,94,43,0.25)"}}>
                   <div style={{display:"flex", alignItems:"center", gap:"8px", marginBottom:"10px"}}>
                     <span style={{padding:"4px 12px", borderRadius:"8px", background:"rgba(255,255,255,0.15)", fontSize:"12px", fontWeight:700, color:"#fff"}}>{textoAtual?.lingua}</span>
                     <span style={{padding:"4px 12px", borderRadius:"8px", background:"rgba(255,255,255,0.12)", fontSize:"12px", fontWeight:700, color:"rgba(255,255,255,0.85)", textTransform:"capitalize" as const}}>{textoAtual?.nivel}</span>
@@ -1833,7 +1833,7 @@ function HistoriasTab({ profile, cards, onAddCard }: {
                 <div style={{display:"flex", gap:"8px", marginBottom:"12px", flexWrap:"wrap" as const}}>
                   {/* Áudio */}
                   <button onClick={toggleAudio}
-                    style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 16px", borderRadius:"10px", border:"none", background:playing?"rgba(204,42,32,0.09)":"rgba(26,74,138,0.08)", color:playing?"#CC2A20":"#1A4A8A", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", transition:"all 0.2s"}}>
+                    style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 16px", borderRadius:"10px", border:"none", background:playing?"rgba(204,42,32,0.09)":"rgba(27,94,43,0.08)", color:playing?"#991B1B":"#1B5E2B", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", transition:"all 0.2s"}}>
                     {playing
                       ? <><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>Pausar</>
                       : <><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>Ouvir</>
@@ -1841,13 +1841,13 @@ function HistoriasTab({ profile, cards, onAddCard }: {
                   </button>
                   {/* Modo paralelo */}
                   <button onClick={ativarParalelo} disabled={loadingParalelo}
-                    style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 16px", borderRadius:"10px", border:"none", background:paralelo?"rgba(94,92,230,0.12)":"rgba(0,0,0,0.06)", color:paralelo?"#5E5CE6":"#5A6A80", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif"}}>
+                    style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 16px", borderRadius:"10px", border:"none", background:paralelo?"rgba(94,92,230,0.12)":"rgba(0,0,0,0.06)", color:paralelo?"#5E5CE6":"#6B7280", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif"}}>
                     {loadingParalelo?"Traduzindo...":paralelo?"🇧🇷 Ocultar PT":"🇧🇷 Ler em PT"}
                   </button>
                   {/* Salvar */}
                   {!historiaSelecionada && (
                     <button onClick={salvarHistoria}
-                      style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 16px", borderRadius:"10px", border:"none", background:"rgba(42,154,96,0.08)", color:"#2A9A60", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", marginLeft:"auto"}}>
+                      style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 16px", borderRadius:"10px", border:"none", background:"rgba(27,94,43,0.08)", color:"#1B5E2B", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", marginLeft:"auto"}}>
                       🔖 Salvar história
                     </button>
                   )}
@@ -1855,53 +1855,53 @@ function HistoriasTab({ profile, cards, onAddCard }: {
 
                 {/* Popup de tradução de palavra */}
                 {selWord && (
-                  <div style={{background:"#fff", borderRadius:"6px", padding:"14px 16px", marginBottom:"12px", border:"1.5px solid rgba(26,74,138,0.15)", boxShadow:"0 2px 12px rgba(26,74,138,0.10)", display:"flex", alignItems:"center", gap:"14px", animation:"fadeIn 0.2s ease forwards"}}>
+                  <div style={{background:"#fff", borderRadius:"6px", padding:"14px 16px", marginBottom:"12px", border:"1.5px solid rgba(27,94,43,0.15)", boxShadow:"0 2px 12px rgba(27,94,43,0.10)", display:"flex", alignItems:"center", gap:"14px", animation:"fadeIn 0.2s ease forwards"}}>
                     {translating
-                      ? <div style={{fontSize:"14px", color:"#8A9AB8"}}>Traduzindo "{selWord}"...</div>
+                      ? <div style={{fontSize:"14px", color:"#6B7280"}}>Traduzindo "{selWord}"...</div>
                       : wordTranslation
                         ? <>
                             <div style={{flex:1}}>
                               <div style={{display:"flex", alignItems:"baseline", gap:"8px", marginBottom:"2px"}}>
                                 <div style={{fontSize:"18px", fontWeight:800, color:C.green, fontFamily:"Inter, -apple-system, sans-serif"}}>{selWord}</div>
-                                <div style={{fontSize:"11px", color:"#8A9AB8", fontStyle:"italic"}}>{wordTranslation.fonetica}</div>
+                                <div style={{fontSize:"11px", color:"#6B7280", fontStyle:"italic"}}>{wordTranslation.fonetica}</div>
                                 <div style={{fontSize:"11px", color:"#AEAEB2"}}>· {wordTranslation.classe}</div>
                               </div>
-                              <div style={{fontSize:"16px", fontWeight:700, color:"#1A2A40", marginBottom:"6px"}}>{wordTranslation.traducao_pt}</div>
+                              <div style={{fontSize:"16px", fontWeight:700, color:"#111827", marginBottom:"6px"}}>{wordTranslation.traducao_pt}</div>
                               {wordTranslation.instrucao_biologica && (
-                                <div style={{padding:"6px 10px", borderRadius:"8px", background:"rgba(42,154,96,0.07)", border:"1px solid rgba(42,154,96,0.18)", fontSize:"12px", color:"#2A6A48", marginBottom:"5px", lineHeight:1.5}}>
+                                <div style={{padding:"6px 10px", borderRadius:"8px", background:"rgba(27,94,43,0.07)", border:"1px solid rgba(27,94,43,0.18)", fontSize:"12px", color:"#2A6A48", marginBottom:"5px", lineHeight:1.5}}>
                                   <span style={{fontWeight:700}}>🫁 Pronúncia: </span>{wordTranslation.instrucao_biologica}
                                 </div>
                               )}
                               {wordTranslation.ancora && (
-                                <div style={{padding:"6px 10px", borderRadius:"8px", background:"rgba(224,120,32,0.07)", border:"1px solid rgba(224,120,32,0.18)", fontSize:"12px", color:"#8A4A10", marginBottom:"5px", lineHeight:1.5}}>
+                                <div style={{padding:"6px 10px", borderRadius:"8px", background:"rgba(245,200,0,0.10)", border:"1px solid rgba(224,120,32,0.18)", fontSize:"12px", color:"#8A4A10", marginBottom:"5px", lineHeight:1.5}}>
                                   <span style={{fontWeight:700}}>🏺 Origem: </span>{wordTranslation.ancora}
                                 </div>
                               )}
                               {wordTranslation.chunk_tear && (
-                                <div style={{padding:"6px 10px", borderRadius:"8px", background:"rgba(26,74,138,0.06)", border:"1px solid rgba(26,74,138,0.15)", fontSize:"12px", color:C.green, marginBottom:"5px", lineHeight:1.5}}>
+                                <div style={{padding:"6px 10px", borderRadius:"8px", background:"rgba(27,94,43,0.06)", border:"1px solid rgba(27,94,43,0.15)", fontSize:"12px", color:C.green, marginBottom:"5px", lineHeight:1.5}}>
                                   <span style={{fontWeight:700}}>🧬 Tear: </span>{wordTranslation.chunk_tear}
                                 </div>
                               )}
-                              {wordTranslation.exemplo_uso && <div style={{fontSize:"12px", color:"#8A9AB8", fontStyle:"italic"}}>"{wordTranslation.exemplo_uso}"</div>}
+                              {wordTranslation.exemplo_uso && <div style={{fontSize:"12px", color:"#6B7280", fontStyle:"italic"}}>"{wordTranslation.exemplo_uso}"</div>}
                             </div>
                             <div style={{display:"flex", flexDirection:"column" as const, gap:"6px"}}>
                               <button onClick={()=>salvarPalavraComNexo({palavra:selWord, traducao_pt:wordTranslation.traducao_pt, fonetica:wordTranslation.fonetica})}
                                 disabled={savedWords.has(selWord)||savingWord===selWord}
-                                style={{padding:"7px 14px", borderRadius:"10px", border:"none", background:savedWords.has(selWord)?"rgba(42,154,96,0.10)":"linear-gradient(135deg,#E07820,#F09030)", color:savedWords.has(selWord)?"#2A9A60":"#fff", fontSize:"13px", fontWeight:800, cursor:savedWords.has(selWord)?"default":"pointer", fontFamily:"Inter, -apple-system, sans-serif", whiteSpace:"nowrap" as const}}>
+                                style={{padding:"7px 14px", borderRadius:"10px", border:"none", background:savedWords.has(selWord)?"rgba(27,94,43,0.10)":"linear-gradient(135deg,#E07820,#F09030)", color:savedWords.has(selWord)?"#1B5E2B":"#fff", fontSize:"13px", fontWeight:800, cursor:savedWords.has(selWord)?"default":"pointer", fontFamily:"Inter, -apple-system, sans-serif", whiteSpace:"nowrap" as const}}>
                                 {savingWord===selWord?"...":savedWords.has(selWord)?"✓ Salvo":"+ Nexo"}
                               </button>
                               <button onClick={()=>{setSelWord(null);setWordTranslation(null);}}
                                 style={{padding:"4px", border:"none", background:"none", color:"#AEAEB2", fontSize:"18px", cursor:"pointer", lineHeight:1}}>×</button>
                             </div>
                           </>
-                        : <div style={{fontSize:"14px", color:"#CC2A20"}}>Não foi possível traduzir.</div>
+                        : <div style={{fontSize:"14px", color:"#991B1B"}}>Não foi possível traduzir.</div>
                     }
                   </div>
                 )}
 
                 {/* Texto */}
-                <div style={{background:"#fff", borderRadius:"6px", padding:"24px", marginBottom:"12px", boxShadow:"0 2px 12px rgba(26,74,138,0.07)"}}>
-                  <div style={{fontSize:"12px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"16px"}}>
+                <div style={{background:"#fff", borderRadius:"6px", padding:"24px", marginBottom:"12px", boxShadow:"0 2px 12px rgba(27,94,43,0.07)"}}>
+                  <div style={{fontSize:"12px", fontWeight:700, color:"#6B7280", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"16px"}}>
                     Toque em qualquer palavra para traduzir
                   </div>
                   {textoAtual && renderTexto(textoAtual?.texto, textoAtual)}
@@ -1909,20 +1909,20 @@ function HistoriasTab({ profile, cards, onAddCard }: {
 
                 {/* Glossário */}
                 {(textoAtual?.palavras_chave||[]).length>0 && (
-                  <div style={{background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"12px", boxShadow:"0 2px 12px rgba(26,74,138,0.07)"}}>
-                    <div style={{fontSize:"13px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"14px"}}>Glossário da história</div>
+                  <div style={{background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"12px", boxShadow:"0 2px 12px rgba(27,94,43,0.07)"}}>
+                    <div style={{fontSize:"13px", fontWeight:700, color:"#6B7280", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"14px"}}>Glossário da história</div>
                     <div style={{display:"flex", flexDirection:"column" as const, gap:"8px"}}>
                       {(textoAtual?.palavras_chave||[]).map((p,i)=>{
                         const saved=savedWords.has(p.palavra);
                         return(
-                          <div key={i} style={{display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", borderRadius:"12px", background:saved?"rgba(42,154,96,0.06)":"#F7F8FC", border:`1px solid ${saved?"rgba(42,154,96,0.20)":"rgba(0,0,0,0.07)"}`}}>
+                          <div key={i} style={{display:"flex", alignItems:"center", justifyContent:"space-between", padding:"10px 14px", borderRadius:"12px", background:saved?"rgba(27,94,43,0.06)":"#F7F8FC", border:`1px solid ${saved?"rgba(27,94,43,0.20)":"rgba(0,0,0,0.07)"}`}}>
                             <div style={{display:"flex", alignItems:"baseline", gap:"8px", flexWrap:"wrap" as const}}>
                               <span style={{fontSize:"15px", fontWeight:800, color:"#B05A10", fontFamily:"Inter, -apple-system, sans-serif"}}>{p.palavra}</span>
-                              <span style={{fontSize:"11px", color:"#8A9AB8", fontStyle:"italic"}}>{p.fonetica}</span>
-                              <span style={{fontSize:"14px", color:"#5A6A80"}}>→ {p.traducao_pt}</span>
+                              <span style={{fontSize:"11px", color:"#6B7280", fontStyle:"italic"}}>{p.fonetica}</span>
+                              <span style={{fontSize:"14px", color:"#6B7280"}}>→ {p.traducao_pt}</span>
                             </div>
                             <button onClick={()=>salvarPalavraComNexo(p)} disabled={saved||savingWord===p.palavra}
-                              style={{padding:"5px 12px", borderRadius:"8px", border:"none", background:saved?"rgba(42,154,96,0.12)":"rgba(26,74,138,0.08)", color:saved?"#2A9A60":"#1A4A8A", fontSize:"12px", fontWeight:700, cursor:saved?"default":"pointer", fontFamily:"Inter, -apple-system, sans-serif", flexShrink:0}}>
+                              style={{padding:"5px 12px", borderRadius:"8px", border:"none", background:saved?"rgba(27,94,43,0.12)":"rgba(27,94,43,0.08)", color:saved?"#1B5E2B":"#1B5E2B", fontSize:"12px", fontWeight:700, cursor:saved?"default":"pointer", fontFamily:"Inter, -apple-system, sans-serif", flexShrink:0}}>
                               {savingWord===p.palavra?"...":saved?"✓":"+ Nexo"}
                             </button>
                           </div>
@@ -1939,21 +1939,21 @@ function HistoriasTab({ profile, cards, onAddCard }: {
                       Testar compreensão →
                     </button>
                   : (
-                    <div style={{background:"#fff", borderRadius:"6px", padding:"22px", boxShadow:"0 2px 12px rgba(26,74,138,0.07)"}}>
-                      <div style={{fontSize:"13px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"16px"}}>Perguntas de compreensão</div>
+                    <div style={{background:"#fff", borderRadius:"6px", padding:"22px", boxShadow:"0 2px 12px rgba(27,94,43,0.07)"}}>
+                      <div style={{fontSize:"13px", fontWeight:700, color:"#6B7280", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"16px"}}>Perguntas de compreensão</div>
                       <div style={{display:"flex", flexDirection:"column" as const, gap:"20px"}}>
                         {(textoAtual.perguntas||[]).map((q,qi)=>(
                           <div key={qi}>
-                            <div style={{fontSize:"15px", fontWeight:700, color:"#1A2A40", marginBottom:"10px", fontFamily:"Inter, -apple-system, sans-serif"}}>{qi+1}. {q.pergunta}</div>
+                            <div style={{fontSize:"15px", fontWeight:700, color:"#111827", marginBottom:"10px", fontFamily:"Inter, -apple-system, sans-serif"}}>{qi+1}. {q.pergunta}</div>
                             <div style={{display:"flex", flexDirection:"column" as const, gap:"7px"}}>
                               {(q.opcoes||[]).map((op,oi)=>{
                                 const answered=quizAnswers[qi]!==null;
                                 const isSelected=quizAnswers[qi]===oi;
                                 const isCorrect=oi===q.correta;
-                                let bg="#F7F8FC", border="1px solid rgba(0,0,0,0.08)", color="#1A2A40";
+                                let bg="#F7F8FC", border="1px solid rgba(0,0,0,0.08)", color="#111827";
                                 if(answered){
-                                  if(isCorrect){bg="rgba(42,154,96,0.08)";border="1.5px solid #2A9A60";color="#2A9A60";}
-                                  else if(isSelected){bg="rgba(204,42,32,0.08)";border="1.5px solid #CC2A20";color="#CC2A20";}
+                                  if(isCorrect){bg="rgba(27,94,43,0.08)";border="1.5px solid #1B5E2B";color="#1B5E2B";}
+                                  else if(isSelected){bg="rgba(204,42,32,0.08)";border="1.5px solid #991B1B";color="#991B1B";}
                                 }
                                 return(
                                   <button key={oi} disabled={answered} onClick={()=>handleQuizAnswer(qi,oi)}
@@ -1967,11 +1967,11 @@ function HistoriasTab({ profile, cards, onAddCard }: {
                         ))}
                       </div>
                       {quizDone && (
-                        <div style={{marginTop:"20px", padding:"16px 20px", borderRadius:"6px", background:acertos===3?"rgba(42,154,96,0.08)":acertos>=2?"rgba(224,120,32,0.08)":"rgba(26,74,138,0.08)", border:`1.5px solid ${acertos===3?"rgba(42,154,96,0.25)":acertos>=2?"rgba(224,120,32,0.25)":"rgba(26,74,138,0.20)"}`, textAlign:"center" as const}}>
-                          <div style={{fontSize:"28px", fontWeight:800, color:acertos===3?"#2A9A60":acertos>=2?"#C06010":"#1A4A8A", fontFamily:"Inter, -apple-system, sans-serif"}}>
+                        <div style={{marginTop:"20px", padding:"16px 20px", borderRadius:"6px", background:acertos===3?"rgba(27,94,43,0.08)":acertos>=2?"rgba(245,200,0,0.12)":"rgba(27,94,43,0.08)", border:`1.5px solid ${acertos===3?"rgba(27,94,43,0.25)":acertos>=2?"rgba(224,120,32,0.25)":"rgba(27,94,43,0.20)"}`, textAlign:"center" as const}}>
+                          <div style={{fontSize:"28px", fontWeight:800, color:acertos===3?"#1B5E2B":acertos>=2?"#C06010":"#1B5E2B", fontFamily:"Inter, -apple-system, sans-serif"}}>
                             {acertos}/3 {acertos===3?"🎉":acertos>=2?"👍":"💪"}
                           </div>
-                          <div style={{fontSize:"14px", color:"#5A6A80", marginTop:"4px"}}>{acertos===3?"Perfeito!":acertos>=2?"Muito bem!":"Continue praticando!"}</div>
+                          <div style={{fontSize:"14px", color:"#6B7280", marginTop:"4px"}}>{acertos===3?"Perfeito!":acertos>=2?"Muito bem!":"Continue praticando!"}</div>
                           <button onClick={gerarHistoria}
                             style={{marginTop:"14px", padding:"10px 24px", borderRadius:"12px", border:"none", background:C.green, color:"#fff", fontSize:"14px", fontWeight:800, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif"}}>
                             Nova história
@@ -1986,9 +1986,9 @@ function HistoriasTab({ profile, cards, onAddCard }: {
 
             {/* Estado vazio */}
             {!textoAtual && !loading && (
-              <div style={{textAlign:"center", padding:"48px 24px", color:"#8A9AB8"}}>
+              <div style={{textAlign:"center", padding:"48px 24px", color:"#6B7280"}}>
                 <div style={{fontSize:"48px", marginBottom:"12px"}}>📖</div>
-                <div style={{fontSize:"16px", fontWeight:700, color:"#5A6A80", fontFamily:"Inter, -apple-system, sans-serif", marginBottom:"6px"}}>Pronto para ler?</div>
+                <div style={{fontSize:"16px", fontWeight:700, color:"#6B7280", fontFamily:"Inter, -apple-system, sans-serif", marginBottom:"6px"}}>Pronto para ler?</div>
                 <div style={{fontSize:"14px", lineHeight:1.5}}>Escolha a língua e o nível acima,<br/>e o Chico cria uma história só para você.</div>
               </div>
             )}
@@ -2002,11 +2002,11 @@ function HistoriasTab({ profile, cards, onAddCard }: {
               ? (
                 <>
                   <button onClick={()=>setHistoriaSelecionada(null)}
-                    style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 14px", borderRadius:"10px", border:"1px solid rgba(0,0,0,0.09)", background:"#fff", color:"#5A6A80", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", marginBottom:"14px"}}>
+                    style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 14px", borderRadius:"10px", border:"1px solid rgba(0,0,0,0.09)", background:"#fff", color:"#6B7280", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", marginBottom:"14px"}}>
                     ← Voltar
                   </button>
                   {/* Reutiliza a renderização da história */}
-                  <div style={{background:C.green, borderRadius:"6px", padding:"22px 24px", marginBottom:"12px", boxShadow:"0 4px 20px rgba(26,74,138,0.25)"}}>
+                  <div style={{background:C.green, borderRadius:"6px", padding:"22px 24px", marginBottom:"12px", boxShadow:"0 4px 20px rgba(27,94,43,0.25)"}}>
                     <div style={{display:"flex", gap:"8px", marginBottom:"10px"}}>
                       <span style={{padding:"4px 12px", borderRadius:"8px", background:"rgba(255,255,255,0.15)", fontSize:"12px", fontWeight:700, color:"#fff"}}>{historiaSelecionada.lingua}</span>
                       <span style={{padding:"4px 12px", borderRadius:"8px", background:"rgba(255,255,255,0.12)", fontSize:"12px", fontWeight:700, color:"rgba(255,255,255,0.85)", textTransform:"capitalize" as const}}>{historiaSelecionada.nivel}</span>
@@ -2016,28 +2016,28 @@ function HistoriasTab({ profile, cards, onAddCard }: {
                   </div>
                   <div style={{display:"flex", gap:"8px", marginBottom:"12px"}}>
                     <button onClick={toggleAudio}
-                      style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 16px", borderRadius:"10px", border:"none", background:playing?"rgba(204,42,32,0.09)":"rgba(26,74,138,0.08)", color:playing?"#CC2A20":"#1A4A8A", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif"}}>
+                      style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 16px", borderRadius:"10px", border:"none", background:playing?"rgba(204,42,32,0.09)":"rgba(27,94,43,0.08)", color:playing?"#991B1B":"#1B5E2B", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif"}}>
                       {playing ? "⏸ Pausar" : "▶ Ouvir"}
                     </button>
                     <button onClick={ativarParalelo} disabled={loadingParalelo}
-                      style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 16px", borderRadius:"10px", border:"none", background:paralelo?"rgba(94,92,230,0.12)":"rgba(0,0,0,0.06)", color:paralelo?"#5E5CE6":"#5A6A80", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif"}}>
+                      style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 16px", borderRadius:"10px", border:"none", background:paralelo?"rgba(94,92,230,0.12)":"rgba(0,0,0,0.06)", color:paralelo?"#5E5CE6":"#6B7280", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif"}}>
                       {loadingParalelo?"Traduzindo...":paralelo?"🇧🇷 Ocultar PT":"🇧🇷 Ler em PT"}
                     </button>
                   </div>
                   {selWord && (
-                    <div style={{background:"#fff", borderRadius:"6px", padding:"14px 16px", marginBottom:"12px", border:"1.5px solid rgba(26,74,138,0.15)", animation:"fadeIn 0.2s ease forwards"}}>
+                    <div style={{background:"#fff", borderRadius:"6px", padding:"14px 16px", marginBottom:"12px", border:"1.5px solid rgba(27,94,43,0.15)", animation:"fadeIn 0.2s ease forwards"}}>
                       {translating
-                        ? <div style={{fontSize:"14px", color:"#8A9AB8"}}>Traduzindo "{selWord}"...</div>
+                        ? <div style={{fontSize:"14px", color:"#6B7280"}}>Traduzindo "{selWord}"...</div>
                         : wordTranslation
                           ? <div style={{display:"flex", alignItems:"center", gap:"14px"}}>
                               <div style={{flex:1}}>
                                 <div style={{fontSize:"18px", fontWeight:800, color:C.green, fontFamily:"Inter, -apple-system, sans-serif"}}>{selWord}</div>
-                                <div style={{fontSize:"11px", color:"#8A9AB8", fontStyle:"italic"}}>{wordTranslation.fonetica} · {wordTranslation.classe}</div>
+                                <div style={{fontSize:"11px", color:"#6B7280", fontStyle:"italic"}}>{wordTranslation.fonetica} · {wordTranslation.classe}</div>
                                 <div style={{fontSize:"15px", fontWeight:700}}>{wordTranslation.traducao_pt}</div>
                               </div>
                               <button onClick={()=>salvarPalavraComNexo({palavra:selWord, traducao_pt:wordTranslation.traducao_pt, fonetica:wordTranslation.fonetica})}
                                 disabled={savedWords.has(selWord)||savingWord===selWord}
-                                style={{padding:"7px 14px", borderRadius:"10px", border:"none", background:savedWords.has(selWord)?"rgba(42,154,96,0.10)":"linear-gradient(135deg,#E07820,#F09030)", color:savedWords.has(selWord)?"#2A9A60":"#fff", fontSize:"13px", fontWeight:800, cursor:savedWords.has(selWord)?"default":"pointer", fontFamily:"Inter, -apple-system, sans-serif"}}>
+                                style={{padding:"7px 14px", borderRadius:"10px", border:"none", background:savedWords.has(selWord)?"rgba(27,94,43,0.10)":"linear-gradient(135deg,#E07820,#F09030)", color:savedWords.has(selWord)?"#1B5E2B":"#fff", fontSize:"13px", fontWeight:800, cursor:savedWords.has(selWord)?"default":"pointer", fontFamily:"Inter, -apple-system, sans-serif"}}>
                                 {savedWords.has(selWord)?"✓ Salvo":"+ Nexo"}
                               </button>
                             </div>
@@ -2045,35 +2045,35 @@ function HistoriasTab({ profile, cards, onAddCard }: {
                       }
                     </div>
                   )}
-                  <div style={{background:"#fff", borderRadius:"6px", padding:"24px", boxShadow:"0 2px 12px rgba(26,74,138,0.07)"}}>
+                  <div style={{background:"#fff", borderRadius:"6px", padding:"24px", boxShadow:"0 2px 12px rgba(27,94,43,0.07)"}}>
                     {renderTexto(historiaSelecionada.texto, historiaSelecionada)}
                   </div>
                 </>
               )
               : historiasSalvas.length===0
                 ? (
-                  <div style={{textAlign:"center", padding:"48px 24px", color:"#8A9AB8"}}>
+                  <div style={{textAlign:"center", padding:"48px 24px", color:"#6B7280"}}>
                     <div style={{fontSize:"48px", marginBottom:"12px"}}>🔖</div>
-                    <div style={{fontSize:"16px", fontWeight:700, color:"#5A6A80", fontFamily:"Inter, -apple-system, sans-serif", marginBottom:"6px"}}>Nenhuma história salva</div>
+                    <div style={{fontSize:"16px", fontWeight:700, color:"#6B7280", fontFamily:"Inter, -apple-system, sans-serif", marginBottom:"6px"}}>Nenhuma história salva</div>
                     <div style={{fontSize:"14px"}}>Gere uma história e clique em "Salvar história" para guardar aqui.</div>
                   </div>
                 )
                 : (
                   <div style={{display:"flex", flexDirection:"column" as const, gap:"10px"}}>
                     {historiasSalvas.map(h=>(
-                      <div key={h.id} style={{background:"#fff", borderRadius:"6px", padding:"16px 18px", boxShadow:"0 2px 8px rgba(26,74,138,0.06)", display:"flex", alignItems:"center", gap:"14px", cursor:"pointer"}}
+                      <div key={h.id} style={{background:"#fff", borderRadius:"6px", padding:"16px 18px", boxShadow:"0 2px 8px rgba(27,94,43,0.06)", display:"flex", alignItems:"center", gap:"14px", cursor:"pointer"}}
                         onClick={()=>{ marcarLida(h.id); setHistoriaSelecionada(h); setSelWord(null); setWordTranslation(null); setParalelo(false); setParagrafosPt([]); setPlaying(false); synth?.cancel(); }}>
                         <div style={{flex:1, minWidth:0}}>
                           <div style={{display:"flex", alignItems:"center", gap:"8px", marginBottom:"4px"}}>
                             <span style={{padding:"2px 8px", borderRadius:"8px", background:C.greenLt, color:C.green, fontSize:"11px", fontWeight:700}}>{h.lingua}</span>
-                            <span style={{padding:"2px 8px", borderRadius:"8px", background:`${nivelCores[h.nivel]?.bg??"rgba(0,0,0,0.05)"}`, color:`${nivelCores[h.nivel]?.color??"#5A6A80"}`, fontSize:"11px", fontWeight:700, textTransform:"capitalize" as const}}>{h.nivel}</span>
-                            {!h.lida && <span style={{padding:"2px 8px", borderRadius:"8px", background:"rgba(224,120,32,0.10)", color:"#C06010", fontSize:"11px", fontWeight:700}}>Nova</span>}
+                            <span style={{padding:"2px 8px", borderRadius:"8px", background:`${nivelCores[h.nivel]?.bg??"rgba(0,0,0,0.05)"}`, color:`${nivelCores[h.nivel]?.color??"#6B7280"}`, fontSize:"11px", fontWeight:700, textTransform:"capitalize" as const}}>{h.nivel}</span>
+                            {!h.lida && <span style={{padding:"2px 8px", borderRadius:"8px", background:"rgba(245,200,0,0.15)", color:"#C06010", fontSize:"11px", fontWeight:700}}>Nova</span>}
                           </div>
-                          <div style={{fontSize:"16px", fontWeight:800, color:"#1A2A40", fontFamily:"Inter, -apple-system, sans-serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{h.titulo}</div>
-                          <div style={{fontSize:"13px", color:"#8A9AB8", marginTop:"2px"}}>{h.titulo_pt} · {h.salva_em}</div>
+                          <div style={{fontSize:"16px", fontWeight:800, color:"#111827", fontFamily:"Inter, -apple-system, sans-serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap"}}>{h.titulo}</div>
+                          <div style={{fontSize:"13px", color:"#6B7280", marginTop:"2px"}}>{h.titulo_pt} · {h.salva_em}</div>
                         </div>
                         <button onClick={e=>{e.stopPropagation(); excluirHistoria(h.id);}}
-                          style={{width:30, height:30, borderRadius:"8px", border:"none", background:"rgba(204,42,32,0.07)", color:"#CC2A20", fontSize:"16px", cursor:"pointer", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center"}}>
+                          style={{width:30, height:30, borderRadius:"8px", border:"none", background:"rgba(204,42,32,0.07)", color:"#991B1B", fontSize:"16px", cursor:"pointer", flexShrink:0, display:"flex", alignItems:"center", justifyContent:"center"}}>
                           ×
                         </button>
                       </div>
@@ -2127,13 +2127,13 @@ function MusicaTab({ profile }: { profile: UserProfile | null }) {
 
       <input value={artista} onChange={e=>setArtista(e.target.value)} placeholder="Artista ou banda (opcional)"
         style={{ width:"100%", padding:"10px 12px", borderRadius:"10px", border:"1.5px solid rgba(0,0,0,0.10)", fontSize:"14px", color:"#1D1D1F", fontFamily:"Inter, -apple-system, sans-serif", background:"#fff", outline:"none", boxSizing:"border-box" as const }}
-        onFocus={e=>(e.target.style.borderColor="#1A4A8A")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
+        onFocus={e=>(e.target.style.borderColor="#1B5E2B")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
 
       <textarea value={letra} onChange={e=>setLetra(e.target.value)}
         placeholder="Cole aqui os versos da música... Ex: La vie en rose / Des yeux qui font baisser les miens"
         rows={7}
         style={{ width:"100%", padding:"13px", borderRadius:"6px", border:"1.5px solid rgba(0,0,0,0.10)", fontSize:"14px", lineHeight:"1.7", color:"#1D1D1F", fontFamily:"Inter, -apple-system, sans-serif", background:"#fff", resize:"vertical" as const, outline:"none", boxSizing:"border-box" as const }}
-        onFocus={e=>(e.target.style.borderColor="#1A4A8A")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
+        onFocus={e=>(e.target.style.borderColor="#1B5E2B")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.10)")}/>
 
       <button onClick={handleAnalisar} disabled={!letra.trim()||loading}
         style={{ padding:"13px", borderRadius:"12px", border:"none", background:!letra.trim()||loading?"rgba(0,0,0,0.08)":"linear-gradient(135deg,#0071E3,#0077ED)", color:!letra.trim()||loading?"#86868B":"#fff", fontSize:"14px", fontWeight:600, cursor:!letra.trim()||loading?"not-allowed":"pointer", fontFamily:"Inter, -apple-system, sans-serif", boxShadow:!letra.trim()||loading?"none":"0 2px 10px rgba(0,113,227,0.25)" }}>
@@ -2148,7 +2148,7 @@ function MusicaTab({ profile }: { profile: UserProfile | null }) {
               {artista && <div style={{ fontSize:"11px", color:"#86868B", marginTop:"1px" }}>{artista}</div>}
             </div>
             <button onClick={()=>{ navigator.clipboard.writeText(resultado); setCopied(true); setTimeout(()=>setCopied(false),2000); }}
-              style={{ display:"flex", alignItems:"center", gap:"5px", padding:"4px 10px", borderRadius:"8px", border:"1px solid rgba(0,0,0,0.10)", background:copied?"rgba(52,199,89,0.08)":"transparent", color:copied?"#34C759":"#86868B", fontSize:"12px", cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
+              style={{ display:"flex", alignItems:"center", gap:"5px", padding:"4px 10px", borderRadius:"8px", border:"1px solid rgba(0,0,0,0.10)", background:copied?"rgba(52,199,89,0.08)":"transparent", color:copied?"#2E7D45":"#86868B", fontSize:"12px", cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
               <Icon.Copy/>{copied?"Copiado!":"Copiar"}
             </button>
           </div>
@@ -2253,7 +2253,7 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
       <div style={{ maxWidth:"560px", margin:"0 auto", padding:"24px 20px 40px" }}>
 
         {/* ── Cabeçalho perfil ── */}
-        <div style={{ background:"#fff", borderRadius:"8px", padding:"24px", marginBottom:"16px", boxShadow:"0 2px 12px rgba(26,74,138,0.07)", display:"flex", alignItems:"center", gap:"18px" }}>
+        <div style={{ background:"#fff", borderRadius:"8px", padding:"24px", marginBottom:"16px", boxShadow:"0 2px 12px rgba(27,94,43,0.07)", display:"flex", alignItems:"center", gap:"18px" }}>
           {profile?.avatar_url
             ? <img src={profile.avatar_url} alt="" style={{ width:64, height:64, borderRadius:"50%", objectFit:"cover", border:"3px solid #E8F0FC" }}/>
             : <div style={{ width:64, height:64, borderRadius:"50%", background:C.green, display:"flex", alignItems:"center", justifyContent:"center", fontSize:"26px", fontWeight:800, color:"#fff", flexShrink:0, fontFamily:"Inter, -apple-system, sans-serif" }}>
@@ -2261,18 +2261,18 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
               </div>
           }
           <div style={{ flex:1, minWidth:0 }}>
-            <div style={{ fontSize:"20px", fontWeight:800, color:"#1A2A40", fontFamily:"Inter, -apple-system, sans-serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
+            <div style={{ fontSize:"20px", fontWeight:800, color:"#111827", fontFamily:"Inter, -apple-system, sans-serif", overflow:"hidden", textOverflow:"ellipsis", whiteSpace:"nowrap" }}>
               {nome||profile?.display_name}
             </div>
-            <div style={{ fontSize:"13px", color:"#8A9AB8", marginTop:"2px" }}>
+            <div style={{ fontSize:"13px", color:"#6B7280", marginTop:"2px" }}>
               {interesses.slice(0,3).join(" · ")||"Adicione seus interesses abaixo"}
             </div>
             {/* Stats inline */}
             <div style={{ display:"flex", gap:"16px", marginTop:"10px" }}>
-              {[{v:total,l:"nexos",c:"#1A4A8A"},{v:streak,l:"dias",c:"#E07820"},{v:total*3,l:"traduções",c:"#2A9A60"}].map((s: any) =>(
+              {[{v:total,l:"nexos",c:"#1B5E2B"},{v:streak,l:"dias",c:"#E07820"},{v:total*3,l:"traduções",c:"#1B5E2B"}].map((s: any) =>(
                 <div key={s.l}>
                   <span style={{ fontSize:"18px", fontWeight:800, color:s.c, fontFamily:"Inter, -apple-system, sans-serif" }}>{s.v}</span>
-                  <span style={{ fontSize:"12px", color:"#8A9AB8", marginLeft:"4px", fontWeight:500 }}>{s.l}</span>
+                  <span style={{ fontSize:"12px", color:"#6B7280", marginLeft:"4px", fontWeight:500 }}>{s.l}</span>
                 </div>
               ))}
             </div>
@@ -2280,24 +2280,24 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
         </div>
 
         {/* ── Nome ── */}
-        <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"12px", boxShadow:"0 1px 6px rgba(26,74,138,0.05)" }}>
-          <div style={{ fontSize:"12px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"10px" }}>Nome</div>
+        <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"12px", boxShadow:"0 1px 6px rgba(27,94,43,0.05)" }}>
+          <div style={{ fontSize:"12px", fontWeight:700, color:"#6B7280", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"10px" }}>Nome</div>
           <input value={nome} onChange={e=>setNome(e.target.value)} placeholder="Seu nome"
-            style={{ width:"100%", padding:"12px 14px", borderRadius:"12px", border:"2px solid rgba(0,0,0,0.09)", fontSize:"15px", fontWeight:600, color:"#1A2A40", fontFamily:"Inter, -apple-system, sans-serif", background:"#F8F9FF", boxSizing:"border-box" as const, outline:"none", transition:"border-color 0.2s" }}
-            onFocus={e=>(e.target.style.borderColor="#1A4A8A")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.09)")}/>
+            style={{ width:"100%", padding:"12px 14px", borderRadius:"12px", border:"2px solid rgba(0,0,0,0.09)", fontSize:"15px", fontWeight:600, color:"#111827", fontFamily:"Inter, -apple-system, sans-serif", background:"#F8F9FF", boxSizing:"border-box" as const, outline:"none", transition:"border-color 0.2s" }}
+            onFocus={e=>(e.target.style.borderColor="#1B5E2B")} onBlur={e=>(e.target.style.borderColor="rgba(0,0,0,0.09)")}/>
         </div>
 
         {/* ── Troncos ── */}
-        <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"12px", boxShadow:"0 1px 6px rgba(26,74,138,0.05)" }}>
-          <div style={{ fontSize:"12px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"12px" }}>Troncos linguísticos</div>
+        <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"12px", boxShadow:"0 1px 6px rgba(27,94,43,0.05)" }}>
+          <div style={{ fontSize:"12px", fontWeight:700, color:"#6B7280", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"12px" }}>Troncos linguísticos</div>
           <div style={{ display:"flex", flexDirection:"column" as const, gap:"10px" }}>
             {TC.map(t=>{ const sel=troncos.includes(t.id); return (
               <button key={t.id} onClick={()=>toggleTronco(t.id)}
                 style={{ width:"100%", padding:"14px 16px", borderRadius:"6px", border:`2px solid ${sel?t.color:t.border}`, background:sel?t.bg:"#FAFBFF", cursor:"pointer", textAlign:"left" as const, fontFamily:"Inter, -apple-system, sans-serif", transition:"all 0.2s", display:"flex", alignItems:"center", gap:"14px", boxShadow:sel?`0 2px 10px ${t.color}20`:"none" }}>
                 <div style={{ fontSize:"22px", letterSpacing:"2px", flexShrink:0 }}>{t.flags}</div>
                 <div style={{ flex:1 }}>
-                  <div style={{ fontSize:"14px", fontWeight:800, color:sel?t.color:"#1A2A40", fontFamily:"Inter, -apple-system, sans-serif" }}>{t.label}</div>
-                  <div style={{ fontSize:"12px", color:sel?t.color:"#8A9AB8", marginTop:"1px", fontWeight:600 }}>{t.desc}</div>
+                  <div style={{ fontSize:"14px", fontWeight:800, color:sel?t.color:"#111827", fontFamily:"Inter, -apple-system, sans-serif" }}>{t.label}</div>
+                  <div style={{ fontSize:"12px", color:sel?t.color:"#6B7280", marginTop:"1px", fontWeight:600 }}>{t.desc}</div>
                 </div>
                 <div style={{ width:22, height:22, borderRadius:"7px", border:`2px solid ${sel?t.color:"rgba(0,0,0,0.15)"}`, background:sel?t.color:"transparent", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0, transition:"all 0.2s" }}>
                   {sel&&<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>}
@@ -2308,15 +2308,15 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
         </div>
 
         {/* ── Interesses ── */}
-        <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"12px", boxShadow:"0 1px 6px rgba(26,74,138,0.05)" }}>
+        <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", marginBottom:"12px", boxShadow:"0 1px 6px rgba(27,94,43,0.05)" }}>
           <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginBottom:"12px" }}>
-            <div style={{ fontSize:"12px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const }}>Interesses</div>
+            <div style={{ fontSize:"12px", fontWeight:700, color:"#6B7280", letterSpacing:"0.06em", textTransform:"uppercase" as const }}>Interesses</div>
             {interesses.length>0&&<button onClick={()=>setInteresses([])} style={{ background:"none", border:"none", color:"#AEAEB2", fontSize:"12px", cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>Limpar</button>}
           </div>
           <div style={{ display:"flex", flexWrap:"wrap" as const, gap:"8px" }}>
             {INTERESSES_ALL.map(item=>{ const sel=interesses.includes(item.id); return (
               <button key={item.id} onClick={()=>toggleInteresse(item.id)}
-                style={{ padding:"8px 14px", borderRadius:"8px", border:`2px solid ${sel?"#1A4A8A":"rgba(0,0,0,0.09)"}`, background:sel?"rgba(26,74,138,0.08)":"#F8F9FF", color:sel?"#1A4A8A":"#4A5A7A", fontSize:"14px", fontWeight:sel?700:500, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", transition:"all 0.15s", display:"flex", alignItems:"center", gap:"5px", boxShadow:sel?"0 2px 8px rgba(26,74,138,0.15)":"none" }}>
+                style={{ padding:"8px 14px", borderRadius:"8px", border:`2px solid ${sel?"#1B5E2B":"rgba(0,0,0,0.09)"}`, background:sel?"rgba(27,94,43,0.08)":"#F8F9FF", color:sel?"#1B5E2B":"#4A5A7A", fontSize:"14px", fontWeight:sel?700:500, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", transition:"all 0.15s", display:"flex", alignItems:"center", gap:"5px", boxShadow:sel?"0 2px 8px rgba(27,94,43,0.15)":"none" }}>
                 <span style={{ fontSize:"15px" }}>{item.emoji}</span>{item.id}
               </button>
             );})}
@@ -2325,31 +2325,31 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
 
         {/* ── Salvar ── */}
         <button onClick={handleSave} disabled={troncos.length===0||saving}
-          style={{ width:"100%", padding:"15px", borderRadius:"6px", border:"none", background:troncos.length===0||saving?"rgba(0,0,0,0.08)":saved?"rgba(42,154,96,0.15)":"linear-gradient(135deg,#1A4A8A,#2A6ACC)", color:troncos.length===0||saving?"#AEAEB2":saved?"#2A9A60":"#fff", fontSize:"16px", fontWeight:800, cursor:troncos.length===0||saving?"not-allowed":"pointer", fontFamily:"Inter, -apple-system, sans-serif", transition:"all 0.3s", boxShadow:saved||troncos.length===0||saving?"none":"0 3px 14px rgba(26,74,138,0.28)", marginBottom:"16px", letterSpacing:"-0.01em" }}>
+          style={{ width:"100%", padding:"15px", borderRadius:"6px", border:"none", background:troncos.length===0||saving?"rgba(0,0,0,0.08)":saved?"rgba(27,94,43,0.15)":"linear-gradient(135deg,#1B5E2B,#2E7D45)", color:troncos.length===0||saving?"#AEAEB2":saved?"#1B5E2B":"#fff", fontSize:"16px", fontWeight:800, cursor:troncos.length===0||saving?"not-allowed":"pointer", fontFamily:"Inter, -apple-system, sans-serif", transition:"all 0.3s", boxShadow:saved||troncos.length===0||saving?"none":"0 3px 14px rgba(27,94,43,0.28)", marginBottom:"16px", letterSpacing:"-0.01em" }}>
           {saving?"Salvando...":saved?"✓ Salvo!":"Salvar alterações"}
         </button>
 
         {/* ── Conta ── */}
-        <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", boxShadow:"0 1px 6px rgba(26,74,138,0.05)" }}>
-          <div style={{ fontSize:"12px", fontWeight:700, color:"#8A9AB8", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"14px" }}>Conta</div>
+        <div style={{ background:"#fff", borderRadius:"6px", padding:"20px", boxShadow:"0 1px 6px rgba(27,94,43,0.05)" }}>
+          <div style={{ fontSize:"12px", fontWeight:700, color:"#6B7280", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"14px" }}>Conta</div>
           <div style={{ display:"flex", flexDirection:"column" as const, gap:"10px" }}>
             {!resetSent
               ? <button onClick={handleResetPassword} disabled={sendingReset}
                   style={{ width:"100%", padding:"13px", borderRadius:"12px", border:"1.5px solid rgba(0,0,0,0.09)", background:"#F8F9FF", color:"#3A4A6A", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
                   🔑 {sendingReset?"Enviando...":"Redefinir senha por email"}
                 </button>
-              : <div style={{ padding:"12px 14px", borderRadius:"12px", background:"rgba(42,154,96,0.08)", border:"1px solid rgba(42,154,96,0.20)", fontSize:"14px", color:"#2A9A60", fontWeight:600 }}>
+              : <div style={{ padding:"12px 14px", borderRadius:"12px", background:"rgba(27,94,43,0.08)", border:"1px solid rgba(27,94,43,0.20)", fontSize:"14px", color:"#1B5E2B", fontWeight:600 }}>
                   ✓ Link enviado! Verifique seu email.
                 </div>
             }
             {!confirmLogout
               ? <button onClick={()=>setConfirmLogout(true)}
-                  style={{ width:"100%", padding:"13px", borderRadius:"12px", border:"1.5px solid rgba(255,59,48,0.20)", background:"rgba(255,59,48,0.04)", color:"#CC2A20", fontSize:"14px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
+                  style={{ width:"100%", padding:"13px", borderRadius:"12px", border:"1.5px solid rgba(255,59,48,0.20)", background:"rgba(255,59,48,0.04)", color:"#991B1B", fontSize:"14px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
                   Sair da conta
                 </button>
               : <div style={{ display:"flex", gap:"8px" }}>
-                  <button onClick={()=>setConfirmLogout(false)} style={{ flex:1, padding:"12px", borderRadius:"12px", border:"1.5px solid rgba(0,0,0,0.10)", background:"transparent", color:"#8A9AB8", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>Cancelar</button>
-                  <button onClick={handleLogout} style={{ flex:1, padding:"12px", borderRadius:"12px", border:"none", background:"#CC2A20", color:"#fff", fontSize:"14px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>Confirmar saída</button>
+                  <button onClick={()=>setConfirmLogout(false)} style={{ flex:1, padding:"12px", borderRadius:"12px", border:"1.5px solid rgba(0,0,0,0.10)", background:"transparent", color:"#6B7280", fontSize:"14px", fontWeight:600, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>Cancelar</button>
+                  <button onClick={handleLogout} style={{ flex:1, padding:"12px", borderRadius:"12px", border:"none", background:"#991B1B", color:"#fff", fontSize:"14px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>Confirmar saída</button>
                 </div>
             }
             {!confirmDelete
@@ -2358,10 +2358,10 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
                   Apagar minha conta
                 </button>
               : <div style={{ padding:"14px", borderRadius:"12px", background:"rgba(204,42,32,0.05)", border:"1px solid rgba(204,42,32,0.18)" }}>
-                  <p style={{ margin:"0 0 10px", fontSize:"13px", color:"#CC2A20", fontWeight:700, lineHeight:1.4 }}>Isso apaga todos os seus nexos e dados. Sem volta.</p>
+                  <p style={{ margin:"0 0 10px", fontSize:"13px", color:"#991B1B", fontWeight:700, lineHeight:1.4 }}>Isso apaga todos os seus nexos e dados. Sem volta.</p>
                   <div style={{ display:"flex", gap:"8px" }}>
-                    <button onClick={()=>setConfirmDelete(false)} style={{ flex:1, padding:"10px", borderRadius:"10px", border:"1px solid rgba(0,0,0,0.10)", background:"transparent", color:"#8A9AB8", fontSize:"13px", cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>Cancelar</button>
-                    <button onClick={handleDeleteAccount} disabled={deletingAccount} style={{ flex:1, padding:"10px", borderRadius:"10px", border:"none", background:"#CC2A20", color:"#fff", fontSize:"13px", fontWeight:800, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
+                    <button onClick={()=>setConfirmDelete(false)} style={{ flex:1, padding:"10px", borderRadius:"10px", border:"1px solid rgba(0,0,0,0.10)", background:"transparent", color:"#6B7280", fontSize:"13px", cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>Cancelar</button>
+                    <button onClick={handleDeleteAccount} disabled={deletingAccount} style={{ flex:1, padding:"10px", borderRadius:"10px", border:"none", background:"#991B1B", color:"#fff", fontSize:"13px", fontWeight:800, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>
                       {deletingAccount?"Apagando...":"Sim, apagar tudo"}
                     </button>
                   </div>
@@ -2777,8 +2777,8 @@ function ChicoDashboard() {
             {/* Tronco badge */}
             {profile?.tronco && (
               <div style={{ padding:"12px 14px", borderRadius:"6px", background:profile.tronco==="românico"?"#FFF3EE":"#EEF3FF", border:`1px solid ${profile.tronco==="românico"?"#FFDDD0":"#C8D8F8"}` }}>
-                <div style={{ fontSize:"10px", fontWeight:700, color:profile.tronco==="românico"?"#C04018":"#1A4A8A", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"3px" }}>{troncoLabel}</div>
-                <div style={{ fontSize:"12px", color:profile.tronco==="românico"?"#C04018":"#1A4A8A", fontWeight:600, opacity:0.8 }}>
+                <div style={{ fontSize:"10px", fontWeight:700, color:profile.tronco==="românico"?"#C04018":"#1B5E2B", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"3px" }}>{troncoLabel}</div>
+                <div style={{ fontSize:"12px", color:profile.tronco==="românico"?"#C04018":"#1B5E2B", fontWeight:600, opacity:0.8 }}>
                   {profile.tronco==="românico"?"🇪🇸 🇫🇷 🇮🇹":"🇬🇧 🇩🇪 🇳🇱"}
                 </div>
               </div>
@@ -2797,7 +2797,7 @@ function ChicoDashboard() {
               <>
                 {/* Toolbar roteiro */}
                 <div style={{ padding:"8px 20px", background:"rgba(255,255,255,0.9)", backdropFilter:"blur(12px)", borderBottom:`1px solid ${C.border}`, display:"flex", alignItems:"center", gap:"8px", flexShrink:0 }}>
-                  {!showRoteiroInput ? (<><button onClick={()=>setShowRoteiroInput(true)} style={{ display:"flex", alignItems:"center", gap:"6px", padding:"6px 14px", borderRadius:"8px", border:`1.5px solid ${C.orange}`, background:C.orangeLight, color:C.orange, fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>Gerar roteiro</button><div style={{ display:"flex", alignItems:"center", gap:"6px" }}><button onClick={()=>{ setModoConversa(v=>!v); }} style={{ display:"flex", alignItems:"center", gap:"6px", padding:"6px 14px", borderRadius:"8px", border:`1.5px solid ${modoConversa?"rgba(42,154,96,0.40)":"rgba(0,0,0,0.10)"}`, background:modoConversa?"rgba(42,154,96,0.10)":"transparent", color:modoConversa?"#2A9A60":"#6A7A9A", fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>{modoConversa?"Conversa livre ON":"Conversa livre"}</button>{modoConversa&&profile&&(<div style={{ display:"flex", gap:"4px" }}>{(profile.tronco==="germânico"?["Inglês","Alemão","Holandês"]:["Espanhol","Francês","Italiano"]).map((l:string)=>(<button key={l} onClick={()=>setLinguaConversa(l)} style={{ padding:"5px 11px", borderRadius:"8px", border:`1.5px solid ${linguaConversa===l?"rgba(42,154,96,0.40)":"rgba(0,0,0,0.09)"}`, background:linguaConversa===l?"rgba(42,154,96,0.10)":"transparent", color:linguaConversa===l?"#2A9A60":"#6A7A9A", fontSize:"12px", fontWeight:linguaConversa===l?800:500, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>{l}</button>))}</div>)}</div></>) : (
+                  {!showRoteiroInput ? (<><button onClick={()=>setShowRoteiroInput(true)} style={{ display:"flex", alignItems:"center", gap:"6px", padding:"6px 14px", borderRadius:"8px", border:`1.5px solid ${C.orange}`, background:C.orangeLight, color:C.orange, fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="6" cy="19" r="3"/><path d="M9 19h8.5a3.5 3.5 0 0 0 0-7h-11a3.5 3.5 0 0 1 0-7H15"/><circle cx="18" cy="5" r="3"/></svg>Gerar roteiro</button><div style={{ display:"flex", alignItems:"center", gap:"6px" }}><button onClick={()=>{ setModoConversa(v=>!v); }} style={{ display:"flex", alignItems:"center", gap:"6px", padding:"6px 14px", borderRadius:"8px", border:`1.5px solid ${modoConversa?"rgba(27,94,43,0.40)":"rgba(0,0,0,0.10)"}`, background:modoConversa?"rgba(27,94,43,0.10)":"transparent", color:modoConversa?"#1B5E2B":"#6A7A9A", fontSize:"12px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>{modoConversa?"Conversa livre ON":"Conversa livre"}</button>{modoConversa&&profile&&(<div style={{ display:"flex", gap:"4px" }}>{(profile.tronco==="germânico"?["Inglês","Alemão","Holandês"]:["Espanhol","Francês","Italiano"]).map((l:string)=>(<button key={l} onClick={()=>setLinguaConversa(l)} style={{ padding:"5px 11px", borderRadius:"8px", border:`1.5px solid ${linguaConversa===l?"rgba(27,94,43,0.40)":"rgba(0,0,0,0.09)"}`, background:linguaConversa===l?"rgba(27,94,43,0.10)":"transparent", color:linguaConversa===l?"#1B5E2B":"#6A7A9A", fontSize:"12px", fontWeight:linguaConversa===l?800:500, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif" }}>{l}</button>))}</div>)}</div></>) : (
                     <>
                       <input value={temaRoteiro} onChange={e=>setTemaRoteiro(e.target.value)} placeholder="Tema do roteiro..."
                         style={{ flex:1, padding:"6px 14px", borderRadius:"8px", border:`1.5px solid ${C.orange}`, fontSize:"13px", color:C.text, fontFamily:"Inter, -apple-system, sans-serif", background:"#fff", outline:"none" }}
@@ -2835,9 +2835,9 @@ function ChicoDashboard() {
 
                 {/* Banner conversa livre */}
                 {modoConversa && (
-                  <div style={{ padding:"8px 20px", background:"rgba(42,154,96,0.07)", borderBottom:"1px solid rgba(42,154,96,0.15)", display:"flex", alignItems:"center", gap:"10px", flexShrink:0 }}>
-                    <div style={{ width:8, height:8, borderRadius:"50%", background:"#2A9A60" }}/>
-                    <span style={{ fontSize:"13px", fontWeight:700, color:"#2A9A60" }}>Conversa Livre em {linguaConversa}</span>
+                  <div style={{ padding:"8px 20px", background:"rgba(27,94,43,0.07)", borderBottom:"1px solid rgba(27,94,43,0.15)", display:"flex", alignItems:"center", gap:"10px", flexShrink:0 }}>
+                    <div style={{ width:8, height:8, borderRadius:"50%", background:"#1B5E2B" }}/>
+                    <span style={{ fontSize:"13px", fontWeight:700, color:"#1B5E2B" }}>Conversa Livre em {linguaConversa}</span>
                     <span style={{ fontSize:"12px", color:"#6A9A7A" }}>-- escreva na língua e o Chico responde. Erros serão corrigidos com discrição.</span>
                   </div>
                 )}
@@ -2861,7 +2861,7 @@ function ChicoDashboard() {
 
                 {/* Input */}
                 <div style={{ padding:isMobile?"8px 12px 12px":"12px 28px 16px", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(16px)", borderTop:`1px solid ${C.border}`, flexShrink:0 }}>
-                  <div style={{ display:"flex", gap:"10px", alignItems:"flex-end", background:"#F0F4FA", borderRadius:"8px", padding:"10px 10px 10px 20px", border:`1.5px solid ${C.border}` }}>
+                  <div style={{ display:"flex", gap:"10px", alignItems:"flex-end", background:"#F4F5F0", borderRadius:"8px", padding:"10px 10px 10px 20px", border:`1.5px solid ${C.border}` }}>
                     <textarea ref={textareaRef} value={inputText} onChange={e=>setInputText(e.target.value)} onKeyDown={handleKeyDown}
                       {...(modoConversa ? {placeholder:`Escreva em ${linguaConversa}...`} : {placeholder:"Escreva para o Chico..."})} rows={1} disabled={isLoading}
                       style={{ flex:1, border:"none", background:"transparent", fontSize:"15px", lineHeight:"1.4", color:C.text, fontFamily:"Inter, -apple-system, sans-serif", maxHeight:"120px", overflowY:"auto", padding:0 }}/>
@@ -2900,13 +2900,13 @@ function ChicoDashboard() {
                     <span style={{ padding:"2px 10px", borderRadius:"8px", background:C.blueLight, color:C.blue, fontSize:"12px", fontWeight:800 }}>{filteredCards.length}</span>
                     {cards.length > 0 && (
                       <button onClick={()=>exportAnki(cards)} title="Exportar para Anki"
-                        style={{ width:28, height:28, borderRadius:"8px", border:"1px solid rgba(26,74,138,0.20)", background:"rgba(26,74,138,0.06)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
-                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1A4A8A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        style={{ width:28, height:28, borderRadius:"8px", border:"1px solid rgba(27,94,43,0.20)", background:"rgba(27,94,43,0.06)", cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#1B5E2B" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                       </button>
                     )}
                   </div>
                 </div>
-                <div style={{ display:"flex", alignItems:"center", gap:"8px", padding:"8px 12px", background:"#F0F4FA", borderRadius:"12px", border:`1px solid ${C.border}`, marginBottom:"8px" }}>
+                <div style={{ display:"flex", alignItems:"center", gap:"8px", padding:"8px 12px", background:"#F4F5F0", borderRadius:"12px", border:`1px solid ${C.border}`, marginBottom:"8px" }}>
                   <Icon.Search size={13} color={C.textMuted}/>
                   <input value={searchQuery} onChange={e=>setSearchQuery(e.target.value)} placeholder="Buscar nexos..."
                     style={{ flex:1, border:"none", background:"transparent", fontSize:"13px", color:C.text, fontFamily:"Inter, -apple-system, sans-serif" }}/>
