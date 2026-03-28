@@ -35,6 +35,10 @@ export interface ChicoCard {
   quiz_erros?: number;
   modo?: string;
   nivel?: string;
+  sr_interval?: number;
+  sr_easiness?: number;
+  sr_due_date?: string;
+  sr_reviews?: number;
 
   lang_1_nome: string;
   lang_1_txt: string;
@@ -1096,6 +1100,67 @@ ${letra}`;
         const result = parseJSON(compAval.choices[0]?.message?.content ?? "");
         return NextResponse.json({ avaliacao: result });
       } catch { return NextResponse.json({ error:"Erro ao avaliar resposta." },{ status:500 }); }
+    }
+
+        // ── Revisão espaçada SM-2 ────────────────────────────────────────────────
+    if (acao === "sr_review") {
+      const { card_id, qualidade } = body;
+      // qualidade: 0=Errei, 3=Difícil, 4=Bom, 5=Fácil
+
+      const supabase2 = await createSupabaseServer();
+      const { data: { session: sess2 } } = await supabase2.auth.getSession();
+      if (!sess2) return NextResponse.json({ error:"Não autorizado." }, { status:401 });
+
+      // Busca dados atuais do card
+      const { data: card } = await supabase2
+        .from("mentoria_cards")
+        .select("sr_interval, sr_easiness, sr_reviews")
+        .eq("id", card_id)
+        .eq("user_id", sess2.user.id)
+        .single();
+
+      if (!card) return NextResponse.json({ error:"Card não encontrado." }, { status:404 });
+
+      const q   = qualidade as number;
+      let interval  = (card.sr_interval  as number) || 1;
+      let easiness  = (card.sr_easiness  as number) || 2.5;
+      let reviews   = (card.sr_reviews   as number) || 0;
+
+      // Algoritmo SM-2
+      if (q < 3) {
+        // Errou — reinicia
+        interval = 1;
+        reviews  = 0;
+      } else {
+        // Acertou — calcula próximo intervalo
+        if (reviews === 0)      interval = 1;
+        else if (reviews === 1) interval = 3;
+        else                    interval = Math.round(interval * easiness);
+
+        // Atualiza fator de facilidade
+        easiness = easiness + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
+        if (easiness < 1.3) easiness = 1.3;
+        reviews += 1;
+      }
+
+      // Calcula próxima data
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + interval);
+      const dueDateStr = dueDate.toISOString().split("T")[0];
+
+      const { error: updateErr } = await supabase2
+        .from("mentoria_cards")
+        .update({
+          sr_interval:  interval,
+          sr_easiness:  Math.round(easiness * 100) / 100,
+          sr_due_date:  dueDateStr,
+          sr_reviews:   reviews,
+        })
+        .eq("id", card_id)
+        .eq("user_id", sess2.user.id);
+
+      if (updateErr) return NextResponse.json({ error: updateErr.message }, { status:500 });
+      return NextResponse.json({ ok:true, next_interval: interval, next_due: dueDateStr });
     }
 
         return NextResponse.json({ error:"Ação desconhecida." },{ status:400 });
