@@ -501,13 +501,23 @@ function FlashcardsTab({ cards, audio }: {
     const reviews  = card.sr_reviews  || 0;
     let next: number;
     if (q < 3) {
-      next = 1;
+      next = 1; // Errei → reinicia
+    } else if (reviews === 0) {
+      // Card novo nunca revisado
+      if (q === 3) next = 1;       // Difícil → amanhã
+      else if (q === 4) next = 4;  // Bom → 4 dias
+      else next = 7;               // Fácil → 1 semana
+    } else if (reviews === 1) {
+      if (q === 3) next = 1;
+      else if (q === 4) next = 4;
+      else next = 10;
     } else {
-      if (reviews === 0)      next = 1;
-      else if (reviews === 1) next = 3;
-      else                    next = Math.round(interval * easiness);
+      const factor = q === 3 ? Math.max(1.3, easiness - 0.15)
+                   : q === 4 ? easiness
+                   : easiness + 0.1;
+      next = Math.round(interval * factor);
     }
-    if (next === 1) return "amanhã";
+    if (next <= 1)  return "amanhã";
     if (next < 7)   return `${next} dias`;
     if (next < 30)  return `${Math.round(next/7)}sem`;
     return `${Math.round(next/30)}mês`;
@@ -679,7 +689,7 @@ function FlashcardsTab({ cards, audio }: {
           </div>
 
           {/* Info do próximo intervalo atual */}
-          {card.sr_due_date && card.sr_reviews && card.sr_reviews > 0 && (
+          {card.sr_due_date != null && (card.sr_reviews||0) > 0 && (
             <div style={{ fontSize:"12px", color:C.muted, textAlign:"center" as const }}>
               Intervalo atual: {card.sr_interval || 1} {(card.sr_interval||1) === 1 ? "dia" : "dias"}
             </div>
