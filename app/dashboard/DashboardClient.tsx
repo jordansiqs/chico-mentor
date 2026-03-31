@@ -53,7 +53,7 @@ interface ChicoMemoria {
   ultima_sessao?: string;
 }
 
-type MainTab       = "chat" | "flashcards" | "progresso" | "praticar" | "viagem" | "musica" | "historias" | "perfil";
+type MainTab       = "chat" | "flashcards" | "progresso" | "praticar" | "viagem" | "musica" | "historias" | "livros" | "perfil";
 type SidebarFilter = "todos" | "românico" | "germânico";
 
 function createSupabase() {
@@ -1533,6 +1533,415 @@ function PraticarTab({ profile, cards, audio }: {
 }
 
 
+// ── Livros (Project Gutenberg) ────────────────────────────────────────────────
+
+interface LivroInfo {
+  id: number;
+  titulo: string;
+  autor: string;
+  lingua: string;
+  assuntos: string[];
+  downloads: number;
+  url_txt: string;
+}
+
+interface LivroProgresso {
+  gutenberg_id: number;
+  titulo: string;
+  autor: string;
+  lingua: string;
+  capitulo_atual: number;
+  url_txt: string;
+  atualizado_em: string;
+}
+
+interface Capitulo {
+  num: number;
+  total: number;
+  titulo_cap: string;
+  texto: string;
+  contexto: string;
+  nivel: string;
+  palavras_chave: { palavra: string; traducao_pt: string; nota: string }[];
+}
+
+function LivrosTab({ profile, cards, audio, onAddCard }: {
+  profile: UserProfile | null;
+  cards: MentoriaCard[];
+  audio: ReturnType<typeof useAudio>;
+  onAddCard: (card: MentoriaCard) => void;
+}) {
+  const [view, setView]               = useState<"lista"|"lendo">("lista");
+  const [query, setQuery]             = useState("");
+  const [livros, setLivros]           = useState<LivroInfo[]>([]);
+  const [recomendados, setRecomend]   = useState<number[]>([]);
+  const [loading, setLoading]         = useState(false);
+  const [progresso, setProgresso]     = useState<LivroProgresso[]>([]);
+  const [livroAtual, setLivroAtual]   = useState<LivroInfo | null>(null);
+  const [capitulo, setCapitulo]       = useState<Capitulo | null>(null);
+  const [capLoading, setCapLoad]      = useState(false);
+  const [tradWord, setTradWord]       = useState<{palavra:string;trad:string;nota:string}|null>(null);
+  const [salvando, setSalvando]       = useState<string|null>(null);
+  const [paralelo, setParalelo]       = useState(false);
+  const [selWord, setSelWord]         = useState<string|null>(null);
+
+  const linguaFlag: Record<string,string> = {
+    "es":"🇪🇸","fr":"🇫🇷","it":"🇮🇹","en":"🇬🇧","de":"🇩🇪","nl":"🇳🇱","pt":"🇧🇷"
+  };
+  const linguaNome: Record<string,string> = {
+    "es":"Espanhol","fr":"Francês","it":"Italiano","en":"Inglês","de":"Alemão","nl":"Holandês","pt":"Português"
+  };
+
+  useEffect(() => {
+    if (!profile) return;
+    buscarLivros();
+    carregarProgresso();
+  }, [profile]);
+
+  async function buscarLivros(q = "") {
+    if (!profile) return;
+    setLoading(true);
+    try {
+      const res = await fetch("/api/chico", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          acao: "buscar_livros", tronco: profile.tronco,
+          nivel: "intermediário", interesses: profile.interesses || [],
+          query: q,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) { setLivros(data.livros || []); setRecomend(data.recomendados || []); }
+    } catch {}
+    setLoading(false);
+  }
+
+  async function carregarProgresso() {
+    try {
+      const res = await fetch("/api/chico", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ acao: "buscar_progresso_livros" }),
+      });
+      const data = await res.json();
+      if (res.ok) setProgresso(data.livros || []);
+    } catch {}
+  }
+
+  async function abrirLivro(livro: LivroInfo, capNum = 1) {
+    setLivroAtual(livro); setView("lendo");
+    setCapitulo(null); setCapLoad(true);
+    try {
+      const res = await fetch("/api/chico", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          acao: "carregar_capitulo", url_txt: livro.url_txt,
+          capitulo_num: capNum, titulo: livro.titulo,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.capitulo) {
+        setCapitulo(data.capitulo);
+        // Salva progresso
+        await fetch("/api/chico", {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            acao: "salvar_progresso_livro",
+            gutenberg_id: livro.id, titulo: livro.titulo,
+            autor: livro.autor, lingua: livro.lingua,
+            capitulo_atual: capNum, url_txt: livro.url_txt,
+          }),
+        });
+        await carregarProgresso();
+      }
+    } catch {}
+    setCapLoad(false);
+  }
+
+  async function traduzirPalavra(palavra: string) {
+    if (!profile || !capitulo) return;
+    setSelWord(palavra);
+    // Check in palavras_chave first
+    const found = capitulo.palavras_chave.find((p: any) =>
+      p.palavra.toLowerCase() === palavra.toLowerCase()
+    );
+    if (found) { setTradWord({ palavra: found.palavra, trad: found.traducao_pt, nota: found.nota }); return; }
+    // Otherwise fetch
+    try {
+      const res = await fetch("/api/chico", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          acao: "traduzir_palavra", palavra, lingua: livroAtual?.lingua || "es",
+          tronco: profile.tronco,
+        }),
+      });
+      const data = await res.json();
+      if (res.ok) setTradWord({ palavra, trad: data.traducao_pt || "", nota: data.nota || "" });
+    } catch {}
+  }
+
+  async function salvarComoNexo() {
+    if (!tradWord || !profile) return;
+    setSalvando(tradWord.palavra);
+    try {
+      const res = await fetch("/api/chico", {
+        method: "PATCH", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          acao: "salvar_palavra_historia",
+          palavra: tradWord.palavra, traducao_pt: tradWord.trad,
+          nota: tradWord.nota, lingua: livroAtual?.lingua || "es",
+          tronco: profile.tronco, interesses: profile.interesses || [],
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.card) onAddCard({ ...data.card, id: data.saved_id, criado_em: new Date().toISOString() });
+    } catch {}
+    setSalvando(null);
+    setTradWord(null); setSelWord(null);
+  }
+
+  function renderTextoLivro(texto: string) {
+    if (!texto) return null;
+    const parafs = texto.split(/\n\n+/).filter((p: string) => p.trim());
+    return parafs.map((para: string, pi: number) => (
+      <p key={pi} style={{ margin: "0 0 16px", fontSize: "16px", lineHeight: "1.85", color: C.text }}>
+        {para.split(/(\s+)/).map((token: string, ti: number) => {
+          const word = token.trim().replace(/[.,;:!?"""''()]/g, "");
+          const isWord = word.length > 2;
+          const isKw = capitulo?.palavras_chave?.some((k: any) =>
+            k.palavra.toLowerCase() === word.toLowerCase()
+          );
+          return (
+            <span key={ti}
+              onClick={() => isWord ? traduzirPalavra(word) : null}
+              style={{
+                cursor: isWord ? "pointer" : "default",
+                background: selWord === word ? "rgba(27,94,43,0.15)" : isKw ? "rgba(245,200,0,0.25)" : "transparent",
+                borderRadius: "3px", padding: isWord ? "1px 2px" : "0",
+                borderBottom: isKw ? "1px solid #E8B800" : "none",
+              }}>
+              {token}
+            </span>
+          );
+        })}
+      </p>
+    ));
+  }
+
+  // ── Lista de livros ────────────────────────────────────────────────────────
+  if (view === "lista") return (
+    <div style={{ height: "100%", overflowY: "auto" as const, background: C.bg }}>
+      <div style={{ maxWidth: "680px", margin: "0 auto", padding: "24px 20px 48px" }}>
+
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+          <div style={{ fontSize: "22px", fontWeight: 800, color: C.green, fontFamily: "Nunito, sans-serif" }}>
+            Biblioteca
+          </div>
+          <a href="https://www.gutenberg.org" target="_blank" rel="noreferrer"
+            style={{ fontSize: "11px", color: C.muted, textDecoration: "none" }}>
+            Project Gutenberg ↗
+          </a>
+        </div>
+        <div style={{ fontSize: "14px", color: C.muted, marginBottom: "20px" }}>
+          Clássicos da literatura mundial — leitura guiada pelo Chico.
+        </div>
+
+        {/* Busca */}
+        <div style={{ display: "flex", gap: "8px", marginBottom: "20px" }}>
+          <input value={query} onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") buscarLivros(query); }}
+            placeholder="Buscar livro ou autor..."
+            style={{ flex: 1, padding: "10px 14px", borderRadius: "6px", border: `1px solid ${C.border}`, fontSize: "14px", fontFamily: "Nunito, sans-serif", color: C.text, background: C.panel }}
+          />
+          <button onClick={() => buscarLivros(query)} disabled={loading}
+            style={{ padding: "10px 18px", borderRadius: "6px", border: "none", background: loading ? C.border : C.green, color: "#fff", fontSize: "13px", fontWeight: 700, cursor: loading ? "not-allowed" : "pointer", fontFamily: "Nunito, sans-serif" }}>
+            {loading ? "..." : "Buscar"}
+          </button>
+        </div>
+
+        {/* Continuar lendo */}
+        {progresso.length > 0 && (
+          <div style={{ marginBottom: "24px" }}>
+            <div style={{ fontSize: "11px", fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: "10px" }}>
+              Continuar lendo
+            </div>
+            <div style={{ display: "flex", flexDirection: "column" as const, gap: "8px" }}>
+              {progresso.slice(0, 3).map((lp: LivroProgresso) => (
+                <div key={lp.gutenberg_id}
+                  onClick={() => abrirLivro({ id: lp.gutenberg_id, titulo: lp.titulo, autor: lp.autor, lingua: lp.lingua, url_txt: lp.url_txt, assuntos: [], downloads: 0 }, lp.capitulo_atual)}
+                  style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: "6px", padding: "12px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ fontSize: "22px" }}>{linguaFlag[lp.lingua] || "📖"}</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "14px", fontWeight: 700, color: C.text }}>{lp.titulo}</div>
+                    <div style={{ fontSize: "12px", color: C.muted }}>{lp.autor} · Capítulo {lp.capitulo_atual}</div>
+                  </div>
+                  <div style={{ fontSize: "12px", fontWeight: 700, color: C.green }}>Continuar →</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Lista de livros */}
+        {loading ? (
+          <div style={{ textAlign: "center" as const, padding: "48px", color: C.muted }}>
+            <div style={{ fontSize: "32px", marginBottom: "12px" }}>📚</div>
+            <div style={{ fontSize: "14px" }}>Buscando livros...</div>
+          </div>
+        ) : livros.length === 0 ? (
+          <div style={{ textAlign: "center" as const, padding: "48px", color: C.muted }}>
+            <div style={{ fontSize: "48px", marginBottom: "12px" }}>📚</div>
+            <div style={{ fontSize: "15px", fontWeight: 700, color: C.text, fontFamily: "Nunito, sans-serif" }}>Nenhum livro encontrado</div>
+            <div style={{ fontSize: "13px", marginTop: "6px" }}>Tente buscar por título ou autor.</div>
+          </div>
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column" as const, gap: "10px" }}>
+            <div style={{ fontSize: "11px", fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, letterSpacing: "0.06em", marginBottom: "4px" }}>
+              {recomendados.length > 0 ? "Recomendados para você" : "Resultados"}
+            </div>
+            {[
+              ...livros.filter((l: LivroInfo) => recomendados.includes(l.id)),
+              ...livros.filter((l: LivroInfo) => !recomendados.includes(l.id)),
+            ].map((livro: LivroInfo) => {
+              const isRec = recomendados.includes(livro.id);
+              return (
+                <div key={livro.id}
+                  onClick={() => abrirLivro(livro, 1)}
+                  style={{ background: C.panel, border: `1px solid ${isRec ? C.greenBd : C.border}`, borderRadius: "6px", padding: "14px 16px", cursor: "pointer", display: "flex", gap: "14px", alignItems: "flex-start", transition: "border-color 0.15s" }}>
+                  <div style={{ fontSize: "28px", flexShrink: 0 }}>{linguaFlag[livro.lingua] || "📖"}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "3px" }}>
+                      <span style={{ fontSize: "15px", fontWeight: 700, color: C.text, fontFamily: "Nunito, sans-serif" }}>{livro.titulo}</span>
+                      {isRec && <span style={{ background: C.greenLt, color: C.green, fontSize: "10px", fontWeight: 700, padding: "2px 7px", borderRadius: "3px", border: `1px solid ${C.greenBd}`, flexShrink: 0 }}>Recomendado</span>}
+                    </div>
+                    <div style={{ fontSize: "13px", color: C.muted }}>{livro.autor} · {linguaNome[livro.lingua] || livro.lingua}</div>
+                    {livro.assuntos.length > 0 && (
+                      <div style={{ fontSize: "11px", color: C.hint, marginTop: "4px" }}>{livro.assuntos.slice(0, 2).join(" · ")}</div>
+                    )}
+                  </div>
+                  <div style={{ fontSize: "12px", fontWeight: 700, color: C.green, flexShrink: 0 }}>Ler →</div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+
+  // ── Lendo ─────────────────────────────────────────────────────────────────
+  return (
+    <div style={{ height: "100%", display: "flex", flexDirection: "column" as const, background: C.bg }}>
+
+      {/* Header */}
+      <div style={{ padding: "12px 20px", background: C.panel, borderBottom: `1px solid ${C.border}`, display: "flex", alignItems: "center", gap: "12px", flexShrink: 0 }}>
+        <button onClick={() => { setView("lista"); setCapitulo(null); setTradWord(null); setSelWord(null); }}
+          style={{ padding: "6px 12px", borderRadius: "5px", border: `1px solid ${C.border}`, background: "transparent", color: C.muted, fontSize: "12px", cursor: "pointer", fontFamily: "Nunito, sans-serif" }}>
+          ← Voltar
+        </button>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: "14px", fontWeight: 800, color: C.text, fontFamily: "Nunito, sans-serif", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>
+            {livroAtual?.titulo}
+          </div>
+          <div style={{ fontSize: "11px", color: C.muted }}>{livroAtual?.autor}</div>
+        </div>
+        {capitulo && (
+          <div style={{ fontSize: "12px", color: C.muted, flexShrink: 0 }}>
+            Cap. {capitulo.num}/{capitulo.total}
+          </div>
+        )}
+      </div>
+
+      {/* Conteúdo */}
+      <div style={{ flex: 1, overflowY: "auto" as const, padding: "24px 20px" }}>
+        <div style={{ maxWidth: "640px", margin: "0 auto" }}>
+
+          {capLoading ? (
+            <div style={{ textAlign: "center" as const, padding: "80px 0", color: C.muted }}>
+              <div style={{ fontSize: "32px", marginBottom: "16px" }}>📖</div>
+              <div style={{ fontSize: "14px" }}>Carregando capítulo...</div>
+            </div>
+          ) : capitulo ? (
+            <>
+              {/* Título do capítulo */}
+              <div style={{ marginBottom: "20px" }}>
+                <div style={{ fontSize: "11px", fontWeight: 700, color: C.green, textTransform: "uppercase" as const, letterSpacing: "0.07em", marginBottom: "4px" }}>
+                  {linguaFlag[livroAtual?.lingua || ""] || "📖"} {linguaNome[livroAtual?.lingua || ""] || ""}
+                </div>
+                <div style={{ fontSize: "20px", fontWeight: 800, color: C.text, fontFamily: "Nunito, sans-serif", marginBottom: "6px" }}>
+                  {capitulo.titulo_cap}
+                </div>
+                {capitulo.contexto && (
+                  <div style={{ fontSize: "13px", color: C.muted, fontStyle: "italic", padding: "8px 12px", background: C.greenLt, borderRadius: "5px", borderLeft: `3px solid ${C.green}` }}>
+                    {capitulo.contexto}
+                  </div>
+                )}
+              </div>
+
+              {/* Palavras-chave */}
+              {capitulo.palavras_chave.length > 0 && (
+                <div style={{ marginBottom: "20px", padding: "12px 16px", background: C.panel, borderRadius: "6px", border: `1px solid ${C.border}` }}>
+                  <div style={{ fontSize: "10px", fontWeight: 700, color: C.muted, textTransform: "uppercase" as const, letterSpacing: "0.07em", marginBottom: "8px" }}>
+                    Vocabulário do capítulo — clique para salvar
+                  </div>
+                  <div style={{ display: "flex", flexWrap: "wrap" as const, gap: "6px" }}>
+                    {capitulo.palavras_chave.map((kw: any, i: number) => (
+                      <button key={i} onClick={() => setTradWord({ palavra: kw.palavra, trad: kw.traducao_pt, nota: kw.nota })}
+                        style={{ padding: "4px 10px", borderRadius: "4px", border: `1px solid ${C.yellowBd}`, background: C.yellowLt, color: "#7A5F00", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "Nunito, sans-serif" }}>
+                        {kw.palavra}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Texto */}
+              <div style={{ fontSize: "16px", lineHeight: 1.85, color: C.text, fontFamily: "Georgia, serif" }}>
+                {renderTextoLivro(capitulo.texto)}
+              </div>
+
+              {/* Tradução inline */}
+              {tradWord && (
+                <div style={{ position: "sticky" as const, bottom: "16px", background: C.panel, border: `1px solid ${C.greenBd}`, borderRadius: "8px", padding: "14px 16px", boxShadow: "0 4px 16px rgba(0,0,0,0.10)", display: "flex", alignItems: "center", gap: "12px" }}>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: "16px", fontWeight: 800, color: C.green, fontFamily: "Nunito, sans-serif" }}>{tradWord.palavra}</div>
+                    <div style={{ fontSize: "14px", color: C.text }}>🇧🇷 {tradWord.trad}</div>
+                    {tradWord.nota && <div style={{ fontSize: "12px", color: C.muted, marginTop: "2px", fontStyle: "italic" }}>💡 {tradWord.nota}</div>}
+                  </div>
+                  <div style={{ display: "flex", flexDirection: "column" as const, gap: "6px" }}>
+                    <button onClick={salvarComoNexo} disabled={salvando === tradWord.palavra}
+                      style={{ padding: "7px 14px", borderRadius: "5px", border: "none", background: C.green, color: "#fff", fontSize: "12px", fontWeight: 700, cursor: "pointer", fontFamily: "Nunito, sans-serif", whiteSpace: "nowrap" as const }}>
+                      {salvando === tradWord.palavra ? "..." : "+ Nexo"}
+                    </button>
+                    <button onClick={() => { setTradWord(null); setSelWord(null); }}
+                      style={{ padding: "5px 14px", borderRadius: "5px", border: `1px solid ${C.border}`, background: "transparent", color: C.muted, fontSize: "12px", cursor: "pointer", fontFamily: "Nunito, sans-serif" }}>
+                      Fechar
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Navegação de capítulos */}
+              <div style={{ display: "flex", gap: "10px", marginTop: "32px", paddingTop: "20px", borderTop: `1px solid ${C.border}` }}>
+                <button onClick={() => livroAtual && abrirLivro(livroAtual, capitulo.num - 1)}
+                  disabled={capitulo.num <= 1 || capLoading}
+                  style={{ flex: 1, padding: "12px", borderRadius: "6px", border: `1px solid ${C.border}`, background: "transparent", color: capitulo.num <= 1 ? C.hint : C.text, fontSize: "13px", fontWeight: 700, cursor: capitulo.num <= 1 ? "not-allowed" : "pointer", fontFamily: "Nunito, sans-serif" }}>
+                  ← Cap. anterior
+                </button>
+                <button onClick={() => livroAtual && abrirLivro(livroAtual, capitulo.num + 1)}
+                  disabled={capitulo.num >= capitulo.total || capLoading}
+                  style={{ flex: 1, padding: "12px", borderRadius: "6px", border: "none", background: capitulo.num >= capitulo.total ? C.border : C.green, color: capitulo.num >= capitulo.total ? C.hint : "#fff", fontSize: "13px", fontWeight: 700, cursor: capitulo.num >= capitulo.total ? "not-allowed" : "pointer", fontFamily: "Nunito, sans-serif" }}>
+                  Cap. seguinte →
+                </button>
+              </div>
+            </>
+          ) : null}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 // ── Histórias ────────────────────────────────────────────────────────────────
 
 interface Historia {
@@ -2700,6 +3109,7 @@ function ChicoDashboard() {
     { id:"praticar",  label:"Praticar",   icon:(a)=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?"#1B5E2B":"#9CA3AF"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg> },
     { id:"musica",     label:"Música",     icon:(a)=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?"#1B5E2B":"#9CA3AF"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg> },
     { id:"historias",  label:"Histórias",  icon:(a)=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?"#1B5E2B":"#9CA3AF"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg> },
+    { id:"livros",     label:"Biblioteca", icon:(a)=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?"#1B5E2B":"#9CA3AF"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg> },
     { id:"perfil",     label:"Perfil",     icon:(a)=><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={a?"#1B5E2B":"#9CA3AF"} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
   ];
 
@@ -2886,7 +3296,8 @@ function ChicoDashboard() {
             {activeTab==="praticar"   && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><PraticarTab profile={profile} cards={cards} audio={audio}/></div>}
             {activeTab==="viagem"     && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><ViagemTab profile={profile} audio={audio}/></div>}
             {activeTab==="musica"     && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><MusicaTab profile={profile}/></div>}
-            {activeTab==="historias"  && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><HistoriasTab profile={profile} cards={cards} onAddCard={(c)=>setCards(prev=>[c,...prev])}/></div>}
+            {activeTab==="historias"  && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><HistoriasTab profile={profile} cards={cards} onAddCard={(c: MentoriaCard)=>setCards(prev=>[c,...prev])}/></div>}
+            {activeTab==="livros"     && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><LivrosTab profile={profile} cards={cards} audio={audio} onAddCard={(c: MentoriaCard)=>setCards(prev=>[c,...prev])}/></div>}
             {activeTab==="perfil"     && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><PerfilTab profile={profile} onProfileUpdate={setProfile} cards={cards}/></div>}
           </div>
 
