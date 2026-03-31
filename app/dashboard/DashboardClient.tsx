@@ -1896,7 +1896,7 @@ function LivrosTab({ profile, cards, audio, onAddCard }: {
                   </div>
                   <div style={{ display: "flex", flexWrap: "wrap" as const, gap: "6px" }}>
                     {capitulo.palavras_chave.map((kw: any, i: number) => (
-                      <button key={i} onClick={() => setTradWord({ palavra: kw.palavra, trad: kw.traducao_pt, nota: kw.nota })}
+                      <button key={i} onClick={() => setTradWord({ palavra: kw.palavra, traducao_pt: kw.traducao_pt, fonetica: "", classe: "", instrucao_biologica: kw.nota })}
                         style={{ padding: "4px 10px", borderRadius: "4px", border: `1px solid ${C.yellowBd}`, background: C.yellowLt, color: "#7A5F00", fontSize: "12px", fontWeight: 600, cursor: "pointer", fontFamily: "Nunito, sans-serif" }}>
                         {kw.palavra}
                       </button>
