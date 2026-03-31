@@ -1169,6 +1169,202 @@ ${letra}`;
       return NextResponse.json({ ok:true, next_interval: interval, next_due: dueDateStr });
     }
 
+        // ── Buscar livros no Project Gutenberg ──────────────────────────────────
+    if (acao === "buscar_livros") {
+      const { tronco, nivel, interesses, query } = body;
+
+      // Mapa de línguas por tronco
+      const linguasCodigos: Record<string, string[]> = {
+        "românico": ["es", "fr", "it", "pt"],
+        "germânico": ["en", "de", "nl"],
+      };
+      const codigos = linguasCodigos[tronco as string] || ["es", "fr"];
+      const linguasParam = codigos.join(",");
+
+      // Se busca livre, usa query; senão retorna lista curada
+      let url = "";
+      if (query && (query as string).trim().length > 0) {
+        url = `https://gutendex.com/books/?search=${encodeURIComponent(query as string)}&languages=${linguasParam}&mime_type=text/plain`;
+      } else {
+        url = `https://gutendex.com/books/?languages=${linguasParam}&mime_type=text/plain&topic=fiction&sort=popular`;
+      }
+
+      try {
+        const resp = await fetch(url);
+        const data = await resp.json();
+
+        // Filtra e formata os resultados
+        const livros = ((data.results as any[]) || []).slice(0, 20).map((b: any) => ({
+          id:        b.id,
+          titulo:    b.title,
+          autor:     (b.authors[0]?.name || "Desconhecido").replace(/,\s*/, " "),
+          lingua:    b.languages?.[0] || "?",
+          assuntos:  (b.subjects || []).slice(0, 3),
+          downloads: b.download_count,
+          url_txt:   b.formats?.["text/plain; charset=utf-8"] || b.formats?.["text/plain"] || null,
+        })).filter((b: any) => b.url_txt);
+
+        // Usa o Chico para recomendar os melhores para o aluno
+        const interessesStr = (interesses as string[] || []).join(", ") || "geral";
+        const nivelStr = (nivel as string) || "iniciante";
+        const livrosStr = livros.slice(0, 10).map((b: any) =>
+          `ID ${b.id}: "${b.titulo}" de ${b.autor} (${b.lingua})`
+        ).join("\n");
+
+        const promptRec = [
+          `Você é o Chico. Recomende os 5 melhores livros desta lista para um aluno de nível ${nivelStr} com interesse em ${interessesStr}.`,
+          `Lista:
+${livrosStr}`,
+          `Responda APENAS com JSON: { "recomendados": [{"id": 0, "motivo": "..."}] }`,
+        ].join("\n");
+
+        let recomendados: any[] = [];
+        try {
+          const recResp = await groq.chat.completions.create({
+            model: "llama-3.3-70b-versatile", temperature: 0.3, max_tokens: 300,
+            messages: [{ role: "user", content: promptRec }],
+          });
+          const recData = parseJSON(recResp.choices[0]?.message?.content ?? "");
+          recomendados = (recData.recomendados || []).map((r: any) => r.id);
+        } catch {}
+
+        return NextResponse.json({ livros, recomendados });
+      } catch (e: any) {
+        return NextResponse.json({ error: "Erro ao buscar livros: " + e.message }, { status: 500 });
+      }
+    }
+
+    // ── Carregar capítulo de livro do Gutenberg ───────────────────────────────
+    if (acao === "carregar_capitulo") {
+      const { url_txt, capitulo_num, titulo } = body;
+      if (!url_txt) return NextResponse.json({ error: "URL do livro não informada." }, { status: 400 });
+
+      try {
+        // Baixa o texto completo
+        const resp = await fetch(url_txt as string);
+        if (!resp.ok) throw new Error("Falha ao baixar livro");
+        const textoCompleto = await resp.text();
+
+        // Limpa o header/footer padrão do Gutenberg
+        const startMarkers = ["*** START OF", "***START OF", "* * * START OF", "START OF THE PROJECT"];
+        const endMarkers   = ["*** END OF",   "***END OF",   "* * * END OF",   "END OF THE PROJECT"];
+        let texto = textoCompleto;
+        for (const m of startMarkers) {
+          const idx = texto.indexOf(m);
+          if (idx > -1) { const nl = texto.indexOf("
+", idx); texto = texto.slice(nl + 1); break; }
+        }
+        for (const m of endMarkers) {
+          const idx = texto.indexOf(m);
+          if (idx > -1) { texto = texto.slice(0, idx); break; }
+        }
+
+        // Divide em capítulos (detecta padrões: "CHAPTER", "CAPÍTULO", "CHAPITRE", "KAPITEL")
+        const capPatterns = /
+\s*(CHAPTER|CAPÍTULO|CAPITULO|CHAPITRE|KAPITEL|PARTE|PART|BOOK|LIVRO)\s+[\dIVXLCivxlc]+[^
+]*/gi;
+        const capMatches: { idx: number; titulo: string }[] = [];
+        let m: RegExpExecArray | null;
+        while ((m = capPatterns.exec(texto)) !== null) {
+          capMatches.push({ idx: m.index, titulo: m[0].trim() });
+        }
+
+        // Se não achou capítulos, divide por blocos de ~1500 palavras
+        const BLOCO = 1500;
+        let capitulos: string[] = [];
+        if (capMatches.length > 1) {
+          for (let i = 0; i < capMatches.length; i++) {
+            const start = capMatches[i].idx;
+            const end   = i + 1 < capMatches.length ? capMatches[i+1].idx : texto.length;
+            capitulos.push(texto.slice(start, end).trim());
+          }
+        } else {
+          const palavras = texto.split(/\s+/);
+          for (let i = 0; i < palavras.length; i += BLOCO) {
+            capitulos.push(palavras.slice(i, i + BLOCO).join(" "));
+          }
+        }
+
+        const totalCaps = capitulos.length;
+        const capIdx    = Math.max(0, Math.min((capitulo_num as number || 1) - 1, totalCaps - 1));
+        const capTexto  = capitulos[capIdx] || "";
+
+        // Pede ao Chico para preparar o capítulo pedagogicamente
+        const promptCap = [
+          `Você é o Chico. Prepare este trecho do livro "${titulo}" para leitura guiada.`,
+          `Trecho (primeiras 800 palavras):
+${capTexto.slice(0, 3000)}`,
+          `Responda APENAS com JSON:`,
+          `{`,
+          `  "texto": "o trecho limpo e formatado em parágrafos (max 600 palavras)",`,
+          `  "nivel_detectado": "iniciante|intermediário|avançado",`,
+          `  "contexto": "1 frase explicando o contexto desta parte da história",`,
+          `  "palavras_chave": [{"palavra": "...", "traducao_pt": "...", "nota": "..."}]`,
+          `}`,
+        ].join("\n");
+
+        const capResp = await groq.chat.completions.create({
+          model: "llama-3.3-70b-versatile", temperature: 0.2, max_tokens: 1200,
+          messages: [{ role: "user", content: promptCap }],
+        });
+        const capData = parseJSON(capResp.choices[0]?.message?.content ?? "");
+
+        return NextResponse.json({
+          capitulo: {
+            num:        capIdx + 1,
+            total:      totalCaps,
+            titulo_cap: capMatches[capIdx]?.titulo || `Capítulo ${capIdx + 1}`,
+            texto:      capData.texto || capTexto.slice(0, 2000),
+            contexto:   capData.contexto || "",
+            nivel:      capData.nivel_detectado || "intermediário",
+            palavras_chave: capData.palavras_chave || [],
+          }
+        });
+      } catch (e: any) {
+        return NextResponse.json({ error: "Erro ao carregar capítulo: " + e.message }, { status: 500 });
+      }
+    }
+
+    // ── Salvar progresso de leitura ───────────────────────────────────────────
+    if (acao === "salvar_progresso_livro") {
+      const { gutenberg_id, titulo, autor, lingua, capitulo_atual, url_txt } = body;
+      const supabaseP = await createSupabaseServer();
+      const { data: { session: sessP } } = await supabaseP.auth.getSession();
+      if (!sessP) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+
+      const { error: upsertErr } = await supabaseP
+        .from("livros_progresso")
+        .upsert({
+          user_id:        sessP.user.id,
+          gutenberg_id:   gutenberg_id as number,
+          titulo:         titulo as string,
+          autor:          autor as string,
+          lingua:         lingua as string,
+          capitulo_atual: capitulo_atual as number,
+          url_txt:        url_txt as string,
+          atualizado_em:  new Date().toISOString(),
+        }, { onConflict: "user_id,gutenberg_id" });
+
+      if (upsertErr) return NextResponse.json({ error: upsertErr.message }, { status: 500 });
+      return NextResponse.json({ ok: true });
+    }
+
+    // ── Buscar progresso de leitura ───────────────────────────────────────────
+    if (acao === "buscar_progresso_livros") {
+      const supabaseLP = await createSupabaseServer();
+      const { data: { session: sessLP } } = await supabaseLP.auth.getSession();
+      if (!sessLP) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+
+      const { data, error } = await supabaseLP
+        .from("livros_progresso")
+        .select("*")
+        .eq("user_id", sessLP.user.id)
+        .order("atualizado_em", { ascending: false });
+
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+      return NextResponse.json({ livros: data || [] });
+    }
+
         return NextResponse.json({ error:"Ação desconhecida." },{ status:400 });
   } catch (err) {
     console.error("Erro PATCH:", err);
