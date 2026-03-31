@@ -1251,8 +1251,7 @@ ${livrosStr}`,
         let texto = textoCompleto;
         for (const m of startMarkers) {
           const idx = texto.indexOf(m);
-          if (idx > -1) { const nl = texto.indexOf("
-", idx); texto = texto.slice(nl + 1); break; }
+          if (idx > -1) { const nl = texto.indexOf("\n", idx); texto = texto.slice(nl + 1); break; }
         }
         for (const m of endMarkers) {
           const idx = texto.indexOf(m);
