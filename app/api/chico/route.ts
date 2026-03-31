@@ -1259,9 +1259,7 @@ ${livrosStr}`,
         }
 
         // Divide em capítulos (detecta padrões: "CHAPTER", "CAPÍTULO", "CHAPITRE", "KAPITEL")
-        const capPatterns = /
-\s*(CHAPTER|CAPÍTULO|CAPITULO|CHAPITRE|KAPITEL|PARTE|PART|BOOK|LIVRO)\s+[\dIVXLCivxlc]+[^
-]*/gi;
+        const capPatterns = /\n\s*(CHAPTER|CAPÍTULO|CAPITULO|CHAPITRE|KAPITEL|PARTE|PART|BOOK|LIVRO)\s+[\dIVXLCivxlc]+[^\n]*/gi;
         const capMatches: { idx: number; titulo: string }[] = [];
         let m: RegExpExecArray | null;
         while ((m = capPatterns.exec(texto)) !== null) {
