@@ -1580,7 +1580,8 @@ function LivrosTab({ profile, cards, audio, onAddCard }: {
   const [livroAtual, setLivroAtual]   = useState<LivroInfo | null>(null);
   const [capitulo, setCapitulo]       = useState<Capitulo | null>(null);
   const [capLoading, setCapLoad]      = useState(false);
-  const [tradWord, setTradWord]       = useState<{palavra:string;trad:string;nota:string}|null>(null);
+  const [tradWord, setTradWord]       = useState<{palavra:string;traducao_pt:string;fonetica:string;classe:string;instrucao_biologica?:string;ancora?:string;chunk_tear?:string;exemplo_uso?:string}|null>(null);
+  const [translatingLivro, setTranslatingLivro] = useState(false);
   const [salvando, setSalvando]       = useState<string|null>(null);
   const [paralelo, setParalelo]       = useState(false);
   const [selWord, setSelWord]         = useState<string|null>(null);
@@ -1658,25 +1659,31 @@ function LivrosTab({ profile, cards, audio, onAddCard }: {
   }
 
   async function traduzirPalavra(palavra: string) {
-    if (!profile || !capitulo) return;
-    setSelWord(palavra);
-    // Check in palavras_chave first
-    const found = capitulo.palavras_chave.find((p: any) =>
+    if (!profile) return;
+    setSelWord(palavra); setTradWord(null); setTranslatingLivro(true);
+    // Check palavras_chave do capítulo primeiro
+    const found = capitulo?.palavras_chave?.find((p: any) =>
       p.palavra.toLowerCase() === palavra.toLowerCase()
     );
-    if (found) { setTradWord({ palavra: found.palavra, trad: found.traducao_pt, nota: found.nota }); return; }
-    // Otherwise fetch
+    if (found) {
+      setTradWord({ palavra: found.palavra, traducao_pt: found.traducao_pt, fonetica: "", classe: "", instrucao_biologica: found.nota });
+      setTranslatingLivro(false);
+      return;
+    }
     try {
       const res = await fetch("/api/chico", {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          acao: "traduzir_palavra", palavra, lingua: livroAtual?.lingua || "es",
+          acao: "traduzir_palavra", palavra,
+          lingua_origem: livroAtual?.lingua || "es",
           tronco: profile.tronco,
+          interesses: profile.interesses || [],
         }),
       });
       const data = await res.json();
-      if (res.ok) setTradWord({ palavra, trad: data.traducao_pt || "", nota: data.nota || "" });
+      if (res.ok && data.result) setTradWord({ palavra, ...data.result });
     } catch {}
+    setTranslatingLivro(false);
   }
 
   async function salvarComoNexo() {
@@ -1687,9 +1694,13 @@ function LivrosTab({ profile, cards, audio, onAddCard }: {
         method: "PATCH", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           acao: "salvar_palavra_historia",
-          palavra: tradWord.palavra, traducao_pt: tradWord.trad,
-          nota: tradWord.nota, lingua: livroAtual?.lingua || "es",
-          tronco: profile.tronco, interesses: profile.interesses || [],
+          palavra: tradWord.palavra,
+          traducao_pt: tradWord.traducao_pt,
+          fonetica: tradWord.fonetica || "",
+          nota: tradWord.instrucao_biologica || "",
+          lingua: livroAtual?.lingua || "es",
+          tronco: profile.tronco,
+          interesses: profile.interesses || [],
         }),
       });
       const data = await res.json();
@@ -1899,24 +1910,49 @@ function LivrosTab({ profile, cards, audio, onAddCard }: {
                 {renderTextoLivro(capitulo.texto)}
               </div>
 
-              {/* Tradução inline */}
-              {tradWord && (
-                <div style={{ position: "sticky" as const, bottom: "16px", background: C.panel, border: `1px solid ${C.greenBd}`, borderRadius: "8px", padding: "14px 16px", boxShadow: "0 4px 16px rgba(0,0,0,0.10)", display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: "16px", fontWeight: 800, color: C.green, fontFamily: "Nunito, sans-serif" }}>{tradWord.palavra}</div>
-                    <div style={{ fontSize: "14px", color: C.text }}>🇧🇷 {tradWord.trad}</div>
-                    {tradWord.nota && <div style={{ fontSize: "12px", color: C.muted, marginTop: "2px", fontStyle: "italic" }}>💡 {tradWord.nota}</div>}
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column" as const, gap: "6px" }}>
-                    <button onClick={salvarComoNexo} disabled={salvando === tradWord.palavra}
-                      style={{ padding: "7px 14px", borderRadius: "5px", border: "none", background: C.green, color: "#fff", fontSize: "12px", fontWeight: 700, cursor: "pointer", fontFamily: "Nunito, sans-serif", whiteSpace: "nowrap" as const }}>
-                      {salvando === tradWord.palavra ? "..." : "+ Nexo"}
-                    </button>
-                    <button onClick={() => { setTradWord(null); setSelWord(null); }}
-                      style={{ padding: "5px 14px", borderRadius: "5px", border: `1px solid ${C.border}`, background: "transparent", color: C.muted, fontSize: "12px", cursor: "pointer", fontFamily: "Nunito, sans-serif" }}>
-                      Fechar
-                    </button>
-                  </div>
+              {/* Popup de tradução — igual HistoriasTab */}
+              {selWord && (
+                <div style={{ position: "sticky" as const, bottom: "16px", background: C.panel, border: `1.5px solid ${C.greenBd}`, borderRadius: "8px", padding: "14px 16px", boxShadow: "0 4px 16px rgba(27,94,43,0.12)", display: "flex", alignItems: "flex-start", gap: "12px", animation: "fadeIn 0.2s ease forwards" }}>
+                  {translatingLivro ? (
+                    <div style={{ fontSize: "14px", color: C.muted }}>Traduzindo "{selWord}"...</div>
+                  ) : tradWord ? (
+                    <>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: "flex", alignItems: "baseline", gap: "8px", marginBottom: "4px" }}>
+                          <div style={{ fontSize: "18px", fontWeight: 800, color: C.green, fontFamily: "Nunito, sans-serif" }}>{tradWord.palavra}</div>
+                          {tradWord.fonetica && <div style={{ fontSize: "11px", color: C.muted, fontStyle: "italic" }}>{tradWord.fonetica}</div>}
+                          {tradWord.classe && <div style={{ fontSize: "11px", color: C.hint }}>· {tradWord.classe}</div>}
+                        </div>
+                        <div style={{ fontSize: "16px", fontWeight: 700, color: C.text, marginBottom: "8px" }}>{tradWord.traducao_pt}</div>
+                        {tradWord.instrucao_biologica && (
+                          <div style={{ padding: "6px 10px", borderRadius: "6px", background: C.greenLt, border: `1px solid ${C.greenBd}`, fontSize: "12px", color: C.greenMid, marginBottom: "5px", lineHeight: 1.5 }}>
+                            <span style={{ fontWeight: 700 }}>🫁 Pronúncia: </span>{tradWord.instrucao_biologica}
+                          </div>
+                        )}
+                        {tradWord.ancora && (
+                          <div style={{ padding: "6px 10px", borderRadius: "6px", background: C.yellowLt, border: `1px solid ${C.yellowBd}`, fontSize: "12px", color: "#8A4A10", marginBottom: "5px", lineHeight: 1.5 }}>
+                            <span style={{ fontWeight: 700 }}>🏺 Origem: </span>{tradWord.ancora}
+                          </div>
+                        )}
+                        {tradWord.chunk_tear && (
+                          <div style={{ padding: "6px 10px", borderRadius: "6px", background: C.greenLt, border: `1px solid ${C.greenBd}`, fontSize: "12px", color: C.green, marginBottom: "5px", lineHeight: 1.5 }}>
+                            <span style={{ fontWeight: 700 }}>🧬 Tear: </span>{tradWord.chunk_tear}
+                          </div>
+                        )}
+                        {tradWord.exemplo_uso && (
+                          <div style={{ fontSize: "12px", color: C.muted, fontStyle: "italic" }}>"{tradWord.exemplo_uso}"</div>
+                        )}
+                      </div>
+                      <div style={{ display: "flex", flexDirection: "column" as const, gap: "6px", flexShrink: 0 }}>
+                        <button onClick={salvarComoNexo} disabled={salvando === tradWord.palavra}
+                          style={{ padding: "7px 14px", borderRadius: "5px", border: "none", background: salvando === tradWord.palavra ? C.border : C.green, color: "#fff", fontSize: "12px", fontWeight: 700, cursor: "pointer", fontFamily: "Nunito, sans-serif", whiteSpace: "nowrap" as const }}>
+                          {salvando === tradWord.palavra ? "..." : "+ Nexo"}
+                        </button>
+                        <button onClick={() => { setTradWord(null); setSelWord(null); }}
+                          style={{ padding: "5px", border: "none", background: "none", color: C.hint, fontSize: "18px", cursor: "pointer", lineHeight: 1 }}>×</button>
+                      </div>
+                    </>
+                  ) : null}
                 </div>
               )}
 
