@@ -252,6 +252,39 @@ const C = {
   textSub:    "#6B7280", textMuted:  "#9CA3AF",
 };
 
+
+// ── Bandeiras SVG (cross-platform, sem emoji) ─────────────────────────────────
+
+const FLAG_SVG: Record<string, React.ReactNode> = {
+  "es": <svg viewBox="0 0 28 20" xmlns="http://www.w3.org/2000/svg" style={{display:"block",width:"100%",height:"100%"}}><rect width="28" height="20" fill="#AA151B"/><rect y="5" width="28" height="10" fill="#F1BF00"/></svg>,
+  "fr": <svg viewBox="0 0 28 20" xmlns="http://www.w3.org/2000/svg" style={{display:"block",width:"100%",height:"100%"}}><rect width="9.3" height="20" fill="#002395"/><rect x="9.3" width="9.4" height="20" fill="#FFFFFF"/><rect x="18.7" width="9.3" height="20" fill="#ED2939"/></svg>,
+  "it": <svg viewBox="0 0 28 20" xmlns="http://www.w3.org/2000/svg" style={{display:"block",width:"100%",height:"100%"}}><rect width="9.3" height="20" fill="#009246"/><rect x="9.3" width="9.4" height="20" fill="#FFFFFF"/><rect x="18.7" width="9.3" height="20" fill="#CE2B37"/></svg>,
+  "en": <svg viewBox="0 0 28 20" xmlns="http://www.w3.org/2000/svg" style={{display:"block",width:"100%",height:"100%"}}><rect width="28" height="20" fill="#012169"/><polygon points="0,0 28,20 28,15 5,0" fill="#FFFFFF"/><polygon points="28,0 0,20 0,15 23,0" fill="#FFFFFF"/><polygon points="0,0 28,20 28,18 2,0" fill="#C8102E"/><polygon points="28,0 0,20 0,18 26,0" fill="#C8102E"/><rect x="11.5" width="5" height="20" fill="#FFFFFF"/><rect y="7.5" width="28" height="5" fill="#FFFFFF"/><rect x="12.5" width="3" height="20" fill="#C8102E"/><rect y="8.5" width="28" height="3" fill="#C8102E"/></svg>,
+  "de": <svg viewBox="0 0 28 20" xmlns="http://www.w3.org/2000/svg" style={{display:"block",width:"100%",height:"100%"}}><rect width="28" height="6.7" fill="#000000"/><rect y="6.7" width="28" height="6.6" fill="#DD0000"/><rect y="13.3" width="28" height="6.7" fill="#FFCE00"/></svg>,
+  "nl": <svg viewBox="0 0 28 20" xmlns="http://www.w3.org/2000/svg" style={{display:"block",width:"100%",height:"100%"}}><rect width="28" height="6.7" fill="#AE1C28"/><rect y="6.7" width="28" height="6.6" fill="#FFFFFF"/><rect y="13.3" width="28" height="6.7" fill="#21468B"/></svg>,
+  "pt": <svg viewBox="0 0 28 20" xmlns="http://www.w3.org/2000/svg" style={{display:"block",width:"100%",height:"100%"}}><rect width="10.5" height="20" fill="#006600"/><rect x="10.5" width="17.5" height="20" fill="#FF0000"/><ellipse cx="10.5" cy="10" rx="5" ry="5" fill="#FFD700" stroke="#FFFFFF" strokeWidth=".5"/><ellipse cx="10.5" cy="10" rx="3.5" ry="3.5" fill="#003399"/></svg>,
+};
+
+// nome-based lookup (Espanhol → es, etc.)
+const NOME_TO_BCP47: Record<string, string> = {
+  "Espanhol":"es","Francês":"fr","Italiano":"it",
+  "Inglês":"en","Alemão":"de","Holandês":"nl","Português":"pt",
+};
+
+function Flag({ bcp47, nome, size = "md" }: { bcp47?: string; nome?: string; size?: "sm"|"md"|"lg" }) {
+  const code = bcp47?.split("-")[0]?.toLowerCase() || NOME_TO_BCP47[nome||""] || "";
+  const svg = FLAG_SVG[code];
+  if (!svg) return null;
+  const dims: Record<string,{w:number,h:number}> = { sm:{w:20,h:14}, md:{w:28,h:20}, lg:{w:40,h:28} };
+  const d = dims[size];
+  return (
+    <span style={{ display:"inline-block", width:d.w, height:d.h, borderRadius:"2px", overflow:"hidden", border:"0.5px solid rgba(0,0,0,0.08)", flexShrink:0 }}>
+      {svg}
+    </span>
+  );
+}
+
+
 // ── InlineCard -- card de traduções exibido no chat ───────────────────────────
 
 function InlineCard({ card, audio }: { card: MentoriaCard; audio: ReturnType<typeof useAudio> }) {
@@ -264,7 +297,7 @@ function InlineCard({ card, audio }: { card: MentoriaCard; audio: ReturnType<typ
   ];
   const isRom = card.tronco === "românico";
   const titulo = card.titulo_card || card.tema_gerador;
-  const flags: Record<string,string> = { "Espanhol":"🇪🇸","Francês":"🇫🇷","Italiano":"🇮🇹","Inglês":"🇬🇧","Alemão":"🇩🇪","Holandês":"🇳🇱" };
+  // flags handled by <Flag> component
   return (
     <div style={{ marginTop:"10px", borderRadius:"6px", background:"#FFFFFF", border:"1px solid #E2E5E9", overflow:"hidden" }}>
       <div style={{ padding:"12px 14px 10px", borderBottom:"1px solid #E2E5E9", display:"flex", alignItems:"flex-start", justifyContent:"space-between", gap:"10px" }}>
@@ -294,7 +327,7 @@ function InlineCard({ card, audio }: { card: MentoriaCard; audio: ReturnType<typ
                 <div style={{ fontSize:"15px", fontWeight:700, color:isPlaying?G:"#111827" }}>{l.txt}</div>
                 {l.fon && l.fon !== "--" && <div style={{ fontSize:"11px", color:"#9CA3AF", fontStyle:"italic", marginTop:"1px" }}>{l.fon}</div>}
               </div>
-              <span style={{ fontSize:"16px", flexShrink:0 }}>{flags[l.nome]||""}</span>
+              <Flag nome={l.nome} size="md"/>
             </div>
           );
         })}
@@ -340,7 +373,7 @@ function NexoCard({ card, audio, onDelete }: {
   const [confirmDelete, setConfirm] = useState(false);
   const [deleting, setDeleting]     = useState(false);
   const G = "#1B5E2B"; const GL = "#EBF5EE"; const GB = "#A8D5B5";
-  const flags: Record<string,string> = { "Espanhol":"🇪🇸","Francês":"🇫🇷","Italiano":"🇮🇹","Inglês":"🇬🇧","Alemão":"🇩🇪","Holandês":"🇳🇱" };
+  // flags handled by <Flag> component
 
   const langs = [
     { nome:card.lang_1_nome, txt:card.lang_1_txt, fon:card.lang_1_fon, bcp47:card.lang_1_bcp47, exemplo:card.lang_1_exemplo },
@@ -1376,7 +1409,7 @@ function PraticarTab({ profile, cards, audio }: {
                     {/* Tradução */}
                     {ditado.traducao_pt && (
                       <div style={{ marginTop:"6px", fontSize:"13px", color:C3.muted, fontStyle:"italic" }}>
-                        🇧🇷 {ditado.traducao_pt}
+                        <Flag bcp47="pt" size="sm"/> {ditado.traducao_pt}
                       </div>
                     )}
                     {/* Dica */}
@@ -1586,9 +1619,7 @@ function LivrosTab({ profile, cards, audio, onAddCard }: {
   const [paralelo, setParalelo]       = useState(false);
   const [selWord, setSelWord]         = useState<string|null>(null);
 
-  const linguaFlag: Record<string,string> = {
-    "es":"🇪🇸","fr":"🇫🇷","it":"🇮🇹","en":"🇬🇧","de":"🇩🇪","nl":"🇳🇱","pt":"🇧🇷"
-  };
+  // linguaFlag handled by <Flag> component
   const linguaNome: Record<string,string> = {
     "es":"Espanhol","fr":"Francês","it":"Italiano","en":"Inglês","de":"Alemão","nl":"Holandês","pt":"Português"
   };
@@ -1780,7 +1811,7 @@ function LivrosTab({ profile, cards, audio, onAddCard }: {
                 <div key={lp.gutenberg_id}
                   onClick={() => abrirLivro({ id: lp.gutenberg_id, titulo: lp.titulo, autor: lp.autor, lingua: lp.lingua, url_txt: lp.url_txt, assuntos: [], downloads: 0 }, lp.capitulo_atual)}
                   style={{ background: C.panel, border: `1px solid ${C.border}`, borderRadius: "6px", padding: "12px 16px", cursor: "pointer", display: "flex", alignItems: "center", gap: "12px" }}>
-                  <div style={{ fontSize: "22px" }}>{linguaFlag[lp.lingua] || "📖"}</div>
+                  <div style={{ fontSize: "22px" }}><Flag bcp47={lp.lingua} size="md"/></div>
                   <div style={{ flex: 1 }}>
                     <div style={{ fontSize: "14px", fontWeight: 700, color: C.text }}>{lp.titulo}</div>
                     <div style={{ fontSize: "12px", color: C.muted }}>{lp.autor} · Capítulo {lp.capitulo_atual}</div>
@@ -1818,7 +1849,7 @@ function LivrosTab({ profile, cards, audio, onAddCard }: {
                 <div key={livro.id}
                   onClick={() => abrirLivro(livro, 1)}
                   style={{ background: C.panel, border: `1px solid ${isRec ? C.greenBd : C.border}`, borderRadius: "6px", padding: "14px 16px", cursor: "pointer", display: "flex", gap: "14px", alignItems: "flex-start", transition: "border-color 0.15s" }}>
-                  <div style={{ fontSize: "28px", flexShrink: 0 }}>{linguaFlag[livro.lingua] || "📖"}</div>
+                  <div style={{ fontSize: "28px", flexShrink: 0 }}><Flag bcp47={livro.lingua} size="md"/></div>
                   <div style={{ flex: 1, minWidth: 0 }}>
                     <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "3px" }}>
                       <span style={{ fontSize: "15px", fontWeight: 700, color: C.text, fontFamily: "Nunito, sans-serif" }}>{livro.titulo}</span>
@@ -1876,7 +1907,7 @@ function LivrosTab({ profile, cards, audio, onAddCard }: {
               {/* Título do capítulo */}
               <div style={{ marginBottom: "20px" }}>
                 <div style={{ fontSize: "11px", fontWeight: 700, color: C.green, textTransform: "uppercase" as const, letterSpacing: "0.07em", marginBottom: "4px" }}>
-                  {linguaFlag[livroAtual?.lingua || ""] || "📖"} {linguaNome[livroAtual?.lingua || ""] || ""}
+                  <Flag bcp47={livroAtual?.lingua || "pt"} size="md"/> {linguaNome[livroAtual?.lingua || ""] || ""}
                 </div>
                 <div style={{ fontSize: "20px", fontWeight: 800, color: C.text, fontFamily: "Nunito, sans-serif", marginBottom: "6px" }}>
                   {capitulo.titulo_cap}
@@ -2287,7 +2318,7 @@ function HistoriasTab({ profile, cards, onAddCard }: {
                   {/* Modo paralelo */}
                   <button onClick={ativarParalelo} disabled={loadingParalelo}
                     style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 16px", borderRadius:"10px", border:"none", background:paralelo?"rgba(94,92,230,0.12)":"rgba(0,0,0,0.06)", color:paralelo?"#5E5CE6":"#6B7280", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif"}}>
-                    {loadingParalelo?"Traduzindo...":paralelo?"🇧🇷 Ocultar PT":"🇧🇷 Ler em PT"}
+                    {loadingParalelo?"Traduzindo...":paralelo?<><Flag bcp47="pt" size="sm"/> Ocultar PT</>:<><Flag bcp47="pt" size="sm"/> Ler em PT</>}
                   </button>
                   {/* Salvar */}
                   {!historiaSelecionada && (
@@ -2466,7 +2497,7 @@ function HistoriasTab({ profile, cards, onAddCard }: {
                     </button>
                     <button onClick={ativarParalelo} disabled={loadingParalelo}
                       style={{display:"flex", alignItems:"center", gap:"6px", padding:"8px 16px", borderRadius:"10px", border:"none", background:paralelo?"rgba(94,92,230,0.12)":"rgba(0,0,0,0.06)", color:paralelo?"#5E5CE6":"#6B7280", fontSize:"13px", fontWeight:700, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif"}}>
-                      {loadingParalelo?"Traduzindo...":paralelo?"🇧🇷 Ocultar PT":"🇧🇷 Ler em PT"}
+                      {loadingParalelo?"Traduzindo...":paralelo?<><Flag bcp47="pt" size="sm"/> Ocultar PT</>:<><Flag bcp47="pt" size="sm"/> Ler em PT</>}
                     </button>
                   </div>
                   {selWord && (
@@ -2645,8 +2676,8 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
   ];
 
   const TC = [
-    { id:"românico" as const,  label:"Tear Românico",  desc:"ES · FR · IT", flags:"🇪🇸 🇫🇷 🇮🇹", color:"#C04018", bg:"#FFF3EE", border:"#FFDDD0" },
-    { id:"germânico" as const, label:"Tear Germânico", desc:"EN · DE · NL", flags:"🇬🇧 🇩🇪 🇳🇱", color:C.green, bg:"#EEF3FF", border:"#C8D8F8" },
+    { id:"românico" as const,  label:"Tear Românico",  desc:"ES · FR · IT", flags:["es","fr","it"], color:"#C04018", bg:"#FFF3EE", border:"#FFDDD0" },
+    { id:"germânico" as const, label:"Tear Germânico", desc:"EN · DE · NL", flags:["en","de","nl"], color:C.green, bg:"#EEF3FF", border:"#C8D8F8" },
   ];
 
   function toggleTronco(id:"românico"|"germânico") {
@@ -2739,7 +2770,7 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
             {TC.map(t=>{ const sel=troncos.includes(t.id); return (
               <button key={t.id} onClick={()=>toggleTronco(t.id)}
                 style={{ width:"100%", padding:"14px 16px", borderRadius:"6px", border:`2px solid ${sel?t.color:t.border}`, background:sel?t.bg:"#FAFBFF", cursor:"pointer", textAlign:"left" as const, fontFamily:"Inter, -apple-system, sans-serif", transition:"all 0.2s", display:"flex", alignItems:"center", gap:"14px", boxShadow:sel?`0 2px 10px ${t.color}20`:"none" }}>
-                <div style={{ fontSize:"22px", letterSpacing:"2px", flexShrink:0 }}>{t.flags}</div>
+                <div style={{ display:"flex", gap:"4px", flexShrink:0 }}>{(t.flags as string[]).map((c:string)=><Flag key={c} bcp47={c} size="md"/>)}</div>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:"14px", fontWeight:800, color:sel?t.color:"#111827", fontFamily:"Inter, -apple-system, sans-serif" }}>{t.label}</div>
                   <div style={{ fontSize:"12px", color:sel?t.color:"#6B7280", marginTop:"1px", fontWeight:600 }}>{t.desc}</div>
@@ -3225,7 +3256,7 @@ function ChicoDashboard() {
               <div style={{ padding:"12px 14px", borderRadius:"6px", background:profile.tronco==="românico"?"#FFF3EE":"#EEF3FF", border:`1px solid ${profile.tronco==="românico"?"#FFDDD0":"#C8D8F8"}` }}>
                 <div style={{ fontSize:"10px", fontWeight:700, color:profile.tronco==="românico"?"#C04018":"#1B5E2B", letterSpacing:"0.06em", textTransform:"uppercase" as const, marginBottom:"3px" }}>{troncoLabel}</div>
                 <div style={{ fontSize:"12px", color:profile.tronco==="românico"?"#C04018":"#1B5E2B", fontWeight:600, opacity:0.8 }}>
-                  {profile.tronco==="românico"?"🇪🇸 🇫🇷 🇮🇹":"🇬🇧 🇩🇪 🇳🇱"}
+                  <>{(profile.tronco==="românico"?["es","fr","it"]:["en","de","nl"]).map((c:string)=><Flag key={c} bcp47={c} size="sm"/>)}</>
                 </div>
               </div>
             )}
