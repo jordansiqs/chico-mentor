@@ -2850,8 +2850,6 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
       </div>
     </div>
   );
-ENDTSX
-echo "Lines: $(wc -l < /home/claude/perfil_return.tsx)";
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────────
