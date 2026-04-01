@@ -2722,7 +2722,9 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
 
   async function handleLogout() { await supabase.auth.signOut(); window.location.href="/"; }
 
-  const initials = (nome||profile?.display_name||"U")[0].toUpperCase();
+  const initials    = (nome||profile?.display_name||"U")[0].toUpperCase();
+  const troncoLabel = profile?.tronco === "românico" ? "Tear Românico" : "Tear Germânico";
+  const taxa        = cards.length > 0 ? Math.round((cards.filter((c: MentoriaCard) => (c.sr_reviews||0) > 0).length / cards.length) * 100) : 0;
 
   return (
     <div style={{ height:"100%", overflowY:"auto" as const, background:C.bg }}>
