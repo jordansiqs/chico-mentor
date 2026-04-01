@@ -353,7 +353,7 @@ function InlineCard({ card, audio }: { card: MentoriaCard; audio: ReturnType<typ
                 </button>
                 <div>
                   <span style={{ fontSize:"12px", color:"#374151", fontStyle:"italic" }}>{l.exemplo}</span>
-                  <span style={{ fontSize:"10px", color:"#9CA3AF", marginLeft:"6px" }}>— {l.nome} {flags[l.nome]||""}</span>
+                  <span style={{ fontSize:"10px", color:"#9CA3AF", marginLeft:"6px" }}>— {l.nome} <Flag nome={l.nome} size="sm"/></span>
                 </div>
               </div>
             );
@@ -427,7 +427,7 @@ function NexoCard({ card, audio, onDelete }: {
                     <div style={{ fontSize:"13px", fontWeight:700, color:isPlay?G:"#111827" }}>{l.txt}</div>
                     {l.fon && l.fon !== "--" && <div style={{ fontSize:"10px", color:"#9CA3AF", fontStyle:"italic" }}>{l.fon}</div>}
                   </div>
-                  <span style={{ fontSize:"14px" }}>{flags[l.nome]||""}</span>
+                  <Flag nome={l.nome} size="md"/>
                 </div>
               );
             })}
