@@ -2657,6 +2657,10 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
   const [deletingAccount, setDeletingAccount] = useState(false);
   const [resetSent, setResetSent]             = useState(false);
   const [sendingReset, setSendingReset]       = useState(false);
+  const [userEmail, setUserEmail]             = useState<string>("");
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => { if (data.user?.email) setUserEmail(data.user.email); });
+  }, []);
 
   const total  = cards.length;
   const hoje   = new Date(); hoje.setHours(0,0,0,0);
@@ -2837,7 +2841,7 @@ function PerfilTab({ profile, onProfileUpdate, cards }: {
           <div style={{ fontSize:"10px", fontWeight:700, color:C.hint, letterSpacing:".08em", textTransform:"uppercase" as const, marginBottom:"12px" }}>
             Segurança
           </div>
-          <div style={{ fontSize:"12px", color:C.muted, marginBottom:"10px" }}>{user?.email}</div>
+          <div style={{ fontSize:"12px", color:C.muted, marginBottom:"10px" }}>{userEmail}</div>
           <button onClick={handleResetPassword} disabled={sendingReset}
             style={{ padding:"8px 14px", borderRadius:"5px", border:`1px solid ${C.border}`, background:"transparent", color:C.text, fontSize:"12px", fontWeight:600, cursor:"pointer", fontFamily:"inherit" }}>
             {sendingReset ? "Enviando..." : "Redefinir senha por email"}
