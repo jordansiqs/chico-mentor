@@ -35,6 +35,11 @@ interface ChatMessage {
   card?: MentoriaCard;         // card inline no chat
   isVerificacao?: boolean;
   isRoteiro?: boolean;
+  isNoticing?: boolean;        // Camada 2: observação comparativa
+  swainPrompt?: {              // Camada 4: output forçado
+    frase_incompleta: string;
+    dica: string;
+  };
 }
 
 interface UserProfile {
@@ -51,6 +56,9 @@ interface ChicoMemoria {
   pontos_fracos?: string[];
   estilo?: string;
   ultima_sessao?: string;
+  nivel_lingua?: string;           // A1 | A2 | B1 | B2 | C1 | C2
+  negociacao_count?: number;       // Camada 3: negociações na sessão
+  nivel_negociacao?: string;       // desativado | leve | moderado | ativo
 }
 
 type MainTab       = "chat" | "flashcards" | "progresso" | "praticar" | "viagem" | "musica" | "historias" | "livros" | "perfil";
@@ -472,6 +480,19 @@ function FlashcardsTab({ cards, audio }: {
   const [diffResult, setDiffResult] = useState<null|{ok:boolean; diff:React.ReactNode[]}>(null);
   const inputRef                    = useRef<HTMLInputElement>(null);
 
+  // ── Camada 5: Velocidade ──────────────────────────────────────────────────
+  const [modoVelocidade, setModoVelocidade]     = useState(false);
+  const [velocCards, setVelocCards]             = useState<MentoriaCard[]>([]);
+  const [velocIdx, setVelocIdx]                 = useState(0);
+  const [velocInput, setVelocInput]             = useState("");
+  const [velocTimer, setVelocTimer]             = useState(3);
+  const [velocResult, setVelocResult]           = useState<"acerto"|"erro"|null>(null);
+  const [velocDone, setVelocDone]               = useState(false);
+  const [velocScore, setVelocScore]             = useState({ acertos:0, erros:0 });
+  const velocTimerRef                           = useRef<ReturnType<typeof setInterval>|null>(null);
+  const nivelLingua                             = (profile?.tronco === "românico" ? "B1" : "B1") as string;
+  const tempoLimite                             = nivelLingua >= "B2" ? 2 : 3;
+
   // Calcula próximo intervalo para preview nos botões (sem salvar)
   function previewInterval(card: MentoriaCard, q: number): string {
     const interval = card.sr_interval || 1;
@@ -645,7 +666,145 @@ function FlashcardsTab({ cards, audio }: {
 
   // C is defined at module level
 
-  // ── Sem cards ──────────────────────────────────────────────────────────────
+  // ── Camada 5: Velocidade — funções ──────────────────────────────────────────
+  function iniciarVelocidade() {
+    const consolidados = cards.filter((c: MentoriaCard) =>
+      (c as any).modo_velocidade === true || ((c.sr_easiness||2.5) >= 2.3 && (c.sr_reviews||0) >= 5)
+    ).slice(0, 15);
+    if (consolidados.length === 0) return;
+    setVelocCards(consolidados);
+    setVelocIdx(0); setVelocInput(""); setVelocResult(null); setVelocDone(false);
+    setVelocScore({ acertos:0, erros:0 }); setModoVelocidade(true);
+    fetch("/api/chico", { method:"PATCH", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ acao: "atualizar_modo_velocidade" }) }).catch(() => {});
+  }
+
+  function iniciarTimerVeloc() {
+    if (velocTimerRef.current) clearInterval(velocTimerRef.current);
+    setVelocTimer(tempoLimite);
+    velocTimerRef.current = setInterval(() => {
+      setVelocTimer(prev => {
+        if (prev <= 1) {
+          clearInterval(velocTimerRef.current!);
+          handleVelocErro();
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  }
+
+  function handleVelocAcerto() {
+    if (velocTimerRef.current) clearInterval(velocTimerRef.current);
+    setVelocResult("acerto");
+    setVelocScore(prev => ({ ...prev, acertos: prev.acertos + 1 }));
+    const card = velocCards[velocIdx];
+    fetch("/api/chico", { method:"PATCH", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ acao: "sr_velocidade", card_id: card.id, acertou: true }) }).catch(() => {});
+    setTimeout(() => proximoVeloc(), 800);
+  }
+
+  function handleVelocErro() {
+    if (velocTimerRef.current) clearInterval(velocTimerRef.current);
+    setVelocResult("erro");
+    setVelocScore(prev => ({ ...prev, erros: prev.erros + 1 }));
+    const card = velocCards[velocIdx];
+    fetch("/api/chico", { method:"PATCH", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({ acao: "sr_velocidade", card_id: card.id, acertou: false }) }).catch(() => {});
+    setTimeout(() => proximoVeloc(), 1000);
+  }
+
+  function proximoVeloc() {
+    setVelocResult(null); setVelocInput("");
+    if (velocIdx + 1 >= velocCards.length) { setVelocDone(true); return; }
+    setVelocIdx(prev => prev + 1);
+    iniciarTimerVeloc();
+  }
+
+  function verificarVeloc() {
+    if (!velocCards[velocIdx]) return;
+    const card = velocCards[velocIdx];
+    const lang1 = card.lang_1_txt?.toLowerCase().trim() || "";
+    const lang2 = card.lang_2_txt?.toLowerCase().trim() || "";
+    const lang3 = card.lang_3_txt?.toLowerCase().trim() || "";
+    const resp = velocInput.toLowerCase().trim();
+    const acertou = resp === lang1 || resp === lang2 || resp === lang3 ||
+      lang1.includes(resp) || lang2.includes(resp) || lang3.includes(resp);
+    if (acertou) handleVelocAcerto(); else handleVelocErro();
+  }
+
+  // ── Camada 5: Velocidade — render ────────────────────────────────────────────
+  if (modoVelocidade) {
+    if (velocDone) return (
+      <div style={{ display:"flex", flexDirection:"column" as const, alignItems:"center", justifyContent:"center", gap:"16px", padding:"40px 20px", height:"100%", background:C.bg }}>
+        <div style={{ fontSize:"28px", fontWeight:800, color:C.green }}>
+          {velocScore.acertos}/{velocCards.length}
+        </div>
+        <div style={{ fontSize:"16px", fontWeight:700, color:C.text }}>Sessão de velocidade concluída</div>
+        <div style={{ fontSize:"13px", color:C.muted }}>
+          {velocScore.acertos} acertos · {velocScore.erros} erros
+        </div>
+        <button onClick={() => setModoVelocidade(false)}
+          style={{ padding:"11px 28px", borderRadius:"6px", border:"none", background:C.green, color:"#fff", fontSize:"14px", fontWeight:700, cursor:"pointer" }}>
+          Voltar
+        </button>
+      </div>
+    );
+
+    const vcCard = velocCards[velocIdx];
+    const timerPct = (velocTimer / tempoLimite) * 100;
+    return (
+      <div style={{ display:"flex", flexDirection:"column" as const, alignItems:"center", padding:"20px", gap:"16px", height:"100%", background:C.bg, overflowY:"auto" as const }}>
+        {/* Header */}
+        <div style={{ width:"100%", maxWidth:"480px", display:"flex", alignItems:"center", gap:"10px" }}>
+          <button onClick={() => { if (velocTimerRef.current) clearInterval(velocTimerRef.current); setModoVelocidade(false); }}
+            style={{ padding:"5px 10px", borderRadius:"5px", border:`1px solid ${C.border}`, background:"transparent", color:C.muted, fontSize:"11px", cursor:"pointer" }}>
+            Sair
+          </button>
+          <div style={{ flex:1 }}>
+            <div style={{ height:"4px", background:C.border, borderRadius:"4px", overflow:"hidden" }}>
+              <div style={{ height:"100%", width:`${timerPct}%`, background: timerPct > 50 ? C.green : timerPct > 25 ? C.yellow : C.red, borderRadius:"4px", transition:"width 1s linear" }}/>
+            </div>
+          </div>
+          <span style={{ fontSize:"11px", fontWeight:700, color: timerPct > 50 ? C.green : C.red, minWidth:"18px" }}>{velocTimer}s</span>
+          <span style={{ fontSize:"11px", color:C.muted }}>{velocIdx+1}/{velocCards.length}</span>
+        </div>
+
+        {/* Card */}
+        <div style={{ width:"100%", maxWidth:"480px", background:C.green, borderRadius:"8px", padding:"32px 24px", textAlign:"center" as const, position:"relative" as const }}>
+          <div style={{ position:"absolute" as const, top:0, left:0, right:0, height:"3px", background:C.yellow, borderRadius:"8px 8px 0 0" }}/>
+          <div style={{ fontSize:"10px", fontWeight:700, color:"rgba(255,255,255,.45)", letterSpacing:".1em", textTransform:"uppercase" as const, marginBottom:"12px" }}>Em Português</div>
+          <div style={{ fontSize:"26px", fontWeight:800, color:"#fff", letterSpacing:"-.4px" }}>{vcCard?.titulo_card || vcCard?.tema_gerador}</div>
+        </div>
+
+        {/* Input */}
+        <div style={{ width:"100%", maxWidth:"480px", display:"flex", gap:"8px" }}>
+          <input
+            autoFocus
+            value={velocInput}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setVelocInput(e.target.value)}
+            onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => { if (e.key === "Enter") verificarVeloc(); }}
+            placeholder="Digite em qualquer língua..."
+            disabled={velocResult !== null}
+            style={{ flex:1, padding:"11px 14px", borderRadius:"6px", border:`1.5px solid ${velocResult === "acerto" ? C.green : velocResult === "erro" ? C.red : C.border}`, fontSize:"15px", fontWeight:600, color:C.text, background: velocResult === "acerto" ? C.greenLt : velocResult === "erro" ? C.redLt : C.panel, outline:"none", fontFamily:"inherit" }}
+          />
+          <button onClick={verificarVeloc} disabled={!velocInput.trim() || velocResult !== null}
+            style={{ padding:"11px 18px", borderRadius:"6px", border:"none", background: !velocInput.trim() ? C.border : C.green, color:"#fff", fontSize:"13px", fontWeight:700, cursor: !velocInput.trim() ? "not-allowed" : "pointer" }}>
+            OK
+          </button>
+        </div>
+
+        {/* Feedback */}
+        {velocResult && (
+          <div style={{ width:"100%", maxWidth:"480px", padding:"10px 14px", borderRadius:"6px", background: velocResult === "acerto" ? C.greenLt : C.redLt, border:`1px solid ${velocResult === "acerto" ? C.greenBd : C.redBd}`, fontSize:"13px", fontWeight:600, color: velocResult === "acerto" ? C.green : C.red }}>
+            {velocResult === "acerto" ? `Correto! ${vcCard?.lang_1_txt} · ${vcCard?.lang_2_txt} · ${vcCard?.lang_3_txt}` : `Resposta: ${vcCard?.lang_1_txt} · ${vcCard?.lang_2_txt} · ${vcCard?.lang_3_txt}`}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+    // ── Sem cards ──────────────────────────────────────────────────────────────
   if (cards.length === 0) return (
     <div style={{ display:"flex", flexDirection:"column" as const, alignItems:"center", justifyContent:"center", height:"100%", gap:"12px", padding:"40px", textAlign:"center" as const }}>
       <div style={{ width:48, height:48, borderRadius:8, background:C.greenLt, display:"flex", alignItems:"center", justifyContent:"center" }}><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke={C.green} strokeWidth="2" strokeLinecap="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
@@ -683,6 +842,12 @@ function FlashcardsTab({ cards, audio }: {
           style={{ padding:"13px 32px", borderRadius:"6px", border:"none", background:`linear-gradient(135deg,${C.blue},#2E7D45)`, color:"#fff", fontSize:"15px", fontWeight:800, cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", boxShadow:"0 3px 14px rgba(27,94,43,0.28)" }}>
           Revisar novamente
         </button>
+        {cards.filter((c: MentoriaCard) => (c.sr_easiness||2.5) >= 2.3 && (c.sr_reviews||0) >= 5).length >= 3 && (
+          <button onClick={iniciarVelocidade}
+            style={{ padding:"11px 24px", borderRadius:"6px", border:`1px solid ${C.green}`, background:"transparent", color:C.green, fontSize:"13px", fontWeight:700, cursor:"pointer" }}>
+            Modo Velocidade
+          </button>
+        )}
       </div>
     );
   }
@@ -2948,6 +3113,43 @@ function ChatBubble({ message: msg, audio }: {
     </div>
   );
 
+  // Noticing (Camada 2) — observação pedagógica discreta
+  if (msg.isNoticing) return (
+    <div style={{ margin:"8px 0", padding:"11px 16px", background:C.greenLt, border:`1px solid ${C.greenBd}`, borderLeft:`3px solid ${C.green}`, borderRadius:"0 8px 8px 0", fontSize:"13px", color:C.greenMid, lineHeight:1.6 }}>
+      <div style={{ fontSize:"10px", fontWeight:700, color:C.green, letterSpacing:"0.07em", textTransform:"uppercase" as const, marginBottom:"5px" }}>
+        Observação linguística
+      </div>
+      {msg.content}
+    </div>
+  );
+
+  // Swain (Camada 4) — output forçado com espaço em branco
+  if (msg.swainPrompt) return (
+    <div style={{ display:"flex", alignItems:"flex-start", gap:"8px", marginBottom:"4px" }}>
+      <div style={{ width:28, height:28, borderRadius:"50%", background:C.green, display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+        <span style={{ fontSize:"13px", fontWeight:800, color:"#fff" }}>C</span>
+      </div>
+      <div style={{ maxWidth:"82%", display:"flex", flexDirection:"column" as const, gap:"8px" }}>
+        {msg.content && (
+          <div style={{ padding:"10px 14px", borderRadius:"4px 12px 12px 12px", background:C.panel, border:`1px solid ${C.border}`, fontSize:"14px", lineHeight:1.6, color:C.text }}>
+            {msg.content}
+          </div>
+        )}
+        <div style={{ background:C.yellowLt, border:`1px solid ${C.yellowBd}`, borderRadius:"8px", padding:"12px 14px" }}>
+          <div style={{ fontSize:"10px", fontWeight:700, color:"#7A5F00", letterSpacing:"0.07em", textTransform:"uppercase" as const, marginBottom:"6px" }}>
+            Complete a frase
+          </div>
+          <div style={{ fontSize:"14px", fontWeight:700, color:C.text, marginBottom:"4px" }}>
+            {msg.swainPrompt.frase_incompleta}
+          </div>
+          <div style={{ fontSize:"11px", color:C.muted, fontStyle:"italic" }}>
+            Dica: {msg.swainPrompt.dica}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+
   // Chico bubble
   return (
     <div style={{ display:"flex", alignItems:"flex-start", gap:"8px", marginBottom:"4px" }}>
@@ -3117,6 +3319,36 @@ function ChicoDashboard() {
       ));
 
       chatHistoryRef.current = [...chatHistoryRef.current, { role:"assistant" as const, content:chicoContent }].slice(-8);
+
+      // ── Camada 4: Swain ───────────────────────────────────────────────────
+      if ((data.card as any)?.swain_prompt) {
+        const sp = (data.card as any).swain_prompt;
+        setTimeout(() => {
+          setMessages(prev => [...prev, {
+            id: `sw-${Date.now()}`, role: "chico" as const, content: "",
+            swainPrompt: { frase_incompleta: sp.frase_incompleta, dica: sp.dica },
+          }]);
+        }, 600);
+      }
+
+      // ── Camada 2: Noticing ────────────────────────────────────────────────
+      const newTotal = cards.length + 1;
+      if (newTotal % 3 === 0) {
+        const recentCards = [savedCard, ...cards.slice(0, 4)];
+        fetch("/api/chico", {
+          method: "PATCH", headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ acao: "gerar_noticing", nexos_recentes: recentCards, tronco: profile.tronco }),
+        }).then(r => r.json()).then(d => {
+          if (d.noticing) {
+            setTimeout(() => {
+              setMessages(prev => [...prev, {
+                id: `n-${Date.now()}`, role: "chico" as const,
+                content: d.noticing, isNoticing: true,
+              }]);
+            }, 1200);
+          }
+        }).catch(() => {});
+      }
 
       // Atualiza memória em background a cada 5 nexos
       if (cards.length > 0 && cards.length % 5 === 0) {
