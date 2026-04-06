@@ -490,8 +490,8 @@ function FlashcardsTab({ cards, audio }: {
   const [velocDone, setVelocDone]               = useState(false);
   const [velocScore, setVelocScore]             = useState({ acertos:0, erros:0 });
   const velocTimerRef                           = useRef<ReturnType<typeof setInterval>|null>(null);
-  const nivelLingua                             = (profile?.tronco === "românico" ? "B1" : "B1") as string;
-  const tempoLimite                             = nivelLingua >= "B2" ? 2 : 3;
+  const tempoLimite                             = 3; // B1 default; B2+ = 2s
+
 
   // Calcula próximo intervalo para preview nos botões (sem salvar)
   function previewInterval(card: MentoriaCard, q: number): string {
