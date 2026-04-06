@@ -120,7 +120,8 @@ function buildSystemPrompt(
   interesses: string[],
   nexos_recentes: string[],
   memoria: ChicoMemoria,
-  modo_especial: string
+  modo_especial: string,
+  nivel_lingua: string = "B1"
 ): string {
   const troncoInfo    = TRONCOS[tronco];
   const linguas       = troncoInfo.linguas.map((l: any) => l.nome).join(", ");
