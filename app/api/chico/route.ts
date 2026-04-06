@@ -202,6 +202,31 @@ Avançado → nuances culturais, registros, polissemia.
 - SEMPRE termine com 1 pergunta nova e prática
 ${modoExtra[modo_especial] || ""}
 
+## CAMADA 3 — NEGOCIAÇÃO DE SIGNIFICADO (Long)
+Quando o aluno (nível ${nivel_lingua}) produzir algo com erro de alto valor pedagógico:
+(a) palavra errada mas próxima do significado correto
+(b) estrutura gramatical ambígua para falante nativo
+(c) palavra do português misturada na língua-alvo
+(d) palavra avançada com sentido incorreto
+→ Responda com UMA pergunta de esclarecimento que induza o aluno a perceber o erro sem mencionar o erro diretamente.
+→ Depois que o aluno corrigir, explique em 1-2 linhas o que aconteceu.
+→ Calibragem: A1-A2 = NUNCA ativar. B1 = 1 a cada ~10 interações. B2 = 1 a cada ~5. C1-C2 = sempre que houver oportunidade.
+→ NUNCA ativar em revisão SM-2. NUNCA quando o aluno está claramente frustrado.
+
+## CAMADA 4 — OUTPUT FORÇADO (Swain)
+Quando o aluno produzir frase imprecisa (erro de tempo verbal, código-mistura, concordância de gênero, SVO invertido):
+→ NÃO corrija diretamente. Mostre a frase incompleta com ___ no lugar do erro.
+→ Formato obrigatório: "Você quis dizer: [frase com ___]? Complete: [dica do que falta]"
+→ Depois que o aluno completar corretamente: confirme em 1 linha.
+→ Ativar só em nível >= B1. Máximo 2 reformulações por sessão.
+→ Quando ativar Swain, inclua no JSON: "swain_prompt": {"frase_incompleta": "...", "dica": "..."}
+
+## CAMADA 1 — FREQUÊNCIA CONTEXTUAL (Nation)
+Priorize vocabulário de alta frequência nos temas: ${interessesStr}.
+Evite palavras que o aluno já domina (nexos com intervalo > 14 dias): ${nexosStr}
+Prefira palavras que aparecem naturalmente nos contextos dos últimos nexos aprendidos.
+Não use listas genéricas — calibre sempre para os interesses específicos deste aluno.
+
 ## ATENÇÃO CRÍTICA SOBRE AS LÍNGUAS
 - lang_1 = SEMPRE ${troncoInfo.linguas[0].nome} — sem exceção
 - lang_2 = SEMPRE ${troncoInfo.linguas[1].nome} — sem exceção  
@@ -418,7 +443,7 @@ export async function POST(request: NextRequest) {
     }
 
     // ── Chamada principal ─────────────────────────────────────────────────────
-    const systemPromptStr = buildSystemPrompt(tronco, interesses||[], nexos_recentes, memoria, modo_especial);
+    const systemPromptStr = buildSystemPrompt(tronco, interesses||[], nexos_recentes, memoria, modo_especial, (memoria as any).nivel_lingua || "B1");
 
     async function callGroq(temp: number) {
       const r = await groq.chat.completions.create({
@@ -1360,6 +1385,89 @@ ${capTexto.slice(0, 3000)}`,
 
       if (error) return NextResponse.json({ error: error.message }, { status: 500 });
       return NextResponse.json({ livros: data || [] });
+    }
+
+        // ── Camada 2: Noticing ────────────────────────────────────────────────────
+    if (acao === "gerar_noticing") {
+      const { nexos_recentes, tronco } = body;
+      if (!nexos_recentes || (nexos_recentes as any[]).length < 3) {
+        return NextResponse.json({ noticing: null });
+      }
+      const nexosList = (nexos_recentes as any[]).slice(-5).map((n: any) =>
+        `"${n.titulo}" (${tronco === "românico" ? "ESP: " + n.lang_1_txt + " | FR: " + n.lang_2_txt + " | IT: " + n.lang_3_txt : "EN: " + n.lang_1_txt + " | DE: " + n.lang_2_txt + " | NL: " + n.lang_3_txt})`
+      ).join("\n");
+
+      const noticingPrompt = `Você é o Chico. O aluno acabou de aprender estes Nexos:\n${nexosList}\n\nIdentifique UM padrão linguístico comparativo que aparece neles (fonética, morfologia, posição sintática, falso cognato, conjugação). Escreva uma observação de 2-3 linhas em português, começando com "Perceba que..." ou "Note que...". Seja específico, use os exemplos dos Nexos. Não explique gramática abstrata. Retorne APENAS o texto da observação, sem JSON.`;
+
+      try {
+        const r = await groq.chat.completions.create({
+          model: "llama-3.3-70b-versatile", temperature: 0.4, max_tokens: 200,
+          messages: [{ role: "user", content: noticingPrompt }],
+        });
+        const noticing = r.choices[0]?.message?.content?.trim() || null;
+        return NextResponse.json({ noticing });
+      } catch {
+        return NextResponse.json({ noticing: null });
+      }
+    }
+
+    // ── Camada 5: Velocidade — atualizar modo_velocidade ─────────────────────
+    if (acao === "atualizar_modo_velocidade") {
+      const supabaseV = await createSupabaseServer();
+      const { data: { session: sessV } } = await supabaseV.auth.getSession();
+      if (!sessV) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+
+      // Ativa modo_velocidade para cards consolidados
+      const { data: cards } = await supabaseV
+        .from("mentoria_cards")
+        .select("id, sr_easiness, sr_reviews")
+        .eq("user_id", sessV.user.id);
+
+      const toActivate = (cards || [])
+        .filter((c: any) => c.sr_easiness >= 2.3 && c.sr_reviews >= 5)
+        .map((c: any) => c.id);
+
+      if (toActivate.length > 0) {
+        await supabaseV
+          .from("mentoria_cards")
+          .update({ modo_velocidade: true })
+          .in("id", toActivate);
+      }
+      return NextResponse.json({ ativados: toActivate.length });
+    }
+
+    // ── Camada 5: Velocidade — salvar resultado ───────────────────────────────
+    if (acao === "sr_velocidade") {
+      const { card_id, acertou } = body;
+      const supabaseVR = await createSupabaseServer();
+      const { data: { session: sessVR } } = await supabaseVR.auth.getSession();
+      if (!sessVR) return NextResponse.json({ error: "Não autorizado." }, { status: 401 });
+
+      const { data: card } = await supabaseVR
+        .from("mentoria_cards")
+        .select("sr_easiness, sr_reviews")
+        .eq("id", card_id as string)
+        .eq("user_id", sessVR.user.id)
+        .single();
+
+      if (!card) return NextResponse.json({ error: "Card não encontrado." }, { status: 404 });
+
+      const novoEasiness = acertou
+        ? Math.min(2.5, (card.sr_easiness || 2.5) + 0.05)
+        : Math.max(1.3, (card.sr_easiness || 2.5) - 0.2);
+      const saiModo = !acertou;
+
+      await supabaseVR
+        .from("mentoria_cards")
+        .update({
+          sr_easiness: novoEasiness,
+          sr_reviews: (card.sr_reviews || 0) + 1,
+          ...(saiModo ? { modo_velocidade: false } : {}),
+        })
+        .eq("id", card_id as string)
+        .eq("user_id", sessVR.user.id);
+
+      return NextResponse.json({ ok: true, saiu_modo: saiModo, novo_easiness: novoEasiness });
     }
 
         return NextResponse.json({ error:"Ação desconhecida." },{ status:400 });
