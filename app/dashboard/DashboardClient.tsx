@@ -3449,9 +3449,16 @@ function ChicoDashboard() {
         @media(min-width:769px){
           .mobile-nav{display:none!important;}
         }
+        .mobile-nav::-webkit-scrollbar{display:none;}
+        .mobile-nav{scrollbar-width:none;-ms-overflow-style:none;}
+        @media(max-width:768px){
+          textarea,input[type="text"],input[type="search"]{
+            font-size:16px!important;
+          }
+        }
       `}</style>
 
-      <div style={{ display:"flex", height:"100vh", background:C.bg, fontFamily:"Inter, -apple-system, sans-serif", color:C.text, overflow:"hidden" }}>
+      <div style={{ display:"flex", height:isMobile?"calc(100dvh - 60px)":"100vh", background:C.bg, fontFamily:"Inter, -apple-system, sans-serif", color:C.text, overflow:"hidden", position:"relative" as const }}>
 
         {/* ── NAV ESQUERDA estilo Duolingo ── */}
         {!isMobile && (
@@ -3576,7 +3583,7 @@ function ChicoDashboard() {
                 )}
 
                 {/* Input */}
-                <div style={{ padding:isMobile?"8px 12px 12px":"12px 28px 16px", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(16px)", borderTop:`1px solid ${C.border}`, flexShrink:0 }}>
+                <div style={{ padding:isMobile?"8px 12px 16px":"12px 28px 16px", background:"rgba(255,255,255,0.95)", backdropFilter:"blur(16px)", borderTop:`1px solid ${C.border}`, flexShrink:0 }}>
                   <div style={{ display:"flex", gap:"10px", alignItems:"flex-end", background:"#F4F5F0", borderRadius:"8px", padding:"10px 10px 10px 20px", border:`1.5px solid ${C.border}` }}>
                     <textarea ref={textareaRef} value={inputText} onChange={e=>setInputText(e.target.value)} onKeyDown={handleKeyDown}
                       {...(modoConversa ? {placeholder:`Escreva em ${linguaConversa}...`} : {placeholder:"Escreva para o Chico..."})} rows={1} disabled={isLoading}
@@ -3597,14 +3604,14 @@ function ChicoDashboard() {
               </>
             )}
 
-            {activeTab==="flashcards" && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><FlashcardsTab cards={cards} audio={audio}/></div>}
-            {activeTab==="progresso"  && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><ProgressoTab cards={cards}/></div>}
-            {activeTab==="praticar"   && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><PraticarTab profile={profile} cards={cards} audio={audio}/></div>}
-            {activeTab==="viagem"     && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><ViagemTab profile={profile} audio={audio}/></div>}
-            {activeTab==="musica"     && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><MusicaTab profile={profile}/></div>}
-            {activeTab==="historias"  && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><HistoriasTab profile={profile} cards={cards} onAddCard={(c: MentoriaCard)=>setCards(prev=>[c,...prev])}/></div>}
-            {activeTab==="livros"     && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><LivrosTab profile={profile} cards={cards} audio={audio} onAddCard={(c: MentoriaCard)=>setCards(prev=>[c,...prev])}/></div>}
-            {activeTab==="perfil"     && <div style={{ flex:1, overflow:"hidden", background:C.bg }}><PerfilTab profile={profile} onProfileUpdate={setProfile} cards={cards}/></div>}
+            {activeTab==="flashcards" && <div style={{ flex:1, overflow:isMobile?"auto":"hidden", background:C.bg }}><FlashcardsTab cards={cards} audio={audio}/></div>}
+            {activeTab==="progresso"  && <div style={{ flex:1, overflow:isMobile?"auto":"hidden", background:C.bg }}><ProgressoTab cards={cards}/></div>}
+            {activeTab==="praticar"   && <div style={{ flex:1, overflow:isMobile?"auto":"hidden", background:C.bg }}><PraticarTab profile={profile} cards={cards} audio={audio}/></div>}
+            {activeTab==="viagem"     && <div style={{ flex:1, overflow:isMobile?"auto":"hidden", background:C.bg }}><ViagemTab profile={profile} audio={audio}/></div>}
+            {activeTab==="musica"     && <div style={{ flex:1, overflow:isMobile?"auto":"hidden", background:C.bg }}><MusicaTab profile={profile}/></div>}
+            {activeTab==="historias"  && <div style={{ flex:1, overflow:isMobile?"auto":"hidden", background:C.bg }}><HistoriasTab profile={profile} cards={cards} onAddCard={(c: MentoriaCard)=>setCards(prev=>[c,...prev])}/></div>}
+            {activeTab==="livros"     && <div style={{ flex:1, overflow:isMobile?"auto":"hidden", background:C.bg }}><LivrosTab profile={profile} cards={cards} audio={audio} onAddCard={(c: MentoriaCard)=>setCards(prev=>[c,...prev])}/></div>}
+            {activeTab==="perfil"     && <div style={{ flex:1, overflow:isMobile?"auto":"hidden", background:C.bg }}><PerfilTab profile={profile} onProfileUpdate={setProfile} cards={cards}/></div>}
           </div>
 
           {/* ── BIBLIOTECA DIREITA ── */}
@@ -3673,16 +3680,16 @@ function ChicoDashboard() {
 
         {/* ── BOTTOM NAV MOBILE ── */}
         {isMobile && (
-          <nav className="mobile-nav" style={{ position:"fixed", bottom:0, left:0, right:0, height:MOBILE_NAV_H, background:"rgba(255,255,255,0.96)", backdropFilter:"blur(20px)", borderTop:`1px solid ${C.border}`, display:"flex", alignItems:"center", zIndex:200, paddingBottom:"env(safe-area-inset-bottom)" }}>
-            {navItems.slice(0,5).map(item=>{ const active=activeTab===item.id; return (
+          <nav className="mobile-nav" style={{ position:"fixed", bottom:0, left:0, right:0, zIndex:100, background:C.panel, borderTop:`1px solid ${C.border}`, display:"flex", overflowX:"auto", WebkitOverflowScrolling:"touch", paddingBottom:"env(safe-area-inset-bottom, 8px)", WebkitScrollbarWidth:"none" } as React.CSSProperties}>H, background:"rgba(255,255,255,0.96)", backdropFilter:"blur(20px)", borderTop:`1px solid ${C.border}`, display:"flex", alignItems:"center", zIndex:200, paddingBottom:"env(safe-area-inset-bottom)" }}>
+            {navItems.map(item=>{ const active=activeTab===item.id; return (
               <button key={item.id} onClick={()=>{setActiveTab(item.id);setSidebarOpen(false);}}
-                style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", padding:"6px 0", border:"none", background:"transparent", cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", flex:1 }}>
+                style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", padding:"8px 12px", flexShrink:0, border:"none", background:"transparent", cursor:"pointer", minWidth:"60px" }}0", border:"none", background:"transparent", cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", flex:1 }}>
                 {item.icon(active)}
                 <span style={{ fontSize:"10px", fontWeight:active?800:500, color:active?C.blue:C.textMuted }}>{item.label}</span>
               </button>
             );})}
             <button onClick={()=>setSidebarOpen(v=>!v)}
-              style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", padding:"6px 0", border:"none", background:"transparent", cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", flex:1 }}>
+              style={{ display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", padding:"8px 12px", flexShrink:0, minWidth:"60px", border:"none", background:"transparent", cursor:"pointer", fontFamily:"Inter, -apple-system, sans-serif", flex:1 }}>
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke={sidebarOpen?C.orange:C.textMuted} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
               <span style={{ fontSize:"10px", fontWeight:sidebarOpen?800:500, color:sidebarOpen?C.orange:C.textMuted }}>Nexos</span>
             </button>
